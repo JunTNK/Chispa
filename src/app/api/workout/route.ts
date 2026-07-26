@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { decision, twin, profile, last_focus } = result.data;
+    const { decision, twin, profile, last_focus, client_last_focus } = result.data;
 
     // If the decision says rest, return a rest message
     if (decision.action === 'restore') {
@@ -47,7 +47,8 @@ export async function POST(request: NextRequest) {
       decision as DecisionEngineOutput,
       twin as unknown as DigitalTwin,
       profile.equipment,
-      last_focus
+      last_focus,
+      client_last_focus
     );
 
     // Get the motivation message

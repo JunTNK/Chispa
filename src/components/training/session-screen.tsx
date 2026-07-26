@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { fmtTime } from '@/lib/utils/helpers';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { RecRing } from '@/components/ui/ring';
+import { EXERCISE_CATALOG } from '@/lib/utils/exercises';
 
 interface SessionExercise {
   exercise_id: string;
@@ -19,15 +20,8 @@ interface SessionExercise {
   rest: number;
   status: 'pending' | 'done' | 'skipped';
   progressed?: boolean;
+  load_type?: 'reps' | 'time';
 }
-
-/* ─── Animation Variants ─── */
-
-const cardVariants = {
-  initial: { opacity: 0, y: 20, scale: 0.98 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  exit: { opacity: 0, y: -15, scale: 0.97 },
-};
 
 const dotVariants = {
   initial: { scale: 0, opacity: 0 },
@@ -45,8 +39,8 @@ const completeVariants = {
 
 export function SessionScreen() {
   const plan = useStore((s) => s.plan);
-  const setView = useStore((s) => s.setView);
   const setPlan = useStore((s) => s.setPlan);
+  const setView = useStore((s) => s.setView);
   const logEvent = useStore((s) => s.logEvent);
 
   const [exs, setExs] = React.useState<SessionExercise[]>([]);
@@ -60,17 +54,40 @@ export function SessionScreen() {
   const [timeRun, setTimeRun] = React.useState(false);
   const [timeLeft, setTimeLeft] = React.useState(0);
   const [doneSets, setDoneSets] = React.useState(0);
-  const [adapted, setAdapted] = React.useState(false);
+  const [, setAdapted] = React.useState(false);
   const [finished, setFinished] = React.useState(false);
   const [showComplete, setShowComplete] = React.useState(false);
   const completeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Summary data
-  const [summary, setSummary] = React.useState<any>(null);
+  // Refs for stable callback references (assigned .current right after each useCallback)
+  const endRestRef = useRef<() => void>(() => {});
+  const completeSetRef = useRef<() => void>(() => {});
+  const finishSessionRef = useRef<() => void>(() => {});
+  const exsRef = useRef(exs);
+  exsRef.current = exs;
+  const idxRef = useRef(idx);
+  idxRef.current = idx;
+  const elapsedRef = useRef(elapsed);
+  elapsedRef.current = elapsed;
+  const adaptedRef = useRef(false);
 
   const ex = exs[idx] || null;
+  const exRef = useRef(ex);
+  exRef.current = ex;
   const totalEx = exs.length;
   const totalSets = exs.reduce((a, e) => a + e.sets, 0);
+
+  const exerciseEmoji = useMemo(() => {
+    const lookup: Record<string, string> = {};
+    EXERCISE_CATALOG.forEach((e) => { lookup[e.name] = e.emoji; });
+    return lookup;
+  }, []);
+
+  const exerciseCue = useMemo(() => {
+    const lookup: Record<string, string> = {};
+    EXERCISE_CATALOG.forEach((e) => { lookup[e.name] = e.cue; });
+    return lookup;
+  }, []);
 
   useEffect(() => {
     if (plan?.workout?.exercises) {
@@ -91,7 +108,7 @@ export function SessionScreen() {
       if (restLeft > 0) {
         setRestLeft((r) => {
           if (r <= 1) {
-            endRest();
+            endRestRef.current();
             return 0;
           }
           return r - 1;
@@ -102,7 +119,7 @@ export function SessionScreen() {
         setTimeLeft((t) => {
           if (t <= 1) {
             setTimeRun(false);
-            completeSet();
+            completeSetRef.current();
             return 0;
           }
           return t - 1;
@@ -112,72 +129,90 @@ export function SessionScreen() {
     return () => clearInterval(timer);
   }, [ex, paused, finished, restLeft, timeRun]);
 
+  const setNumRef = useRef(setNum);
+  setNumRef.current = setNum;
+  const restTotalRef = useRef(restTotal);
+  restTotalRef.current = restTotal;
+
   const endRest = useCallback(() => {
-    const next = exs.findIndex((e, i) => i > idx && e.status === 'pending');
+    const currentExs = exsRef.current;
+    const currentIdx = idxRef.current;
+    const next = currentExs.findIndex((e, i) => i > currentIdx && e.status === 'pending');
     if (next === -1) {
-      finishSession();
+      finishSessionRef.current();
       return;
     }
     setIdx(next);
     setSetNum(1);
-    setRepsCur(exs[next].reps);
+    setRepsCur(currentExs[next].reps);
     setRestLeft(0);
     setTimeRun(false);
-  }, [exs, idx]);
+  }, []);
+  endRestRef.current = endRest;
 
   const completeSet = useCallback(() => {
-    if (!ex) return;
+    const currentEx = exRef.current;
+    const currentIdx = idxRef.current;
+    const currentSetNum = setNumRef.current;
+    if (!currentEx) return;
     setDoneSets((d) => d + 1);
     setTimeRun(false);
 
-    if (setNum >= ex.sets) {
-      setExs((prev) => prev.map((e, i) => (i === idx ? { ...e, status: 'done' } : e)));
-      const next = exs.findIndex((e, i) => i > idx && e.status === 'pending');
+    if (currentSetNum >= currentEx.sets) {
+      setExs((prev) => prev.map((e, i) => (i === currentIdx ? { ...e, status: 'done' } : e)));
+      const currentExs = exsRef.current;
+      const next = currentExs.findIndex((e, i) => i > currentIdx && e.status === 'pending');
       if (next === -1) {
-        finishSession();
+        finishSessionRef.current();
         return;
       }
-      setRestTotal(ex.rest);
-      setRestLeft(ex.rest);
+      setRestTotal(currentEx.rest);
+      setRestLeft(currentEx.rest);
     } else {
       setSetNum((s) => s + 1);
-      setRepsCur(ex.reps);
+      setRepsCur(currentEx.reps);
     }
-  }, [ex, setNum, exs, idx]);
+  }, []);
+  completeSetRef.current = completeSet;
 
   const skipExercise = useCallback(() => {
-    if (!ex) return;
-    setExs((prev) => prev.map((e, i) => (i === idx ? { ...e, status: 'skipped' } : e)));
-    const next = exs.findIndex((e, i) => i > idx && e.status === 'pending');
+    const currentIdx = idxRef.current;
+    setExs((prev) => prev.map((e, i) => (i === currentIdx ? { ...e, status: 'skipped' } : e)));
+    const currentExs = exsRef.current;
+    const next = currentExs.findIndex((e, i) => i > currentIdx && e.status === 'pending');
     if (next === -1) {
-      finishSession();
+      finishSessionRef.current();
       return;
     }
     setIdx(next);
     setSetNum(1);
-    setRepsCur(exs[next].reps);
+    setRepsCur(currentExs[next].reps);
     setRestLeft(0);
     setTimeRun(false);
-  }, [ex, exs, idx]);
+  }, []);
 
   const finishSession = useCallback(() => {
     if (finished) return;
     setFinished(true);
-    const doneEx = exs.filter((e) => e.status === 'done').length;
-    const rate = totalSets > 0 ? doneSets / totalSets : 0;
-    setSummary({
-      minutes: Math.max(1, Math.round(elapsed / 60)),
-      doneEx,
-      totalEx,
-      doneSets,
-      plannedSets: totalSets,
-      rate,
-      adapted,
-      rpe: null,
-      motiv: null,
+    const currentExs = exsRef.current;
+    const currentElapsed = elapsedRef.current;
+    const doneEx = currentExs.filter((e) => e.status === 'done').length;
+    const totalEx = currentExs.length;
+    const currentPlan = useStore.getState().plan;
+    setPlan({
+      ...currentPlan,
+      result: {
+        minutes: Math.round(currentElapsed / 60),
+        rate: totalEx > 0 ? doneEx / totalEx : 0,
+        exs: currentExs,
+        doneEx,
+        totalEx,
+        adapted: adaptedRef.current,
+      },
     });
     setView('summary');
-  }, [finished, exs, doneSets, totalSets, elapsed, adapted, setView]);
+  }, [finished, setView, setPlan]);
+  finishSessionRef.current = finishSession;
 
   // Clean up timer on unmount
   useEffect(() => {
@@ -190,11 +225,12 @@ export function SessionScreen() {
     setShowComplete(true);
     completeTimerRef.current = setTimeout(() => {
       setShowComplete(false);
-      completeSet();
+      completeSetRef.current();
     }, 400);
-  }, [completeSet]);
+  }, []);
 
   const handleEasier = () => {
+    adaptedRef.current = true;
     setExs((prev) =>
       prev.map((e, i) => {
         if (i > idx && e.status === 'pending') {
@@ -222,7 +258,7 @@ export function SessionScreen() {
     );
   }
 
-  const isTime = typeof ex.reps === 'number' && ex.reps > 50;
+  const isTime = ex.load_type === 'time';
 
   const renderRest = () => (
     <motion.div
@@ -286,7 +322,7 @@ export function SessionScreen() {
           transition={{ type: 'spring' as const, stiffness: 200, damping: 15 }}
           className="text-5xl mb-2"
         >
-          {EX_EMOJIS[ex.name] || '🏋️'}
+          {exerciseEmoji[ex.name] || '🏋️'}
         </motion.div>
 
         <motion.h2
@@ -304,7 +340,7 @@ export function SessionScreen() {
           transition={{ delay: 0.12 }}
           className="text-sm text-[#94a0b8] my-3 leading-relaxed"
         >
-          {EX_CUES[ex.name] || 'Mantén la forma'}
+          {exerciseCue[ex.name] || 'Mantén la forma'}
         </motion.p>
 
         <motion.div
@@ -547,97 +583,3 @@ export function SessionScreen() {
   );
 }
 
-const EX_EMOJIS: Record<string, string> = {
-  'Sentadilla': '🦵', 'Zancadas': '🚶', 'Puente de glúteos': '🌉',
-  'Gemelos de pie': '🦶', 'Sentadilla en pared': '🧱', 'Sentadilla con salto': '🦘',
-  'Equilibrio a una pierna': '🦩',
-  'Flexiones': '🙌', 'Flexiones inclinadas': '🙌', 'Flexión diamante': '💎',
-  'Fondos en silla': '🪑',
-  'Superman': '🦸',
-  'Plancha': '🧘', 'Plancha lateral': '🧘', 'Escaladores': '⛰️',
-  'Toque de hombros': '👋', 'Crunch': '🧎',
-  'Jumping jacks': '⭐', 'Rodillas arriba': '🏃', 'Burpees': '💥',
-  'Medio burpee': '💫',
-  'Círculos de brazos': '🔄', 'Yoga flow suave': '🌊',
-  'Press de pecho con mancuernas': '🏋️', 'Press de hombros': '🏋️',
-  'Press francés': '🇫🇷', 'Curl de bíceps': '💪',
-  'Elevaciones laterales': '🕊️', 'Remo con mancuerna': '🚣',
-  'Aperturas inversas': '🕊️',
-  'Sentadilla goblet': '🏆', 'Peso muerto rumano': '🏋️',
-  'Zancada con mancuernas': '🚶', 'Hip thrust con mancuerna': '🌉',
-  'Gemelos con mancuernas': '🦶', 'Russian twist con mancuerna': '🔄',
-  'Press de banca': '🛋️', 'Press inclinado': '🛋️',
-  'Press militar': '🎖️', 'Fondos en paralelas': '📐',
-  'Dominadas': '🐒', 'Jalón al pecho': '⬇️',
-  'Remo en máquina': '🚣', 'Face pull': '🎯',
-  'Remo con barra': '🚣',
-  'Sentadilla con barra': '🏋️', 'Peso muerto': '🏋️',
-  'Hip thrust con barra': '🌉', 'Prensa de piernas': '🦵',
-  'Curl femoral': '🦵', 'Extensión de cuádriceps': '🦵',
-  'Curl con barra': '💪', 'Extensión tríceps en polea': '🔽',
-  'Crunch en polea': '🧎', 'Elevación de piernas colgado': '🤸',
-  'Elíptica': '🌀', 'Bicicleta estática': '🚴',
-  'Caminata en pendiente': '⛰️', 'Remo ergómetro': '🚣',
-};
-
-const EX_CUES: Record<string, string> = {
-  'Sentadilla': 'Baja como si te sentaras, espalda recta',
-  'Zancadas': 'Paso largo, rodilla trasera al suelo',
-  'Puente de glúteos': 'Tumbado, eleva la cadera y aprieta',
-  'Gemelos de pie': 'Eleva los talones y baja despacio',
-  'Sentadilla en pared': 'Espalda en la pared, muslos paralelos',
-  'Sentadilla con salto': 'Sentadilla y salta al subir',
-  'Equilibrio a una pierna': 'Mantén el equilibrio, cambia de pierna',
-  'Flexiones': 'Cuerpo en línea, baja lentamente',
-  'Flexiones inclinadas': 'Manos en una superficie alta',
-  'Flexión diamante': 'Manos juntas bajo el pecho',
-  'Fondos en silla': 'Manos en la silla, baja el cuerpo',
-  'Superman': 'Boca abajo, eleva brazos y piernas',
-  'Plancha': 'Cuerpo recto, aprieta el abdomen',
-  'Plancha lateral': 'Cadera arriba, cuerpo alineado',
-  'Escaladores': 'En plancha, rodillas al pecho rápido',
-  'Toque de hombros': 'En plancha, toca el hombro contrario',
-  'Crunch': 'Encoge el abdomen, baja controlado',
-  'Jumping jacks': 'Salta abriendo brazos y piernas',
-  'Rodillas arriba': 'Corre en el sitio, rodillas altas',
-  'Burpees': 'Sentadilla, plancha, flexión, salto',
-  'Medio burpee': 'Sentadilla, plancha y vuelve',
-  'Círculos de brazos': 'Brazos extendidos, círculos amplios',
-  'Yoga flow suave': 'Plancha → cobra → perro boca abajo',
-  'Press de pecho con mancuernas': 'Tumbado, empuja las mancuernas',
-  'Press de hombros': 'Empuja sobre la cabeza',
-  'Press francés': 'Codos arriba, extiende el antebrazo',
-  'Curl de bíceps': 'Codos fijos, sube la mancuerna',
-  'Elevaciones laterales': 'Brazos hasta la altura del hombro',
-  'Remo con mancuerna': 'Inclinado, tira del codo hacia atrás',
-  'Aperturas inversas': 'Inclinado, abre los brazos hacia atrás',
-  'Sentadilla goblet': 'Mancuerna al pecho, baja profundo',
-  'Peso muerto rumano': 'Cadera atrás, espalda neutra',
-  'Zancada con mancuernas': 'Zancada con peso a los lados',
-  'Hip thrust con mancuerna': 'Espalda en banco, empuja la cadera',
-  'Gemelos con mancuernas': 'Eleva los talones con peso',
-  'Russian twist con mancuerna': 'Rota el torso lado a lado',
-  'Press de banca': 'Empuja la barra sobre el pecho',
-  'Press inclinado': 'Banca inclinada, empuja hacia arriba',
-  'Press militar': 'Empuja la barra sobre la cabeza',
-  'Fondos en paralelas': 'Baja hasta 90° y sube',
-  'Dominadas': 'Tira hasta la barbilla sobre la barra',
-  'Jalón al pecho': 'Tira de la barra hacia el pecho',
-  'Remo en máquina': 'Tira hacia tu abdomen',
-  'Face pull': 'Tira de la cuerda hacia la cara',
-  'Remo con barra': 'Inclinado, tira la barra al abdomen',
-  'Sentadilla con barra': 'Barra en la espalda, baja profundo',
-  'Peso muerto': 'Barra al suelo, cadera y rodillas a la vez',
-  'Hip thrust con barra': 'Espalda en banco, empuja la cadera',
-  'Prensa de piernas': 'Empuja sin bloquear rodillas',
-  'Curl femoral': 'Dobla la rodilla contra resistencia',
-  'Extensión de cuádriceps': 'Extiende la rodilla controlado',
-  'Curl con barra': 'Sube la barra con los bíceps',
-  'Extensión tríceps en polea': 'Codos pegados, extiende hacia abajo',
-  'Crunch en polea': 'De rodillas, encoge el abdomen',
-  'Elevación de piernas colgado': 'Cuélgate, sube las piernas a 90°',
-  'Elíptica': 'Ritmo suave y constante',
-  'Bicicleta estática': 'Pedaleo constante, resistencia media',
-  'Caminata en pendiente': 'Cinta inclinada, paso constante',
-  'Remo ergómetro': 'Empuje de piernas, luego brazos',
-};

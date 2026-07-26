@@ -47,7 +47,7 @@ const digitalTwinSchema = z.object({
     best_hours: z.record(z.string(), z.number()),
   }),
   ex_progress: z.record(z.string(), z.object({
-    easy: z.number(),
+    easy: z.number().optional().default(0),
     last_rpe: z.number().optional(),
   })),
   motiv_weights: z.record(z.string(), z.number()),
@@ -102,6 +102,7 @@ export const workoutRequestSchema = z.object({
   twin: digitalTwinSchema,
   profile: workoutProfileSchema,
   last_focus: focusEnum.optional(),
+  client_last_focus: z.string().optional(),
 });
 
 /* ═══════════════════════════════════════════

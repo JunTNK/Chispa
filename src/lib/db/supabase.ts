@@ -28,6 +28,20 @@ function createMockClient(): any {
     error: { message: `Supabase no configurado. ${method} no disponible. Configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.` },
   });
 
+  const mockFrom = () => ({
+    select: () => ({
+      eq: () => ({ single: () => Promise.resolve({ data: null, error: errorResponse('select').error }), data: null, error: errorResponse('select').error }),
+      gte: () => ({ order: () => Promise.resolve({ data: [], error: null }) }),
+      order: () => Promise.resolve({ data: [], error: null }),
+      data: [],
+      error: null,
+    }),
+    upsert: () => Promise.resolve({ data: null, error: errorResponse('upsert').error }),
+    insert: () => Promise.resolve({ data: null, error: errorResponse('insert').error }),
+    update: () => Promise.resolve({ data: null, error: errorResponse('update').error }),
+    delete: () => Promise.resolve({ data: null, error: errorResponse('delete').error }),
+  });
+
   return {
     auth: {
       signInWithPassword: () => Promise.resolve(errorResponse('signInWithPassword')),
@@ -37,9 +51,7 @@ function createMockClient(): any {
       getSession: () => Promise.resolve(errorResponse('getSession')),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
-    from: () => {
-      throw new Error('Supabase no configurado. Consulta la tabla no disponible.');
-    },
+    from: mockFrom,
   };
 }
 

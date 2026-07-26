@@ -87,7 +87,7 @@ export interface DigitalTwin {
     completion_rate: number;
     avg_duration: number;
     abandon_rate: number;
-    best_hours: Record<number, number>;
+    best_hours: Record<string, number>;
   };
   ex_progress: Record<string, { easy: number; last_rpe?: number }>;
   motiv_weights: Record<string, number>;

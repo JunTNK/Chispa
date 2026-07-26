@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { supabaseSync } from '@/lib/sync/supabase-sync';
 
 interface StepData {
   name: string;
@@ -113,12 +114,12 @@ export function OnboardingScreen() {
         equipment: data.equipment as any,
         days_per_week: data.days as any,
         neurotype: data.neuro as any,
-        preferred_duration: data.duration as any,
+        preferred_duration: Number(data.duration),
         limitations: [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       });
-      setNeuro({ type: data.neuro, duration: data.duration });
+      setNeuro({ type: data.neuro, duration: Number(data.duration) });
       setTwin({
         user_id: '',
         created_at: new Date().toISOString(),
@@ -127,11 +128,30 @@ export function OnboardingScreen() {
         motivation_style: 'data',
         avoid: [],
         best_time: '',
-        patterns: { completion_rate: 0.5, avg_duration: data.duration, abandon_rate: 0.2, best_hours: {} },
+        patterns: { completion_rate: 0.5, avg_duration: Number(data.duration), abandon_rate: 0.2, best_hours: {} },
         ex_progress: {},
         motiv_weights: { data: 1, energy: 1, direct: 1, calm: 1 },
       });
       setOnboarded(true);
+
+      // Background sync to Supabase
+      supabaseSync.push({
+        profile: {
+          user_id: '', name: data.name.trim(), goal: data.goal as any,
+          level: data.level as any, equipment: data.equipment as any,
+          days_per_week: data.days as any, neurotype: data.neuro as any,
+          preferred_duration: Number(data.duration), limitations: [],
+          created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+        },
+        neuro: { type: data.neuro, duration: Number(data.duration) },
+        twin: {
+          user_id: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          training_style: 'adaptive', motivation_style: 'data', avoid: [], best_time: '',
+          patterns: { completion_rate: 0.5, avg_duration: Number(data.duration), abandon_rate: 0.2, best_hours: {} },
+          ex_progress: {}, motiv_weights: { data: 1, energy: 1, direct: 1, calm: 1 },
+        },
+      }).catch(() => {});
+
       logEvent('twin_created', {});
       setView('home');
     } else {
@@ -151,6 +171,8 @@ export function OnboardingScreen() {
     if (st.key === 'name') {
       return (
         <input
+          id="onboarding-name"
+          name="name"
           autoFocus
           value={data.name}
           onChange={(e) => setData((d) => ({ ...d, name: e.target.value }))}

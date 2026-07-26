@@ -1,0 +1,246 @@
+'use client';
+
+/**
+ * LocalLLM — Modelo de lenguaje local ejecutándose en el navegador
+ * via Transformers.js (HuggingFace) cargado desde CDN.
+ * Usa Qwen2.5-1.5B-Instruct cuantizado.
+ *
+ * Singleton: una única instancia global que persiste mientras la página esté viva.
+ * El modelo se cachea automáticamente en IndexedDB tras la primera descarga.
+ * La librería Transformers.js se carga desde CDN para evitar problemas de bundling con Next.js/webpack.
+ */
+
+type PipelineFn = (text: string, opts?: Record<string, unknown>) => Promise<{ generated_text: string }[]>;
+
+type LoadStatus = 'idle' | 'downloading' | 'loading' | 'ready' | 'error';
+
+interface LoadProgress {
+  status: 'download' | 'load' | 'done' | 'error' | 'idle';
+  file?: string;
+  progress: number; // 0–1
+  total_files?: number;
+  loaded_files?: number;
+}
+
+type ProgressCallback = (p: LoadProgress) => void;
+
+// Use the browser-optimized build to avoid Node.js dependency resolution issues
+const CDN_URL =
+  'https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.2.0/dist/transformers.web.min.js';
+
+/* ─── ChatML template for Qwen2.5 ─── */
+
+function buildPrompt(system: string, messages: { role: 'user' | 'assistant'; content: string }[]): string {
+  let prompt = `<|im_start|>system\n${system}<|im_end|>\n`;
+  for (const m of messages) {
+    prompt += `<|im_start|>${m.role}\n${m.content}<|im_end|>\n`;
+  }
+  prompt += `<|im_start|>assistant\n`;
+  return prompt;
+}
+
+/* ─── Singleton ─── */
+
+export class LocalLLM {
+  private static INSTANCE: LocalLLM | null = null;
+
+  private _pipeline: PipelineFn | null = null;
+  private _status: LoadStatus = 'idle';
+  private _error: string | null = null;
+  private _progress: LoadProgress = { status: 'idle', progress: 0 };
+  private _progressCbs: Set<ProgressCallback> = new Set();
+  private _modelId: string;
+  private _loadPromise: Promise<void> | null = null;
+
+  private constructor(modelId: string) {
+    this._modelId = modelId;
+  }
+
+  /** Obtiene (o crea) la instancia única */
+  static getInstance(modelId = 'onnx-community/Qwen2.5-1.5B-Instruct-q4'): LocalLLM {
+    if (!LocalLLM.INSTANCE) {
+      LocalLLM.INSTANCE = new LocalLLM(modelId);
+    }
+    return LocalLLM.INSTANCE;
+  }
+
+  /* ─── Getters ─── */
+
+  get status(): LoadStatus {
+    return this._status;
+  }
+
+  get error(): string | null {
+    return this._error;
+  }
+
+  get progress(): LoadProgress {
+    return this._progress;
+  }
+
+  get isLoaded(): boolean {
+    return this._status === 'ready' && this._pipeline !== null;
+  }
+
+  get modelId(): string {
+    return this._modelId;
+  }
+
+  /* ─── Progress subscription ─── */
+
+  onProgress(cb: ProgressCallback): () => void {
+    this._progressCbs.add(cb);
+    // Emit current state immediately
+    cb(this._progress);
+    return () => {
+      this._progressCbs.delete(cb);
+    };
+  }
+
+  private _emitProgress(p: LoadProgress) {
+    this._progress = p;
+    for (const cb of this._progressCbs) {
+      try {
+        cb(p);
+      } catch {
+        // ignore callback errors
+      }
+    }
+  }
+
+  /* ─── Load ─── */
+
+  async load(): Promise<void> {
+    if (this._status === 'ready') return;
+    if (this._loadPromise) return this._loadPromise;
+
+    this._loadPromise = this._doLoad();
+    return this._loadPromise;
+  }
+
+  private async _doLoad(): Promise<void> {
+    this._status = 'downloading';
+    this._error = null;
+    this._emitProgress({ status: 'download', progress: 0 });
+
+    try {
+      // Cargar la librería Transformers.js desde CDN.
+      // Usamos `new Function` para bypassear completamente el bundler (Next.js/Turbopack/webpack)
+      // e importar directamente desde la URL en el browser.
+      const mod: any = await new Function(`return import("${CDN_URL}")`)();
+      const { pipeline, env } = mod;
+
+      // Configure fallback devices: webgpu -> webgl -> cpu
+      if (env) {
+        env.allowLocalModels = true;
+        // Check for WebGPU support
+        const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
+        const preferredDevice = hasWebGPU ? 'webgpu' : 'webgl';
+        this._emitProgress({ status: 'load', progress: 0 });
+
+        const pipe = await pipeline('text-generation', this._modelId, {
+          dtype: 'q4',
+          device: preferredDevice as any,
+          progress_callback: (p: any) => {
+            if (p.status === 'progress') {
+              this._emitProgress({
+                status: 'download',
+                file: p.file,
+                progress: p.progress ?? 0,
+                total_files: p.total_files,
+                loaded_files: p.loaded_files,
+              });
+            }
+          },
+        });
+
+        this._pipeline = pipe as unknown as PipelineFn;
+        this._status = 'ready';
+        this._emitProgress({ status: 'done', progress: 1 });
+      }
+    } catch (err: any) {
+      // Try fallback to webgl if webgpu failed
+      if (this._status !== 'ready') {
+        try {
+          const mod: any = await new Function(`return import("${CDN_URL}")`)();
+          const { pipeline } = mod;
+          this._emitProgress({ status: 'load', progress: 0 });
+
+          const pipe = await pipeline('text-generation', this._modelId, {
+            dtype: 'q4',
+            device: 'webgl' as any,
+            progress_callback: (p: any) => {
+              if (p.status === 'progress') {
+                this._emitProgress({
+                  status: 'download',
+                  file: p.file,
+                  progress: p.progress ?? 0,
+                  total_files: p.total_files,
+                  loaded_files: p.loaded_files,
+                });
+              }
+            },
+          });
+
+          this._pipeline = pipe as unknown as PipelineFn;
+          this._status = 'ready';
+          this._emitProgress({ status: 'done', progress: 1 });
+        } catch (fallbackErr: any) {
+          this._status = 'error';
+          this._error = fallbackErr?.message ?? String(fallbackErr);
+          this._loadPromise = null;
+          this._emitProgress({ status: 'error', progress: 0 });
+          throw fallbackErr;
+        }
+      } else {
+        this._status = 'error';
+        this._error = err?.message ?? String(err);
+        this._loadPromise = null;
+        this._emitProgress({ status: 'error', progress: 0 });
+        throw err;
+      }
+    }
+  }
+
+  /* ─── Chat ─── */
+
+  async chat(
+    messages: { role: 'user' | 'assistant'; content: string }[],
+    system: string,
+    opts?: { max_new_tokens?: number; temperature?: number }
+  ): Promise<string> {
+    if (!this._pipeline) {
+      throw new Error('Model not loaded. Call load() first.');
+    }
+
+    const prompt = buildPrompt(system, messages);
+
+    const result = await this._pipeline(prompt, {
+      max_new_tokens: opts?.max_new_tokens ?? 256,
+      temperature: opts?.temperature ?? 0.7,
+      top_p: 0.9,
+      do_sample: true,
+      repetition_penalty: 1.1,
+    });
+
+    const full = result[0]?.generated_text ?? '';
+    // Extract only the assistant's response (after the final `|<im_start|>assistant\n`)
+    const idx = full.lastIndexOf('<|im_start|>assistant\n');
+    if (idx !== -1) {
+      return full.slice(idx + '<|im_start|>assistant\n'.length).trim();
+    }
+    // Fallback: return everything after the prompt
+    const promptEnd = prompt.length;
+    return full.slice(promptEnd).trim();
+  }
+
+  /* ─── Reset ─── */
+
+  reset() {
+    this._pipeline = null;
+    this._status = 'idle';
+    this._error = null;
+    this._loadPromise = null;
+    this._emitProgress({ status: 'idle', progress: 0 });
+  }
+}

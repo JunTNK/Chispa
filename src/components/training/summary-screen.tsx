@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { updateTwin } from '@/lib/agents/decision-engine';
 import { uid, todayKey } from '@/lib/utils/helpers';
+import { supabaseSync } from '@/lib/sync/supabase-sync';
 
 export function SummaryScreen() {
   const setView = useStore((s) => s.setView);
@@ -58,6 +59,14 @@ export function SummaryScreen() {
     }
 
     setPlan({ ...plan, done: true, result: { ...result, rpe, motiv } });
+
+    // Background sync to Supabase - get workouts AFTER addWorkout
+    const currentWorkouts = useStore.getState().workouts;
+    supabaseSync.push({
+      workouts: [...currentWorkouts, w as any],
+      twin: updated,
+    }).catch(() => {});
+
     setView('home');
   };
 

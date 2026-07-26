@@ -44,13 +44,13 @@ describe('decisionRequestSchema', () => {
   });
 
   it('rejects payload without profile', () => {
-    const { profile, ...rest } = validPayload as any;
+    const { profile: _profile, ...rest } = validPayload as any;
     const result = decisionRequestSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
 
   it('rejects payload without twin', () => {
-    const { twin, ...rest } = validPayload as any;
+    const { twin: _twin, ...rest } = validPayload as any;
     const result = decisionRequestSchema.safeParse(rest);
     expect(result.success).toBe(false);
   });
@@ -80,7 +80,7 @@ describe('decisionRequestSchema', () => {
   });
 
   it('accepts payload without workouts_last_30_days', () => {
-    const { workouts_last_30_days, ...rest } = validPayload as any;
+    const { workouts_last_30_days: _workouts_last_30_days, ...rest } = validPayload as any;
     const result = decisionRequestSchema.safeParse(rest);
     expect(result.success).toBe(true);
   });

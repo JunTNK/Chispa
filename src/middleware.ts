@@ -8,9 +8,7 @@ import { createMiddlewareSupabaseClient } from '@/lib/db/supabase-middleware';
 const PROTECTED_ROUTES = [
   '/api/decision',
   '/api/workout',
-  // '/dashboard',  ← uncomment when dashboard routes are added
-  // '/profile',
-  // '/progress',
+  '/',
 ];
 
 /**

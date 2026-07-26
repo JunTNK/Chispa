@@ -20,11 +20,11 @@ interface ToastState {
 
 const useToastStore = create<ToastState>((set) => ({
   toasts: [],
-  addToast: (toast) => {
+  addToast: (newToast) => {
     const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-    set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+    set((state) => ({ toasts: [...state.toasts, { ...newToast, id }] }));
     // Auto-remove after duration
-    const duration = toast.duration ?? 3500;
+    const duration = newToast.duration ?? 3500;
     setTimeout(() => {
       set((state) => ({ toasts: state.toasts.filter((t) => t.id !== id) }));
     }, duration);

@@ -7,8 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
-import { STYLE_LABELS, EQUIP_LABELS, GOAL_LABELS, NEURO_LABELS } from '@/lib/utils/constants';
-import { cap } from '@/lib/utils/helpers';
+import { STYLE_LABELS, GOAL_LABELS, NEURO_LABELS } from '@/lib/utils/constants';
 
 export function ProfileScreen() {
   const profile = useStore((s) => s.profile);
@@ -20,8 +19,6 @@ export function ProfileScreen() {
   const setTwin = useStore((s) => s.setTwin);
   const reset = useStore((s) => s.reset);
   const setView = useStore((s) => s.setView);
-  const _addChat = useStore((s) => s.addChat);
-
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   const handleReset = () => {

@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/db/supabase';
+import { supabaseSync } from '@/lib/sync/supabase-sync';
 
 export interface AuthError {
   message: string;
@@ -8,6 +9,7 @@ export interface AuthError {
 /**
  * Sign in with email and password.
  * Returns { user, error } — error is null on success.
+ * On success, pulls user data from Supabase.
  */
 export async function signInWithEmail(email: string, password: string) {
   try {
@@ -16,6 +18,10 @@ export async function signInWithEmail(email: string, password: string) {
       password,
     });
     if (error) return { user: null, error: { message: error.message, code: error.code } };
+
+    // Pull data from Supabase in background
+    supabaseSync.pull().catch(() => {});
+
     return { user: data.user, error: null };
   } catch (e) {
     return { user: null, error: { message: (e as Error).message } };
@@ -88,10 +94,17 @@ export async function getSession() {
 /**
  * Listen to auth state changes (e.g., on mount to detect session).
  * Returns an unsubscribe function.
+ * Pulls user data when session is restored.
  */
 export function onAuthStateChange(callback: (event: string, session: any) => void) {
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
     callback(event, session);
+    // Pull data on login / session restore
+    if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (session?.user) {
+        supabaseSync.pull().catch(() => {});
+      }
+    }
   });
   return data.subscription.unsubscribe;
 }

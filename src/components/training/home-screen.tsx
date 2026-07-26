@@ -10,13 +10,18 @@ import {
   calculateRecoveryScore,
   calculateConsistency,
 } from '@/lib/agents/decision-engine';
-import { todayKey, recColor, recWord } from '@/lib/utils/helpers';
+import { todayKey, recWord } from '@/lib/utils/helpers';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RecRing } from '@/components/ui/ring';
 import { Slider } from '@/components/ui/slider';
 import { Icons } from '@/components/ui/icons';
+import { supabaseSync } from '@/lib/sync/supabase-sync';
+import { EXERCISE_CATALOG } from '@/lib/utils/exercises';
+
+const EX_EMOJIS: Record<string, string> = {};
+EXERCISE_CATALOG.forEach((e) => { EX_EMOJIS[e.name] = e.emoji; });
 
 function CheckInCard() {
   const [sleep, setSleep] = React.useState(7);
@@ -60,7 +65,8 @@ function CheckInCard() {
       if (decision.action === 'restore') {
         plan.message = MotivationEngine.restMessage(twin.motivation_style);
       } else {
-        const workout = TrainingAgent.generate(decision, twin, profile.equipment);
+        const clientLastFocus = typeof window !== 'undefined' ? (localStorage.getItem('chispa_last_focus') ?? undefined) : undefined;
+        const workout = TrainingAgent.generate(decision, twin, profile.equipment, undefined, clientLastFocus);
         plan.workout = workout;
         plan.message = MotivationEngine.message(
           twin.motivation_style,
@@ -71,6 +77,12 @@ function CheckInCard() {
       }
 
       setPlan(plan);
+
+      // Background sync check-in to Supabase
+      supabaseSync.push({
+        checkins: { [todayKey()]: { user_id: '', date: todayKey(), sleep, energy, stress, recovery_score: rec.score, created_at: '' } },
+      }).catch(() => {});
+
       logEvent('decision', { intensity: decision.intensity, confidence: decision.confidence });
     }
   };
@@ -131,7 +143,6 @@ function CheckInCard() {
 function PlanCard() {
   const plan = useStore((s) => s.plan);
   const setView = useStore((s) => s.setView);
-  const setPlan = useStore((s) => s.setPlan);
   const [showExercises, setShowExercises] = React.useState(false);
 
   if (!plan || plan.action === 'restore') return null;
@@ -267,39 +278,6 @@ function DoneCard() {
   );
 }
 
-const EX_EMOJIS: Record<string, string> = {
-  'Sentadilla': '🦵', 'Zancadas': '🚶', 'Puente de glúteos': '🌉',
-  'Gemelos de pie': '🦶', 'Sentadilla en pared': '🧱', 'Sentadilla con salto': '🦘',
-  'Equilibrio a una pierna': '🦩',
-  'Flexiones': '🙌', 'Flexiones inclinadas': '🙌', 'Flexión diamante': '💎',
-  'Fondos en silla': '🪑',
-  'Superman': '🦸',
-  'Plancha': '🧘', 'Plancha lateral': '🧘', 'Escaladores': '⛰️',
-  'Toque de hombros': '👋', 'Crunch': '🧎',
-  'Jumping jacks': '⭐', 'Rodillas arriba': '🏃', 'Burpees': '💥',
-  'Medio burpee': '💫',
-  'Círculos de brazos': '🔄', 'Yoga flow suave': '🌊',
-  'Press de pecho con mancuernas': '🏋️', 'Press de hombros': '🏋️',
-  'Press francés': '🇫🇷', 'Curl de bíceps': '💪',
-  'Elevaciones laterales': '🕊️', 'Remo con mancuerna': '🚣',
-  'Aperturas inversas': '🕊️',
-  'Sentadilla goblet': '🏆', 'Peso muerto rumano': '🏋️',
-  'Zancada con mancuernas': '🚶', 'Hip thrust con mancuerna': '🌉',
-  'Gemelos con mancuernas': '🦶', 'Russian twist con mancuerna': '🔄',
-  'Press de banca': '🛋️', 'Press inclinado': '🛋️',
-  'Press militar': '🎖️', 'Fondos en paralelas': '📐',
-  'Dominadas': '🐒', 'Jalón al pecho': '⬇️',
-  'Remo en máquina': '🚣', 'Face pull': '🎯',
-  'Remo con barra': '🚣',
-  'Sentadilla con barra': '🏋️', 'Peso muerto': '🏋️',
-  'Hip thrust con barra': '🌉', 'Prensa de piernas': '🦵',
-  'Curl femoral': '🦵', 'Extensión de cuádriceps': '🦵',
-  'Curl con barra': '💪', 'Extensión tríceps en polea': '🔽',
-  'Crunch en polea': '🧎', 'Elevación de piernas colgado': '🤸',
-  'Elíptica': '🌀', 'Bicicleta estática': '🚴',
-  'Caminata en pendiente': '⛰️', 'Remo ergómetro': '🚣',
-};
-
 function SkeletonCard({ lines = 2 }: { lines?: number }) {
   return (
     <div className="rounded-2xl border border-white/[.07] bg-[#151b2a] p-5 space-y-4">
@@ -333,15 +311,22 @@ export function HomeScreen() {
   const hasCheckin = !!checkins[today];
   const hasPlan = plan && plan.date === today;
 
+  // Use ref to avoid recalculation on date change
+  const todayRef = React.useRef(today);
+  if (todayRef.current !== today) {
+    todayRef.current = today;
+  }
+
   const cons = React.useMemo(() => {
     if (!profile) return { consistency_pct: 0, sessions_done: 0, sessions_target: 0 };
     const target = profile.days_per_week === '4-5' ? 4 : 3;
+    const todayStr = todayRef.current;
     const done = workouts.filter((w) => {
-      const d = Math.floor((new Date(today).getTime() - new Date(w.date).getTime()) / 86400000);
+      const d = Math.floor((new Date(todayStr).getTime() - new Date(w.date).getTime()) / 86400000);
       return d <= 29 && w.completed_rate >= 0.5;
     }).length;
     return calculateConsistency(done, target);
-  }, [workouts, profile, today]);
+  }, [workouts, profile]);
 
   const recoveryScore = hasCheckin ? checkins[today].recovery_score : 50;
 

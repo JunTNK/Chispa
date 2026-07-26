@@ -10,6 +10,27 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // webpack is a transitive dependency of Next.js — use require()
+      const webpack = require('webpack');
+
+      // Prevent webpack from bundling onnxruntime-node (used by transformers.js only in Node)
+      config.externals = [...(config.externals || []), 'onnxruntime-node'];
+
+      // Ignore .node binary files that onnxruntime-node ships
+      config.plugins.push(new webpack.IgnorePlugin({ resourceRegExp: /\.node$/ }));
+
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        'onnxruntime-node': false,
+        'onnxruntime-web': false,
+        fs: false,
+        path: false,
+      };
+    }
+    return config;
+  },
   headers: async () => [
     {
       source: '/(.*)',

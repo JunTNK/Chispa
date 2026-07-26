@@ -84,7 +84,7 @@ export class DecisionEngine {
     if (intensity === 'push') duration = Math.min(duration + 5, 40);
 
     const ageDays = Math.floor(
-      (Date.now() - new Date(twin.created_at).getTime()) / 86400000
+      (Date.now() - Date.parse(twin.created_at)) / 86400000
     );
     const confidence = Math.round(
       clamp(42 + (input.last_workout ? 14 : 0) + Math.min(ageDays, 10), 42, 94)
@@ -106,18 +106,24 @@ export class DecisionEngine {
 
 /** Parse duration from exercise instructions (e.g. "30 segundos" → 30, "3 minutos" → 180) */
 function parseDuration(instructions: string): number {
-  const match = instructions.match(/(\d+)\s*(seg|s|min|m)/i);
+  const match = instructions.match(/(\d+)\s*(seg|segundo|s|min|m)/i);
   if (!match) return 30; // default
   const value = parseInt(match[1], 10);
   const unit = match[2].toLowerCase();
   // If there's a second number in a range like "3-5 min", prefer the larger
-  const rangeMatch = instructions.match(/-(\d+)\s*(seg|s|min|m)/i);
+  const rangeMatch = instructions.match(/-(\d+)\s*(seg|segundo|s|min|m)/i);
   const finalValue = rangeMatch ? Math.max(value, parseInt(rangeMatch[1], 10)) : value;
-  return unit === 'min' || unit === 'm' ? finalValue * 60 : finalValue;
+  return unit.startsWith('min') || unit === 'm' ? finalValue * 60 : finalValue;
 }
 
 export class TrainingAgent {
-  static generate(decision: DecisionEngineOutput, twin: DigitalTwin, equipment: string, lastFocus?: string) {
+  static generate(
+    decision: DecisionEngineOutput,
+    twin: DigitalTwin,
+    equipment: string,
+    lastFocusOverride?: string,
+    clientLastFocus?: string
+  ) {
     const countMap: Record<string, number> = { minimal: 3, light: 4, standard: 5, push: 6 };
     const setsMap: Record<string, number> = { minimal: 2, light: 2, standard: 3, push: 4 };
     const repsMap: Record<string, number> = { minimal: 8, light: 10, standard: 12, push: 12 };
@@ -128,7 +134,7 @@ export class TrainingAgent {
     const reps = repsMap[decision.intensity];
     const rest = restMap[decision.intensity];
 
-    const focus = this._pickFocus(twin, lastFocus);
+    const focus = this._pickFocus(twin, lastFocusOverride, clientLastFocus);
     const picked = this._pickExercises(count, decision.intensity, focus, equipment);
     const exercises = picked.map((ex) => {
       const isTime = ex.load_type === 'time';
@@ -144,6 +150,7 @@ export class TrainingAgent {
         completed_reps: [],
         status: 'pending' as const,
         progressed,
+        load_type: ex.load_type,
       };
     });
 
@@ -165,15 +172,19 @@ export class TrainingAgent {
     };
   }
 
-  private static _pickFocus(twin: DigitalTwin, lastFocusOverride?: string): 'full' | 'upper' | 'lower' | 'core' {
+  private static _pickFocus(
+    twin: DigitalTwin,
+    lastFocusOverride?: string,
+    clientLastFocus?: string
+  ): 'full' | 'upper' | 'lower' | 'core' {
     const seq: ('full' | 'upper' | 'lower' | 'core')[] = ['full', 'upper', 'lower', 'core'];
-    let last: string | null = lastFocusOverride ?? null;
-    if (last === null && typeof localStorage !== 'undefined') {
+    let last: string | null = lastFocusOverride ?? clientLastFocus ?? null;
+    if (last === null && typeof window !== 'undefined') {
       last = localStorage.getItem('chispa_last_focus');
     }
     const idx = last ? seq.indexOf(last as typeof seq[number]) : -1;
     const next = seq[(idx + 1) % 4];
-    if (typeof localStorage !== 'undefined') {
+    if (typeof window !== 'undefined') {
       localStorage.setItem('chispa_last_focus', next);
     }
     return next;
@@ -189,7 +200,6 @@ export class TrainingAgent {
       equipment === 'mancuernas' ? ['ninguno', 'mancuernas'] :
         ['ninguno', 'mancuernas', 'gimnasio'];
 
-    const loadCap = intensity === 'push' ? 2 : 1;
     const pool = EXERCISE_CATALOG.filter(
       (e) => eqList.includes(e.equipment) &&
         (intensity === 'push' || (e.cognitive_load !== 'high'))
@@ -281,11 +291,12 @@ export class MotivationEngine {
 
 /* === DIGITAL TWIN UPDATER === */
 
-export function updateTwin(twin: DigitalTwin, workout: any): DigitalTwin {
-  const rpeN: Record<string, number> = { suave: 5, justo: 7, duro: 9 };
-  const rpe = rpeN[workout.rpe] || 7;
+export function updateTwin(
+  twin: DigitalTwin,
+  workout: { completed_rate: number; actual_minutes: number; exercises?: any[]; rpe?: string }
+): DigitalTwin {
+  const updated = { ...twin, patterns: { ...twin.patterns }, ex_progress: { ...twin.ex_progress } };
 
-  const updated = { ...twin, patterns: { ...twin.patterns } };
   updated.patterns.completion_rate = ema(updated.patterns.completion_rate, workout.completed_rate, 0.35);
   updated.patterns.avg_duration = ema(updated.patterns.avg_duration, Math.max(workout.actual_minutes, 5), 0.3);
   updated.patterns.abandon_rate = ema(updated.patterns.abandon_rate, workout.completed_rate < 0.5 ? 1 : 0, 0.3);
@@ -295,6 +306,19 @@ export function updateTwin(twin: DigitalTwin, workout: any): DigitalTwin {
     ...updated.patterns.best_hours,
     [hour]: (updated.patterns.best_hours[hour] || 0) + 1,
   };
+
+  if (workout.exercises) {
+    for (const ex of workout.exercises) {
+      if (ex.status === 'done' && ex.exercise_id) {
+        const current = updated.ex_progress[ex.exercise_id] || { easy: 0 };
+        const isEasy = workout.rpe === 'suave' || (ex.rpe !== undefined && ex.rpe <= 2);
+        if (isEasy) {
+          current.easy = (current.easy ?? 0) + 1;
+        }
+        updated.ex_progress[ex.exercise_id] = current;
+      }
+    }
+  }
 
   return updated;
 }

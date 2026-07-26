@@ -4,7 +4,8 @@
 
 -- Enable required extensions
 create extension if not exists "uuid-ossp";
-create extension if not exists "pgvector";
+-- pgvector extension is optional — enable if you need vector embeddings
+-- create extension if not exists "pgvector";
 
 -- ═══════════════════════════════════════════════════════════
 -- TABLES
@@ -48,7 +49,7 @@ create table if not exists public.exercises (
   emoji text not null,
   cue text not null,
   secondary_muscles text[] default '{}',
-  embedding vector(1536),
+  -- embedding vector(1536),  -- requires pgvector extension
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

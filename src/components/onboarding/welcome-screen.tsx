@@ -11,7 +11,6 @@ export function WelcomeScreen() {
   const _importDemo = useStore((s) => s.addWorkout);
 
   const handleDemo = () => {
-    const today = new Date().toISOString().slice(0, 10);
     const demoWorkouts = [
       { id: 'd1', user_id: '', date: new Date(Date.now() - 86400000 * 1).toISOString().slice(0, 10), duration: 19, focus: 'upper' as const, intensity: 'standard' as const, score: 85, completed_rate: 1, exercises: [], actual_minutes: 19, rpe: 'justo' as const },
       { id: 'd2', user_id: '', date: new Date(Date.now() - 86400000 * 3).toISOString().slice(0, 10), duration: 21, focus: 'lower' as const, intensity: 'standard' as const, score: 80, completed_rate: 0.85, exercises: [], actual_minutes: 21, rpe: 'justo' as const },

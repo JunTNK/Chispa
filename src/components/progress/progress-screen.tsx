@@ -6,8 +6,7 @@ import { useStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { RecRing } from '@/components/ui/ring';
 import { calculateConsistency } from '@/lib/agents/decision-engine';
-import { cap, daysAgoKey, daysBetween } from '@/lib/utils/helpers';
-import { Badge } from '@/components/ui/badge';
+import { daysAgoKey, daysBetween } from '@/lib/utils/helpers';
 
 /* ─── Animation Variants ─── */
 
@@ -73,10 +72,10 @@ export function ProgressScreen() {
   const start = new Date();
   start.setDate(start.getDate() - 27);
   const pad = (start.getDay() + 6) % 7;
-  const trained = new Set(workouts.filter((w) => w.completed_rate >= 0.5).map((w) => w.date));
 
   // Pre-compute calendar cells with stagger indices
   const cellData = React.useMemo(() => {
+    const trained = new Set(workouts.filter((w) => w.completed_rate >= 0.5).map((w) => w.date));
     const items: { key: string; day: number; trained: boolean; today: boolean; blank: boolean; idx: number }[] = [];
     let idx = 0;
     for (let i = 0; i < pad; i++) {
@@ -88,7 +87,7 @@ export function ProgressScreen() {
       items.push({ key: k, day: dn, trained: trained.has(k), today: i === 0, blank: false, idx: idx++ });
     }
     return items;
-  }, [pad, trained]);
+  }, [pad, workouts]);
 
   // Week bars
   const wkCounts = React.useMemo(() =>

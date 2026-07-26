@@ -1,4 +1,5 @@
 import type { DigitalTwin, Profile, Workout, DecisionEngineOutput } from '@/types';
+import { LocalLLM } from './local-llm';
 
 /* ─── Interfaces ─── */
 
@@ -13,6 +14,7 @@ interface CoachContext {
   twin: DigitalTwin;
   plan: (DecisionEngineOutput & { date?: string; workout?: any; message?: string; done?: boolean; result?: any }) | null;
   workouts: Workout[];
+  checkins: Record<string, any>;
 }
 
 /* ─── Labels (reused from constants, defined here for self-containment) ─── */
@@ -34,28 +36,123 @@ const EQUIPMENT_LABELS: Record<string, string> = {
 
 export class CoachAgent {
   private context: CoachContext;
+  private llm: LocalLLM;
 
   constructor(context: CoachContext) {
     this.context = context;
+    this.llm = LocalLLM.getInstance();
+  }
+
+  /** Update context without recreating agent */
+  updateContext(partial: Partial<CoachContext>) {
+    this.context = { ...this.context, ...partial };
   }
 
   /** Returns the initial greeting */
   getGreeting(): string {
     const style = this.context.twin.motivation_style;
     const name = this.context.profile.name;
+    const hasLlm = this.llm.isLoaded;
     const templates: Record<string, string> = {
-      data: `Hola ${name}. Soy tu coach. Los algoritmos deciden, yo te lo explico con tus datos. Pregúntame lo que quieras.`,
-      energy: `¡Hola ${name}! ⚡ Listo para acompañarte. Los números deciden, yo pongo las palabras.`,
-      direct: `Hola ${name}. Pregúntame y te respondo con datos reales, sin adornos.`,
-      calm: `Hola ${name}. Aquí estoy, sin prisa. Cuando quieras, pregúntame.`,
+      data: `Hola ${name}. Soy tu coach${hasLlm ? ', ahora con IA real' : ''}. Los algoritmos deciden, yo te lo explico con tus datos. Pregúntame lo que quieras.`,
+      energy: `¡Hola ${name}! ⚡ ${hasLlm ? 'Conecté mi IA para responderte mejor. ' : ''}Listo para acompañarte. Los números deciden, yo pongo las palabras.`,
+      direct: `Hola ${name}. ${hasLlm ? 'IA activa — respuestas más precisas. ' : ''}Pregúntame y te respondo con datos reales, sin adornos.`,
+      calm: `Hola ${name}. ${hasLlm ? 'Ahora con IA, puedo conversar mejor. ' : ''}Aquí estoy, sin prisa. Cuando quieras, pregúntame.`,
     };
     return templates[style] || templates.data;
   }
 
-  /** Returns a context-aware reply with data_used and confidence */
-  reply(userInput: string): CoachResponse {
+  /** Builds the system prompt from the current context */
+  private buildSystemPrompt(): string {
+    const c = this.context;
+    const p = c.profile;
+    const t = c.twin;
+    const d = c.plan;
+
+    const bestHour = this._bestHourStr();
+    const style = STYLE_LABELS[t.motivation_style] || t.motivation_style;
+
+    return `Eres CHISPA Coach, un asistente de fitness experto para personas con TDAH y neurodivergencias.
+
+## REGLAS ESENCIALES
+1. 🎯 ERES el 5% LLM que COMUNICA. El 80% son algoritmos deterministas (Decision Engine). El 15% son agentes especializados (Training, Recovery, Habit, Motivation).
+2. 🚫 NUNCA generes rutinas de ejercicio, planes de entrenamiento ni diagnósticos médicos.
+3. 📊 Siempre basas tus respuestas en LOS DATOS del usuario que te proporcionamos abajo.
+4. 💯 Si no sabes algo, DILO HONESTAMENTE. No inventes ni alucines.
+5. 🗣️ Usa un tono ${style}. Sé natural y conversacional.
+6. 🇪🇸 Responde SIEMPRE en español, con emojis con moderación.
+
+## DATOS DEL PERFIL DEL USUARIO
+- Nombre: ${p.name}
+- Nivel: ${p.level}
+- Equipo: ${EQUIPMENT_LABELS[p.equipment] || p.equipment}
+- Neurotipo: ${p.neurotype}
+- Objetivo: ${p.goal}
+- Días por semana: ${p.days_per_week}
+- Estilo de motivación: ${style}
+
+## PLAN DE HOY ${d ? `(confianza: ${d.confidence ?? 50}%)` : '(pendiente de check-in)'}
+${d ? `- Acción: ${d.action === 'train' ? 'Entrenar' : 'Recuperación activa'}
+- Intensidad: ${INTENSITY_LABELS[d.intensity] || d.intensity}
+- Duración: ${d.duration} min
+- Razones del motor: ${d.reasons.join(', ')}
+- Score recuperación: ${d.recovery_score ?? 'N/A'}/100` : '- Haz el check-in para obtener el plan del día'}
+
+## ESTADÍSTICAS DEL DIGITAL TWIN
+- Tasa de finalización: ${Math.round(t.patterns.completion_rate * 100)}%
+- Duración promedio: ${Math.round(t.patterns.avg_duration)} min
+- ${bestHour}
+- Tasa de abandono: ${Math.round(t.patterns.abandon_rate * 100)}%
+- Estilo de entrenamiento: ${t.training_style}
+
+## HISTORIAL RECIENTE
+- Sesiones completadas (últimos 30d): ${c.workouts.filter(w => w.completed_rate >= 0.5).length}
+- Última sesión: ${c.workouts[0] ? `${c.workouts[0].date} — ${c.workouts[0].duration} min, completado ${Math.round(c.workouts[0].completed_rate * 100)}%` : 'Ninguna aún'}
+
+## TONO POR ESTILO
+- data: Responde con datos concretos, lógica clara, sin rodeos.
+- energy: Energético, motivador, usa emojis ⚡🔥, lenguaje positivo.
+- direct: Directo, sin adornos, al grano. Frases cortas.
+- calm: Tranquilo, pausado, sin presiones. Lenguaje suave.
+
+Responde de forma natural y conversacional.`;
+  }
+
+  /** Main reply — uses LLM if available, falls back to rule-based */
+  async reply(userInput: string): Promise<CoachResponse> {
     const lower = userInput.toLowerCase();
 
+    // Use LLM if loaded (singleton, always fresh)
+    if (this.llm.isLoaded) {
+      try {
+        const system = this.buildSystemPrompt();
+        const result = await this.llm.chat(
+          [{ role: 'user', content: userInput }],
+          system,
+          { temperature: 0.7, max_new_tokens: 300 }
+        );
+        return {
+          text: result,
+          data_used: ['local_llm (Qwen2.5-1.5B)', 'profile', 'digital_twin', 'decision_engine'],
+          confidence: 0.85,
+        };
+      } catch (err) {
+        console.warn('LLM reply failed, falling back to rule-based:', err);
+        // Fall through to rule-based
+      }
+    }
+
+    // ── Rule-based fallback ──
+    // Ensure minimum delay so typing dots show
+    const [result] = await Promise.all([
+      this._ruleBasedReply(lower),
+      new Promise(r => setTimeout(r, 400)),
+    ]);
+    return result;
+  }
+
+  /** Rule-based fallback (original implementation) */
+  private _ruleBasedReply(lower: string): CoachResponse {
     if (/(por qu|porque|raz[oó]n|explica)/.test(lower)) return this.explainPlan();
     if (/(cansad|ganas|pereza|motiv|anim|agotad|flojera)/.test(lower)) return this.addressMotivation();
     if (/(consisten|progres|cómo voy|como voy|datos|n[úu]meros|numeros)/.test(lower)) return this.showProgress();
@@ -82,7 +179,7 @@ export class CoachAgent {
     };
   }
 
-  /* ── Private responders ── */
+  /* ── Private responders (unchanged) ── */
 
   private explainPlan(): CoachResponse {
     const d = this.context.plan;
@@ -94,7 +191,7 @@ export class CoachAgent {
       };
     }
     return {
-      text: `El motor decidió hoy **${INTENSITY_LABELS[d.intensity]}** (${d.duration} min). Razones: ${d.reasons.join(' · ')}. Yo no decido nada: solo te lo traduzco a palabras.`,
+      text: `El motor decidió hoy **${INTENSITY_LABELS[d.intensity]}** (${d.duration} min). Razones: ${d.reasons?.join(' · ') ?? ''}. Yo no decido nada: solo te lo traduzco a palabras.`,
       data_used: ['decision_engine', 'recovery_score', 'consistency', 'twin_patterns'],
       confidence: (d.confidence ?? 50) / 100,
     };
@@ -175,9 +272,8 @@ export class CoachAgent {
   }
 
   private explainRecovery(): CoachResponse {
-    const checkin = this.context.workouts.find(
-      (w) => w.date === new Date().toISOString().slice(0, 10)
-    );
+    const today = new Date().toISOString().slice(0, 10);
+    const checkin = this.context.checkins[today] ?? null;
     return {
       text: `El sueño pesa 40% en tu Recovery Score, la energía 30% y el estrés 30%. Tu check-in de hoy: ${checkin ? 'registrado' : 'pendiente'}. Con eso el motor ya adaptó la sesión — no tienes que decidir nada.`,
       data_used: ['recovery_engine', 'checkin_data'],
