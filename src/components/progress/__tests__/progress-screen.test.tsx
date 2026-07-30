@@ -7,7 +7,7 @@ import type { Profile, DigitalTwin, Workout, AIEvent } from '@/types';
 const mockProfile: Profile = {
   user_id: '', name: 'Test', goal: 'energia', level: 'medio',
   equipment: 'ninguno', limitations: [], days_per_week: '2-3',
-  neurotype: 'tdah', preferred_duration: 20,
+  neurotype: 'adh-c', preferred_duration: 20,
   created_at: '', updated_at: '',
 };
 

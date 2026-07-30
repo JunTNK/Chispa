@@ -53,6 +53,7 @@ export function LoginScreen() {
       {/* Back button */}
       <button
         onClick={() => setView('welcome')}
+        aria-label="Volver"
         className="self-start w-11 h-11 rounded-2xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center text-white mb-8"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 5l-7 7 7 7"/></svg>

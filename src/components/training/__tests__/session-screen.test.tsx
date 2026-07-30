@@ -4,7 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { SessionScreen } from '../session-screen';
 import { useStore } from '@/lib/store';
 
-const makePlan = (overrides = {}) => ({
+const makePlan = (overrides: Record<string, unknown> = {}) => ({
   action: 'train' as const,
   intensity: 'standard' as const,
   duration: 20,
@@ -18,12 +18,15 @@ const makePlan = (overrides = {}) => ({
   done: false,
   workout: {
     title: 'Full Body Express',
-    focus: 'full',
+    focus: 'full' as const,
+    intensity: 'standard' as const,
     duration: 20,
+    sets: 3,
+    rest: 50,
     exercises: [
-      { exercise_id: 'ex1', name: 'Sentadilla', muscle: 'cuadriceps', sets: 3, reps: 12, rest: 60 },
-      { exercise_id: 'ex2', name: 'Flexiones', muscle: 'pecho', sets: 3, reps: 10, rest: 45 },
-      { exercise_id: 'ex3', name: 'Plancha', muscle: 'core', sets: 3, reps: 30, rest: 30 },
+      { exercise_id: 'ex1', name: 'Sentadilla', muscle: 'cuadriceps', sets: 3, reps: 12, rest: 60, completed_sets: 0, completed_reps: [], status: 'pending' as const },
+      { exercise_id: 'ex2', name: 'Flexiones', muscle: 'pecho', sets: 3, reps: 10, rest: 45, completed_sets: 0, completed_reps: [], status: 'pending' as const },
+      { exercise_id: 'ex3', name: 'Plancha', muscle: 'core', sets: 3, reps: 30, rest: 30, completed_sets: 0, completed_reps: [], status: 'pending' as const },
     ],
   },
   ...overrides,
@@ -45,12 +48,12 @@ describe('SessionScreen', () => {
     expect(screen.getByText('repeticiones')).toBeInTheDocument();
   });
 
-  it('shows exercise emoji', () => {
+  it('shows exercise icon', () => {
     useStore.setState({ plan: makePlan() });
     render(<SessionScreen />);
 
-    // Sentadilla emoji from EXERCISE_CATALOG
-    expect(screen.getByText('🦵')).toBeInTheDocument();
+    // Vector Dumbbell icon from lucide-react
+    expect(document.querySelector('svg')).toBeInTheDocument();
   });
 
   it('shows "Serie hecha" when not on last set', () => {

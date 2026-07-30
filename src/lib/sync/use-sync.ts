@@ -2,11 +2,12 @@
 
 import { useCallback } from 'react';
 import { useStore } from '@/lib/store';
-import { supabaseSync, type SyncResult } from './supabase-sync';
+import { supabaseSync, SupabaseSyncService, type SyncResult } from './supabase-sync';
 
 /**
  * Hook that provides sync capabilities to components.
- * Fires sync when user is authenticated and data changes.
+ * Syncs bidirectionally with Supabase using timestamp-based merge strategy.
+ * Now includes achievements push/pull.
  */
 export function useSync() {
   const profile = useStore((s) => s.profile);
@@ -14,6 +15,8 @@ export function useSync() {
   const neuro = useStore((s) => s.neuro);
   const checkins = useStore((s) => s.checkins);
   const workouts = useStore((s) => s.workouts);
+  const achievements = useStore((s) => s.achievements);
+  const questState = useStore((s) => s.questState);
 
   /**
    * Push current store data to Supabase.
@@ -26,40 +29,52 @@ export function useSync() {
       twin: twin ?? undefined,
       checkins: checkins ?? undefined,
       workouts: workouts ?? undefined,
+      achievements: achievements ?? undefined,
+      questState: questState ?? undefined,
     });
-  }, [profile, neuro, twin, checkins, workouts]);
+  }, [profile, neuro, twin, checkins, workouts, achievements, questState]);
 
   /**
-   * Pull data from Supabase and load into store.
+   * Pull data from Supabase and merge into local store.
+   * Uses timestamp-based conflict resolution:
+   * - Workouts: merge por ID, gana el más reciente por created_at
+   * - Checkins: merge por fecha, gana el más reciente por created_at
+   * - Profile/Twin: gana el más reciente por updated_at
+   * - Achievements: remote unlocked wins
    */
   const pullData = useCallback(async (): Promise<SyncResult> => {
     const result = await supabaseSync.pull();
     if (result.success && result.pulled) {
       const store = useStore.getState();
-      const p = result.pulled;
 
-      if (p.profile) {
-        store.setProfile(p.profile);
+      const mergedData = SupabaseSyncService.mergePayload(result.pulled, {
+        profile: store.profile,
+        twin: store.twin,
+        workouts: store.workouts,
+        checkins: store.checkins,
+      });
+
+      // Apply merged data to store
+      if (mergedData.profile) {
+        store.setProfile(mergedData.profile);
       }
-      if (p.twin) {
-        store.setTwin(p.twin);
+      if (mergedData.twin) {
+        store.setTwin(mergedData.twin);
       }
-      if (p.workouts && p.workouts.length > 0) {
-        // Merge: server data replaces local if local is empty
-        const local = store.workouts;
-        if (local.length === 0) {
-          for (const w of p.workouts) {
-            store.addWorkout(w);
-          }
-        }
+      if (mergedData.workouts && mergedData.workouts.length > 0) {
+        useStore.setState({ workouts: mergedData.workouts });
       }
-      if (p.checkins && Object.keys(p.checkins).length > 0) {
-        const local = store.checkins;
-        if (Object.keys(local).length === 0) {
-          for (const [date, c] of Object.entries(p.checkins)) {
-            store.setCheckin(date, c);
-          }
-        }
+      if (mergedData.checkins && Object.keys(mergedData.checkins).length > 0) {
+        useStore.setState({ checkins: mergedData.checkins });
+      }
+      if (mergedData.neuro) {
+        store.setNeuro(mergedData.neuro);
+      }
+      if (mergedData.achievements && Object.keys(mergedData.achievements).length > 0) {
+        store.setAchievements(mergedData.achievements);
+      }
+      if (mergedData.questState) {
+        store.setQuestState(mergedData.questState);
       }
     }
     return result;

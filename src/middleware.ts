@@ -1,55 +1,31 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { createMiddlewareSupabaseClient } from '@/lib/db/supabase-middleware';
 
 /**
- * Protected routes that require authentication.
- * Add paths here to require a logged-in session.
+ * Lightweight middleware for auth checks.
+ * Uses raw cookie parsing instead of @supabase/ssr to keep the bundle small.
  */
-const PROTECTED_ROUTES = [
-  '/api/decision',
-  '/api/workout',
-  '/',
-];
-
-/**
- * Public routes that should redirect to home if already authenticated.
- */
-const AUTH_ROUTES = [
-  '/login',
-  '/register',
-];
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for static assets and PWA files
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/static') ||
-    pathname === '/favicon.ico' ||
-    pathname === '/manifest.json' ||
-    pathname === '/sw.js'
-  ) {
-    return;
-  }
+  // Only run on API routes and auth pages (the matcher already narrows it)
+  const isProtected = pathname.startsWith('/api/decision') || pathname.startsWith('/api/workout');
+  const isAuthPage = pathname === '/login' || pathname === '/register';
 
   // Skip auth checks when Supabase isn't configured (local-first dev)
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    return;
+    return NextResponse.next();
   }
 
-  const { supabase, supabaseResponse } = createMiddlewareSupabaseClient(request);
+  if (!isProtected && !isAuthPage) return;
 
-  // Refresh the session — this also sets the cookie
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const isProtected = PROTECTED_ROUTES.some((route) => pathname.startsWith(route));
-  const isAuthPage = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+  // Lightweight session check: parse cookies directly
+  const cookies = request.cookies.getAll();
+  const hasSession = cookies.some(
+    (c) => c.name.startsWith('sb-') && c.name.endsWith('-auth-token')
+  );
 
   // Redirect unauthenticated users trying to access protected routes
-  if (isProtected && !user) {
+  if (isProtected && !hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
@@ -57,18 +33,19 @@ export async function middleware(request: NextRequest) {
   }
 
   // Redirect authenticated users away from login/register pages
-  if (isAuthPage && user) {
+  if (isAuthPage && hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    // Apply to all routes except static assets
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/api/:path*',
+    '/login',
+    '/register',
   ],
 };

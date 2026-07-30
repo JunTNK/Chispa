@@ -33,6 +33,33 @@ export function daysBetween(from: string) {
   );
 }
 
+/**
+ * Map user profile equipment level to allowed exercise equipment values.
+ *
+ * Profile values: 'ninguno' | 'mancuernas' | 'gimnasio'
+ * Exercise values from free-exercise-db: ninguno, mancuernas, barra, barra Z,
+ *   máquina, polea, bandas, kettlebell, balón medicinal, pelota suiza, rodillo, otro
+ *
+ * - ninguno → solo ejercicios sin equipo
+ * - mancuernas → sin equipo + mancuernas
+ * - gimnasio → todo (barra, máquina, polea, etc.)
+ */
+export function matchesEquipment(
+  profileEquipment: string,
+  exerciseEquipment: string
+): boolean {
+  switch (profileEquipment) {
+    case 'ninguno':
+      return exerciseEquipment === 'ninguno';
+    case 'mancuernas':
+      return exerciseEquipment === 'ninguno' || exerciseEquipment === 'mancuernas';
+    case 'gimnasio':
+      return true; // All equipment available
+    default:
+      return exerciseEquipment === profileEquipment;
+  }
+}
+
 export function cap(s: string) {
   return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
 }

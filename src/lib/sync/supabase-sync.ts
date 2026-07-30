@@ -1,10 +1,7 @@
 'use client';
 
-import { supabase as rawSupabase } from '@/lib/db/supabase';
-import type { Profile, DigitalTwin, CheckIn, Workout, ChatMessage } from '@/types';
-
-// Safe cast: the Proxy pattern in supabase.ts doesn't resolve types correctly for chained calls
-const supabase = rawSupabase as any;
+import { supabase } from '@/lib/db/supabase';
+import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessage, UserAchievement, QuestState } from '@/types';
 
 /* ─── Types ─── */
 
@@ -15,6 +12,8 @@ export interface SyncPayload {
   workouts?: Workout[];
   checkins?: Record<string, CheckIn>;
   chat?: ChatMessage[];
+  achievements?: Record<string, UserAchievement>;
+  questState?: QuestState;
 }
 
 export interface SyncResult {
@@ -30,7 +29,7 @@ type SyncListener = (status: SyncStatus, result?: SyncResult) => void;
 
 /* ─── Sync Service ─── */
 
-class SupabaseSyncService {
+export class SupabaseSyncService {
   private _listeners: Set<SyncListener> = new Set();
   private _status: SyncStatus = 'idle';
   private _lastResult: SyncResult | null = null;
@@ -88,7 +87,7 @@ class SupabaseSyncService {
     try {
       // 1. Profile
       if (payload.profile) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('profiles')
           .upsert({
             user_id: uid,
@@ -97,6 +96,10 @@ class SupabaseSyncService {
             equipment: payload.profile.equipment,
             days_per_week: payload.profile.days_per_week,
             limitations: payload.profile.limitations ?? [],
+            // Optional fields from onboarding v3.0
+            ...(payload.profile.chronotype && { chronotype: payload.profile.chronotype }),
+            ...(payload.profile.medication && { medication: payload.profile.medication }),
+            ...(payload.profile.medication_time && { medication_time: payload.profile.medication_time }),
             updated_at: new Date().toISOString(),
           });
         if (!error) pushed.push('profile');
@@ -104,7 +107,7 @@ class SupabaseSyncService {
 
       // 2. Neuro profile
       if (payload.neuro) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('neuro_profiles')
           .upsert({
             user_id: uid,
@@ -117,7 +120,7 @@ class SupabaseSyncService {
 
       // 3. Digital Twin
       if (payload.twin) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('digital_twins')
           .upsert({
             user_id: uid,
@@ -125,8 +128,8 @@ class SupabaseSyncService {
             motivation_style: payload.twin.motivation_style,
             avoid_patterns: payload.twin.avoid ?? [],
             best_hours: payload.twin.patterns.best_hours,
-            patterns: payload.twin.patterns as any,
-            exercise_progress: payload.twin.ex_progress as any,
+            patterns: payload.twin.patterns as unknown as Record<string, unknown>,
+            exercise_progress: payload.twin.ex_progress as unknown as Record<string, unknown>,
             confidence: Math.round(payload.twin.patterns.completion_rate * 100),
             updated_at: new Date().toISOString(),
           });
@@ -144,21 +147,56 @@ class SupabaseSyncService {
           planned_minutes: w.duration,
           actual_minutes: w.actual_minutes ?? w.duration,
           completed_rate: w.completed_rate,
-          planned_sets: w.exercises?.reduce((a: number, e: any) => a + (e.sets ?? 0), 0) ?? 0,
-          done_sets: w.exercises?.filter((e: any) => e.status === 'done').length ?? 0,
-          rpe: (w as any).rpe ?? null,
-          adapted: (w as any).adapted ?? false,
-          exercises: w.exercises as any,
+          planned_sets: w.exercises?.reduce((a: number, e: WorkoutExercise) => a + (e.sets ?? 0), 0) ?? 0,
+          done_sets: w.exercises?.filter((e: WorkoutExercise) => e.status === 'done').length ?? 0,
+          rpe: w.rpe ?? null,
+          adapted: (w as Workout & { adapted?: boolean }).adapted ?? false,
+          exercises: w.exercises as unknown as Record<string, unknown>[],
         }));
 
-        const { error } = await supabase.from('workouts').upsert(recent, {
+        const { error } = await (supabase as any).from('workouts').upsert(recent, {
           onConflict: 'id',
           ignoreDuplicates: false,
         });
         if (!error) pushed.push(`workouts (${recent.length})`);
       }
 
-      // 5. Check-ins (batch upsert)
+      // 5. Quest State
+      if (payload.questState) {
+        const { error } = await (supabase as any)
+          .from('quest_states')
+          .upsert({
+            user_id: uid,
+            selected_theme: payload.questState.selectedTheme,
+            vault_claims: payload.questState.vaultClaims,
+            boss_defeated_this_week: payload.questState.bossDefeatedThisWeek,
+            boss_defeated_count: payload.questState.bossDefeatedCount,
+            last_boss_defeat_date: payload.questState.lastBossDefeatDate,
+            updated_at: new Date().toISOString(),
+          });
+        if (!error) pushed.push('quest_state');
+      }
+
+      // 6. User Achievements
+      if (payload.achievements && Object.keys(payload.achievements).length > 0) {
+        const entries = Object.entries(payload.achievements).map(([id, ua]) => ({
+          user_id: uid,
+          achievement_id: id,
+          unlocked: ua.unlocked,
+          unlocked_at: ua.unlocked_at,
+          progress_current: ua.progress_current,
+          progress_target: ua.progress_target,
+          updated_at: new Date().toISOString(),
+        }));
+
+        const { error } = await (supabase as any).from('user_achievements').upsert(entries, {
+          onConflict: 'user_id, achievement_id',
+          ignoreDuplicates: false,
+        });
+        if (!error) pushed.push(`achievements (${entries.length})`);
+      }
+
+      // 7. Check-ins (batch upsert)
       if (payload.checkins && Object.keys(payload.checkins).length > 0) {
         const entries = Object.entries(payload.checkins).map(([date, c]) => ({
           user_id: uid,
@@ -169,7 +207,7 @@ class SupabaseSyncService {
           recovery_score: c.recovery_score,
         }));
 
-        const { error } = await supabase.from('checkins').upsert(entries, {
+        const { error } = await (supabase as any).from('checkins').upsert(entries, {
           onConflict: 'user_id, date',
           ignoreDuplicates: false,
         });
@@ -181,12 +219,12 @@ class SupabaseSyncService {
       this._lastResult = result;
       this._notify(result);
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       this._status = 'error';
       const result: SyncResult = {
         success: false,
         pushed,
-        error: err?.message ?? 'Sync push failed',
+        error: err instanceof Error ? err.message : 'Sync push failed',
       };
       this._lastResult = result;
       this._notify(result);
@@ -214,7 +252,7 @@ class SupabaseSyncService {
       const payload: SyncPayload = {};
 
       // 1. Profile
-      const { data: profile } = await supabase
+      const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('user_id', uid)
@@ -230,7 +268,7 @@ class SupabaseSyncService {
           equipment: profile.equipment,
           limitations: profile.limitations ?? [],
           days_per_week: profile.days_per_week,
-          neurotype: 'nose', // neurotype is in neuro_profiles
+          neurotype: 'other', // neurotype is in neuro_profiles
           preferred_duration: 20,
           created_at: profile.created_at,
           updated_at: profile.updated_at,
@@ -239,7 +277,7 @@ class SupabaseSyncService {
       }
 
       // 2. Neuro profile
-      const { data: neuro } = await supabase
+      const { data: neuro } = await (supabase as any)
         .from('neuro_profiles')
         .select('*')
         .eq('user_id', uid)
@@ -254,13 +292,13 @@ class SupabaseSyncService {
       }
 
       // 3. Digital Twin
-      const { data: twin } = await supabase
+      const { data: twin } = await (supabase as any)
         .from('digital_twins')
         .select('*')
         .eq('user_id', uid)
         .single();
       if (twin) {
-        const patterns = (twin.patterns as any) ?? {};
+        const p = twin.patterns as Record<string, unknown> | null;
         payload.twin = {
           user_id: uid,
           created_at: twin.created_at,
@@ -270,10 +308,10 @@ class SupabaseSyncService {
           avoid: twin.avoid_patterns ?? [],
           best_time: '',
           patterns: {
-            completion_rate: patterns.completion_rate ?? 0.5,
-            avg_duration: patterns.avg_duration ?? twin.preferred_duration,
-            abandon_rate: patterns.abandon_rate ?? 0.2,
-            best_hours: (twin.best_hours as Record<number, number>) ?? {},
+            completion_rate: (p?.completion_rate as number) ?? 0.5,
+            avg_duration: (p?.avg_duration as number) ?? twin.preferred_duration,
+            abandon_rate: (p?.abandon_rate as number) ?? 0.2,
+            best_hours: (twin.best_hours ?? {}) as Record<number, number>,
           },
           ex_progress: (twin.exercise_progress as Record<string, { easy: number; last_rpe?: number }>) ?? {},
           motiv_weights: { data: 1, energy: 1, direct: 1, calm: 1 },
@@ -285,7 +323,7 @@ class SupabaseSyncService {
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
-      const { data: workouts } = await supabase
+      const { data: workouts } = await (supabase as any)
         .from('workouts')
         .select('*')
         .eq('user_id', uid)
@@ -293,15 +331,15 @@ class SupabaseSyncService {
         .order('date', { ascending: false });
 
       if (workouts && workouts.length > 0) {
-        payload.workouts = workouts.map((w: any) => ({
-          id: w.id ?? '',
+        payload.workouts = workouts.map((w: Record<string, unknown>) => ({
+          id: (w.id as string) ?? '',
           user_id: uid,
-          date: w.date,
-          focus: w.focus,
-          intensity: w.intensity,
-          duration: w.planned_minutes,
-          score: w.completed_rate * 100,
-          completed_rate: w.completed_rate,
+          date: w.date as string,
+          focus: w.focus as string,
+          intensity: w.intensity as string,
+          duration: w.planned_minutes as number,
+          score: (w.completed_rate as number) * 100,
+          completed_rate: w.completed_rate as number,
           exercises: w.exercises ?? [],
           actual_minutes: w.actual_minutes,
           rpe: w.rpe,
@@ -310,8 +348,46 @@ class SupabaseSyncService {
         pushed.push(`workouts (${payload.workouts!.length})`);
       }
 
-      // 5. Check-ins (last 90 days)
-      const { data: checkins } = await supabase
+      // 5. Quest State
+      const { data: questState } = await (supabase as any)
+        .from('quest_states')
+        .select('*')
+        .eq('user_id', uid)
+        .single();
+
+      if (questState) {
+        payload.questState = {
+          selectedTheme: questState.selected_theme ?? 'one_piece',
+          vaultClaims: questState.vault_claims ?? {},
+          bossDefeatedThisWeek: questState.boss_defeated_this_week ?? false,
+          bossDefeatedCount: questState.boss_defeated_count ?? 0,
+          lastBossDefeatDate: questState.last_boss_defeat_date ?? null,
+        };
+        pushed.push('quest_state');
+      }
+
+      // 6. User Achievements
+      const { data: achievements } = await (supabase as any)
+        .from('user_achievements')
+        .select('*')
+        .eq('user_id', uid);
+
+      if (achievements && achievements.length > 0) {
+        payload.achievements = {};
+        for (const ua of achievements) {
+          payload.achievements[ua.achievement_id] = {
+            achievement_id: ua.achievement_id,
+            unlocked: ua.unlocked,
+            unlocked_at: ua.unlocked_at,
+            progress_current: ua.progress_current,
+            progress_target: ua.progress_target,
+          };
+        }
+        pushed.push(`achievements (${Object.keys(payload.achievements).length})`);
+      }
+
+      // 7. Check-ins (last 90 days)
+      const { data: checkins } = await (supabase as any)
         .from('checkins')
         .select('*')
         .eq('user_id', uid)
@@ -338,12 +414,12 @@ class SupabaseSyncService {
       this._lastResult = result;
       this._notify(result);
       return result;
-    } catch (err: any) {
+    } catch (err: unknown) {
       this._status = 'error';
       const result: SyncResult = {
         success: false,
         pushed,
-        error: err?.message ?? 'Sync pull failed',
+        error: err instanceof Error ? err.message : 'Sync pull failed',
       };
       this._lastResult = result;
       this._notify(result);
@@ -363,6 +439,135 @@ class SupabaseSyncService {
     this._status = 'idle';
     this._lastResult = null;
     this._notify();
+  }
+
+  /* ─── Merge helpers ─── */
+
+  /**
+   * Merge local and remote workouts by ID.
+   * - Conflicto (mismo ID): gana el que tiene `created_at` más reciente.
+   * - Workouts únicos de cada lado: se conservan ambos.
+   */
+  static mergeWorkouts(local: Workout[], remote: Workout[]): Workout[] {
+    const byId = new Map<string, Workout>();
+
+    // Index local workouts
+    for (const w of local) {
+      byId.set(w.id || w.date, w);
+    }
+
+    // Merge remote — si existe conflicto, gana el más reciente
+    for (const w of remote) {
+      const key = w.id;
+      const existing = byId.get(key);
+      if (!existing) {
+        byId.set(key, w);
+      } else if (w.created_at > existing.created_at) {
+        byId.set(key, w);
+      }
+    }
+
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }
+
+  /**
+   * Merge local and remote checkins by date.
+   * - Conflicto (misma fecha): gana el que tiene `created_at` más reciente.
+   * - Check-ins únicos de cada lado: se conservan ambos.
+   */
+  static mergeCheckins(
+    local: Record<string, CheckIn>,
+    remote: Record<string, CheckIn>
+  ): Record<string, CheckIn> {
+    const merged: Record<string, CheckIn> = { ...local };
+
+    for (const [date, rc] of Object.entries(remote)) {
+      const lc = merged[date];
+      if (!lc) {
+        // No existe localmente — agregar
+        merged[date] = rc;
+      } else if (rc.created_at > lc.created_at) {
+        // Conflicto: gana el más reciente
+        merged[date] = rc;
+      }
+    }
+
+    return merged;
+  }
+
+  /**
+   * Merge local and remote profile.
+   * Gana el que tiene `updated_at` más reciente.
+   */
+  static mergeProfile(local: Profile | null, remote: Profile | null): Profile | null {
+    if (!local) return remote;
+    if (!remote) return local;
+    return remote.updated_at >= local.updated_at ? remote : local;
+  }
+
+  /**
+   * Merge local and remote Digital Twin.
+   * Gana el que tiene `updated_at` más reciente.
+   */
+  static mergeTwin(local: DigitalTwin | null, remote: DigitalTwin | null): DigitalTwin | null {
+    if (!local) return remote;
+    if (!remote) return local;
+    return remote.updated_at >= local.updated_at ? remote : local;
+  }
+
+  /**
+   * Merge completo: aplica todas las estrategias a un payload remoto contra el store local.
+   * Retorna los datos ya mergeados, listos para cargar en el store.
+   */
+  static mergePayload(remote: SyncPayload, local: {
+    profile: Profile | null;
+    twin: DigitalTwin | null;
+    workouts: Workout[];
+    checkins: Record<string, CheckIn>;
+  }): SyncPayload {
+    const result: SyncPayload = {};
+
+    // Profile: gana el más reciente
+    result.profile = SupabaseSyncService.mergeProfile(local.profile, remote.profile ?? null) ?? undefined;
+
+    // Digital Twin: gana el más reciente
+    result.twin = SupabaseSyncService.mergeTwin(local.twin, remote.twin ?? null) ?? undefined;
+
+    // Workouts: merge por ID + created_at
+    if (remote.workouts || local.workouts.length > 0) {
+      result.workouts = SupabaseSyncService.mergeWorkouts(
+        local.workouts,
+        remote.workouts ?? []
+      );
+    }
+
+    // Checkins: merge por fecha + created_at
+    if (remote.checkins || Object.keys(local.checkins).length > 0) {
+      result.checkins = SupabaseSyncService.mergeCheckins(
+        local.checkins,
+        remote.checkins ?? {}
+      );
+    }
+
+    // Neuro: solo se actualiza si no existe localmente
+    // (se configura una vez durante el onboarding)
+    if (remote.neuro && !local.profile) {
+      result.neuro = remote.neuro;
+    }
+
+    // Achievements: merge sync — gana remote si está unlocked, sino local
+    if (remote.achievements) {
+      result.achievements = {};
+      for (const [id, ua] of Object.entries(remote.achievements)) {
+        if (ua.unlocked) {
+          result.achievements[id] = ua;
+        }
+      }
+    }
+
+    return result;
   }
 }
 

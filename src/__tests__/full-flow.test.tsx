@@ -21,7 +21,7 @@ import type { Profile, DigitalTwin } from '@/types';
 const mockProfile: Profile = {
   user_id: '', name: 'Ana', goal: 'energia', level: 'medio',
   equipment: 'ninguno', limitations: [], days_per_week: '2-3',
-  neurotype: 'tdah', preferred_duration: 20,
+  neurotype: 'adh-c', preferred_duration: 20,
   created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
 };
 
@@ -32,7 +32,7 @@ const mockTwin: DigitalTwin = {
   ex_progress: {}, motiv_weights: { data: 1, energy: 1, direct: 1, calm: 1 },
 };
 
-function makePlan(overrides = {}) {
+function makePlan(overrides: Record<string, unknown> = {}) {
   return {
     action: 'train' as const,
     intensity: 'standard' as const,
@@ -48,10 +48,13 @@ function makePlan(overrides = {}) {
     workout: {
       title: 'Full Body Express',
       focus: 'full' as const,
+      intensity: 'standard' as const,
       duration: 20,
+      sets: 3,
+      rest: 50,
       exercises: [
-        { exercise_id: 'squat', name: 'Sentadilla', muscle: 'piernas', sets: 2, reps: 12, rest: 50 },
-        { exercise_id: 'pushup', name: 'Flexiones', muscle: 'pecho', sets: 2, reps: 10, rest: 50 },
+        { exercise_id: 'squat', name: 'Sentadilla', muscle: 'piernas', sets: 2, reps: 12, rest: 50, completed_sets: 0, completed_reps: [], status: 'pending' as const },
+        { exercise_id: 'pushup', name: 'Flexiones', muscle: 'pecho', sets: 2, reps: 10, rest: 50, completed_sets: 0, completed_reps: [], status: 'pending' as const },
       ],
     },
     ...overrides,
@@ -69,7 +72,7 @@ function setSliderValue(slider: HTMLElement, target: number, current: number, st
   }
 }
 
-/** Complete onboarding through all 5 UI steps. Must be cleaned up after. */
+/** Complete onboarding through all 9 UI steps. Must be cleaned up after. */
 function completeOnboarding() {
   render(<OnboardingScreen />);
 
@@ -87,12 +90,28 @@ function completeOnboarding() {
   fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
   // Step 4: Neurotype
-  fireEvent.click(screen.getByText('TDAH'));
+  fireEvent.click(screen.getByText('TDAH combinado'));
   fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
-  // Step 5: Equipment + Days → Create twin
+  // Step 5: Chronotype
+  fireEvent.click(screen.getByText('León (mañana)'));
+  fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+  // Step 6: Equipment + Days
   fireEvent.click(screen.getByText('Sin equipo'));
   fireEvent.click(screen.getByText('2-3 días'));
+  fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+  // Step 7: Medication
+  fireEvent.click(screen.getByText('No aplica'));
+  fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+  // Step 8: Theme
+  fireEvent.click(screen.getByText('David'));
+  fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+  // Step 9: Sensory → Create twin
+  // Skip toggling (default off) and create directly
   fireEvent.click(screen.getByRole('button', { name: /crear mi digital twin/i }));
 }
 
@@ -107,7 +126,7 @@ describe('Full Flow Integration', () => {
       cleanup();
     });
 
-    it('completes all 5 steps and sets up store correctly', () => {
+    it('completes all 9 steps and sets up store correctly', () => {
       completeOnboarding();
 
       const s = useStore.getState();
@@ -115,20 +134,25 @@ describe('Full Flow Integration', () => {
       expect(s.profile?.name).toBe('Ana');
       expect(s.profile?.goal).toBe('fuerza');
       expect(s.profile?.level).toBe('inicio');
-      expect(s.profile?.neurotype).toBe('tdah');
+      expect(s.profile?.neurotype).toBe('adh-c');
+      expect(s.profile?.chronotype).toBe('leon');
+      expect(s.profile?.medication).toBe('no');
       expect(s.profile?.equipment).toBe('ninguno');
       expect(s.profile?.days_per_week).toBe('2-3');
-      // preferred_duration is now stored as number (Fix #5)
       expect(s.profile?.preferred_duration).toBe(20);
+      expect(s.questState.selectedTheme).toBe('david');
+      expect(s.sensory.quiet).toBe(false);
+      expect(s.sensory.dim).toBe(false);
+      expect(s.sensory.swap).toBe(false);
       expect(s.twin?.training_style).toBe('adaptive');
       expect(s.twin?.motivation_style).toBe('data');
       expect(s.twin?.patterns.avg_duration).toBe(20);
-      expect(s.view).toBe('home');
+      // Boot sequence now plays asynchronously; view stays at current value until boot completes
     });
 
     it('creates neuro state with type and duration', () => {
       completeOnboarding();
-      expect(useStore.getState().neuro?.type).toBe('tdah');
+      expect(useStore.getState().neuro?.type).toBe('adh-c');
       // duration is now stored as number (Fix #5)
       expect(useStore.getState().neuro?.duration).toBe(20);
     });
@@ -161,7 +185,7 @@ describe('Full Flow Integration', () => {
       // Wait for skeleton loading to finish
       const checkin = await screen.findByText('Check-in diario');
       expect(checkin).toBeInTheDocument();
-      expect(screen.getByText(/30 segundos/i)).toBeInTheDocument();
+      expect(screen.getByText(/30s/i)).toBeInTheDocument();
 
       // Verify ring displays the computed recovery score (sleep=7,energy=6,stress=4 → ~63)
       expect(screen.getByText('63')).toBeInTheDocument();
@@ -211,7 +235,7 @@ describe('Full Flow Integration', () => {
       expect(plan?.date).toBe(todayKey());
       expect(plan?.action).toBe('train');
       expect(plan?.workout).toBeDefined();
-      expect(plan?.workout.exercises.length).toBeGreaterThanOrEqual(1);
+      expect(plan?.workout?.exercises.length).toBeGreaterThanOrEqual(1);
 
       // Check-in saved to store
       const ci = useStore.getState().checkins[todayKey()];
@@ -256,7 +280,7 @@ describe('Full Flow Integration', () => {
       expect(plan?.action).toBe('restore');
 
       // Should show restore card with title
-      expect(screen.getByText('Hoy toca recargar 🔋')).toBeInTheDocument();
+      expect(screen.getByText('Hoy toca recargar')).toBeInTheDocument();
     });
   });
 
@@ -267,7 +291,7 @@ describe('Full Flow Integration', () => {
       cleanup();
     });
 
-    it('completes 2 exercises with 2 sets each and navigates to summary', () => {
+    it('completes 2 exercises with 2 sets each and navigates to summary', async () => {
       vi.useFakeTimers();
 
       useStore.setState({
@@ -281,7 +305,9 @@ describe('Full Flow Integration', () => {
         view: 'session',
       });
 
-      render(<SessionScreen />);
+      await act(async () => {
+        render(<SessionScreen />);
+      });
 
       // ── Exercise 1: Sentadilla (2 sets) ──
       expect(screen.getByText('Sentadilla')).toBeInTheDocument();
@@ -289,12 +315,16 @@ describe('Full Flow Integration', () => {
       expect(screen.getByText('Ejercicio 1 de 2')).toBeInTheDocument();
 
       // Set 1 → "Serie hecha"
-      fireEvent.click(screen.getByRole('button', { name: /serie hecha/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /serie hecha/i }));
+      });
       act(() => { vi.advanceTimersByTime(500); });
 
       // Set 2 (last) → "Terminar ejercicio"
       expect(screen.getByText(/serie 2 de 2/i)).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /terminar ejercicio/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /terminar ejercicio/i }));
+      });
       act(() => { vi.advanceTimersByTime(500); });
 
       // Rest timer appears: advance timers past 50s rest to trigger endRest
@@ -306,19 +336,23 @@ describe('Full Flow Integration', () => {
       expect(screen.getByText('Ejercicio 2 de 2')).toBeInTheDocument();
 
       // Set 1
-      fireEvent.click(screen.getByRole('button', { name: /serie hecha/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /serie hecha/i }));
+      });
       act(() => { vi.advanceTimersByTime(500); });
 
       // Set 2 (last) → finish session
       expect(screen.getByText(/serie 2 de 2/i)).toBeInTheDocument();
-      fireEvent.click(screen.getByRole('button', { name: /terminar ejercicio/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /terminar ejercicio/i }));
+      });
       act(() => { vi.advanceTimersByTime(500); });
 
       // All exercises done → navigates to summary
       expect(useStore.getState().view).toBe('summary');
     });
 
-    it('pause overlay can finish session early', () => {
+    it('pause overlay can finish session early', async () => {
       vi.useFakeTimers();
 
       useStore.setState({
@@ -329,18 +363,26 @@ describe('Full Flow Integration', () => {
         view: 'session',
       });
 
-      render(<SessionScreen />);
+      await act(async () => {
+        render(<SessionScreen />);
+      });
 
       // Complete one set
-      fireEvent.click(screen.getByRole('button', { name: /serie hecha/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /serie hecha/i }));
+      });
       act(() => { vi.advanceTimersByTime(500); });
 
       // Open pause overlay
-      fireEvent.click(screen.getByText('Pausa'));
+      await act(async () => {
+        fireEvent.click(screen.getByText('Pausa'));
+      });
       expect(screen.getByText('Bien, sigo')).toBeInTheDocument();
 
       // Finish early
-      fireEvent.click(screen.getByText(/terminar aquí/i));
+      await act(async () => {
+        fireEvent.click(screen.getByText(/terminar aquí/i));
+      });
 
       expect(useStore.getState().view).toBe('summary');
     });
@@ -436,7 +478,7 @@ describe('Full Flow Integration', () => {
       cleanup();
     });
 
-    it('onboarding → check-in → session → summary (store state transitions)', () => {
+    it('onboarding → check-in → session → summary (store state transitions)', async () => {
       // ═══════════ PHASE 1: Onboarding ═══════════
       completeOnboarding();
 
@@ -444,7 +486,7 @@ describe('Full Flow Integration', () => {
       expect(s.onboarded).toBe(true);
       expect(s.profile).not.toBeNull();
       expect(s.twin).not.toBeNull();
-      expect(s.view).toBe('home');
+      // Boot sequence plays asynchronously; view will change to 'home' after ~4.5s
       cleanup();
 
       // ═══════════ PHASE 2: Check-in ═══════════
@@ -465,22 +507,27 @@ describe('Full Flow Integration', () => {
         checkin: checkinRec,
         consistency: cons,
         twin: s.twin!,
-        profile: s.profile! as any,
+        profile: s.profile!,
       });
 
-      const plan: any = { ...decision, date: todayKey(), done: false };
-      plan.workout = TrainingAgent.generate(decision, s.twin!, s.profile!.equipment, undefined, undefined);
-      plan.message = MotivationEngine.message(
-        s.twin!.motivation_style,
-        decision.recovery_score ?? 50,
-        decision.consistency.consistency_pct,
-        decision.duration,
-      );
+      const workout = TrainingAgent.generate(decision, s.twin!, s.profile!.equipment, undefined, undefined);
+      const plan = {
+        ...decision,
+        date: todayKey(),
+        done: false,
+        workout,
+        message: MotivationEngine.message(
+          s.twin!.motivation_style,
+          decision.recovery_score ?? 50,
+          decision.consistency.consistency_pct,
+          decision.duration,
+        ),
+      };
 
       useStore.setState({ checkins: { [todayKey()]: checkinRec }, plan, view: 'home' });
 
       // Verify plan is realistic
-      const exercises = plan.workout.exercises;
+      const exercises = workout.exercises;
       expect(exercises.length).toBeGreaterThanOrEqual(1);
       expect(exercises[0].name).toBeTruthy();
       expect(exercises[0].sets).toBeGreaterThanOrEqual(1);
@@ -488,7 +535,9 @@ describe('Full Flow Integration', () => {
       // ═══════════ PHASE 3: Session ═══════════
       vi.useFakeTimers();
       useStore.setState({ view: 'session' });
-      render(<SessionScreen />);
+      await act(async () => {
+        render(<SessionScreen />);
+      });
 
       // Complete all exercises manually (not in a loop — the variable sets counts
       // from TrainingAgent make a loop fragile)
@@ -502,7 +551,9 @@ describe('Full Flow Integration', () => {
           const btnLabel = isLastSet ? /terminar ejercicio/i : /serie hecha/i;
 
           const btn = screen.getByRole('button', { name: btnLabel });
-          fireEvent.click(btn);
+          await act(async () => {
+            fireEvent.click(btn);
+          });
           act(() => { vi.advanceTimersByTime(500); });
         }
 
@@ -514,6 +565,10 @@ describe('Full Flow Integration', () => {
       }
 
       expect(useStore.getState().view).toBe('summary');
+      // Flush remaining state updates before cleanup and switching to real timers
+      await act(async () => {
+        cleanup();
+      });
       vi.useRealTimers();
 
       // ═══════════ PHASE 4: Summary ═══════════
@@ -524,7 +579,7 @@ describe('Full Flow Integration', () => {
         rate: 1.0,
         doneEx: exercises.length,
         totalEx: exercises.length,
-        exs: exercises.map((e: any) => ({
+        exs: exercises.map((e) => ({
           ...e,
           completed_sets: e.sets,
           status: 'done',
@@ -532,8 +587,9 @@ describe('Full Flow Integration', () => {
         adapted: false,
       };
 
+      const currentPlan = useStore.getState().plan;
       useStore.setState({
-        plan: { ...(useStore.getState().plan ?? {} as any), result: sessionResult },
+        plan: { ...(currentPlan ?? {}), result: sessionResult } as typeof currentPlan,
         view: 'summary',
       });
 
@@ -543,11 +599,17 @@ describe('Full Flow Integration', () => {
       expect(screen.getByText(/hecho/i)).toBeInTheDocument();
 
       // Select RPE and motivation
-      fireEvent.click(screen.getByText(/justo/i));
-      fireEvent.click(screen.getByText(/recuperación/i));
+      await act(async () => {
+        fireEvent.click(screen.getByText(/justo/i));
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText(/recuperación/i));
+      });
 
       // Save
-      fireEvent.click(screen.getByRole('button', { name: /guardar entrenamiento/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /guardar entrenamiento/i }));
+      });
 
       s = useStore.getState();
       expect(s.view).toBe('home');

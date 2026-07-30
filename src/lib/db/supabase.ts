@@ -1,11 +1,12 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from './database.types';
 
 /**
  * Lazy Supabase client.
  * Only creates the client when first accessed, preventing build errors
  * when environment variables aren't configured yet (local-first dev).
  */
-let _supabase: ReturnType<typeof createClient> | null = null;
+let _supabase: SupabaseClient<Database> | null = null;
 
 function getSupabaseClient() {
   if (!_supabase) {
@@ -16,13 +17,13 @@ function getSupabaseClient() {
       // Return a mock client that logs and returns errors
       _supabase = createMockClient();
     } else {
-      _supabase = createClient(supabaseUrl, supabaseAnonKey);
+      _supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
     }
   }
   return _supabase;
 }
 
-function createMockClient(): any {
+function createMockClient(): SupabaseClient<Database> {
   const errorResponse = (method: string) => ({
     data: null,
     error: { message: `Supabase no configurado. ${method} no disponible. Configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.` },
@@ -52,7 +53,7 @@ function createMockClient(): any {
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
     },
     from: mockFrom,
-  };
+  } as unknown as SupabaseClient<Database>;
 }
 
 /**
@@ -61,11 +62,11 @@ function createMockClient(): any {
  * when Supabase isn't configured yet.
  */
 export const supabase = new Proxy(
-  {},
+  {} as SupabaseClient<Database>,
   {
     get(_target, prop) {
       const client = getSupabaseClient();
       return (client as any)[prop];
     },
   }
-) as ReturnType<typeof createClient>;
+);

@@ -7,6 +7,7 @@ import { CoachAgent } from '@/lib/ai/coach';
 import { LocalLLM } from '@/lib/ai/local-llm';
 import Image from 'next/image';
 import { Icons } from '@/components/ui/icons';
+import { WarningIcon } from '@/components/ui/icons-rpg';
 
 type ModelStatus = 'idle' | 'downloading' | 'loading' | 'ready' | 'error' | 'unavailable';
 
@@ -117,6 +118,7 @@ export function CoachScreen() {
   const handleSend = useCallback(
     async (text: string) => {
       if (!text.trim() || !agent) return;
+      useStore.getState().trackDecision(3);
       addChat({
         id: Date.now().toString(36),
         user_id: '',
@@ -171,6 +173,8 @@ export function CoachScreen() {
           />
           {/* Status indicator dot */}
           <span
+            role="status"
+            aria-label={`Estado del modelo: ${modelStatus === 'ready' ? 'conectado' : modelStatus === 'error' || modelStatus === 'unavailable' ? 'desconectado' : 'cargando'}`}
             className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-[#0a0d14] ${
               modelStatus === 'ready'
                 ? 'bg-[#34d399]'
@@ -208,14 +212,21 @@ export function CoachScreen() {
             className="px-4 py-2.5 bg-[rgba(251,191,36,0.08)] border-b border-[rgba(251,191,36,0.15)]"
           >
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-medium text-[#fbbf24]">
+              <span className="text-xs font-medium text-[#fbbf24]" id="progress-label">
                 {modelStatus === 'loading' ? 'Cargando modelo en memoria...' : 'Descargando IA local'}
               </span>
               <span className="text-[11px] text-[#94a0b8]">
                 {modelStatus === 'loading' ? '...' : `${Math.round(downloadProgress * 100)}%`}
               </span>
             </div>
-            <div className="h-1.5 rounded-full bg-[rgba(255,255,255,0.08)] overflow-hidden">
+            <div
+              role="progressbar"
+              aria-label="Descarga del modelo de IA"
+              aria-valuenow={modelStatus === 'loading' ? 90 : Math.round(downloadProgress * 100)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              className="h-1.5 rounded-full bg-[rgba(255,255,255,0.08)] overflow-hidden"
+            >
               <motion.div
                 className="h-full rounded-full bg-gradient-to-r from-[#fbbf24] to-[#ffb454]"
                 initial={{ width: 0 }}
@@ -241,8 +252,8 @@ export function CoachScreen() {
             exit={{ height: 0, opacity: 0 }}
             className="px-4 py-2 bg-[rgba(248,113,113,0.08)] border-b border-[rgba(248,113,113,0.15)]"
           >
-            <div className="flex items-center gap-2 text-xs text-[#f87171]">
-              <span>⚠️</span>
+            <div className="flex items-center gap-2 text-xs text-[#f87171]" role="alert">
+              <WarningIcon size={16} aria-label="Advertencia" />
               <span>{modelError ?? 'Error al descargar el modelo. Usando respuestas predefinidas.'}</span>
             </div>
           </motion.div>
@@ -250,7 +261,12 @@ export function CoachScreen() {
       </AnimatePresence>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5">
+      <div
+        role="log"
+        aria-label="Mensajes del coach"
+        aria-live="polite"
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-2.5"
+      >
         {chat.map((m) => (
           <motion.div
             key={m.id}
@@ -275,6 +291,8 @@ export function CoachScreen() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            aria-label="El coach está escribiendo"
+            role="status"
             className="flex items-center gap-1.5 px-4 py-3 max-w-[85%] bg-[#1a2234] border border-white/[.07] rounded-2xl rounded-bl-md"
           >
             {[0, 1, 2].map((i) => (
@@ -306,16 +324,19 @@ export function CoachScreen() {
         </div>
         <div className="flex gap-2">
           <input
+            id="coach-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend(input)}
             placeholder="Escribe tu pregunta…"
+            aria-label="Escribe tu pregunta al coach"
             disabled={typing}
             className="flex-1 h-12 rounded-2xl bg-[#151b2a] border border-white/[.07] text-white px-4 text-sm outline-none focus:border-[#ffb454] transition-colors disabled:opacity-50"
           />
           <motion.button
             onClick={() => handleSend(input)}
             disabled={typing || !input.trim()}
+            aria-label="Enviar mensaje"
             className="w-12 h-12 rounded-2xl bg-gradient-to-r from-[#ffb454] to-[#ff7a3d] flex items-center justify-center text-[#241309] active:scale-90 disabled:opacity-40 transition-all"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.9 }}

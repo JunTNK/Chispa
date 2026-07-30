@@ -26,7 +26,7 @@ const profileSchema = z.object({
   equipment: equipmentEnum,
   limitations: z.array(z.string()).optional(),
   days_per_week: daysEnum,
-  neurotype: z.enum(['tdah', 'neuro', 'nose']).optional(),
+  neurotype: z.enum(['adh-c', 'adh-i', 'audhd', 'spd', 'curious', 'other']).optional(),
   preferred_duration: z.number().min(5).max(60).int(),
 });
 

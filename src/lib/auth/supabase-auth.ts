@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/db/supabase';
 import { supabaseSync } from '@/lib/sync/supabase-sync';
+import { logError } from '@/lib/utils/logger';
 
 export interface AuthError {
   message: string;
@@ -20,7 +21,7 @@ export async function signInWithEmail(email: string, password: string) {
     if (error) return { user: null, error: { message: error.message, code: error.code } };
 
     // Pull data from Supabase in background
-    supabaseSync.pull().catch(() => {});
+    supabaseSync.pull().catch(logError('auth:pull-on-signin'));
 
     return { user: data.user, error: null };
   } catch (e) {
@@ -102,7 +103,7 @@ export function onAuthStateChange(callback: (event: string, session: any) => voi
     // Pull data on login / session restore
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
       if (session?.user) {
-        supabaseSync.pull().catch(() => {});
+        supabaseSync.pull().catch(logError('auth:pull-on-restore'));
       }
     }
   });

@@ -1,4 +1,11 @@
 import type { DigitalTwin, Profile, Workout, DecisionEngineOutput } from '@/types';
+import {
+  INTENSITY_LABELS,
+  FOCUS_LABELS,
+  STYLE_LABELS,
+  EQUIPMENT_LABELS,
+  NEURO_LABELS,
+} from '@/lib/utils/constants';
 import { LocalLLM } from './local-llm';
 
 /* ─── Interfaces ─── */
@@ -16,21 +23,6 @@ interface CoachContext {
   workouts: Workout[];
   checkins: Record<string, any>;
 }
-
-/* ─── Labels (reused from constants, defined here for self-containment) ─── */
-
-const INTENSITY_LABELS: Record<string, string> = {
-  minimal: 'Suave', light: 'Ligero', standard: 'Estándar', push: 'Progreso',
-};
-const FOCUS_LABELS: Record<string, string> = {
-  full: 'Cuerpo completo', upper: 'Tren superior', lower: 'Tren inferior', core: 'Core y cardio',
-};
-const STYLE_LABELS: Record<string, string> = {
-  data: 'Datos y lógica', energy: 'Energía', direct: 'Directo', calm: 'Calma',
-};
-const EQUIPMENT_LABELS: Record<string, string> = {
-  ninguno: 'Sin equipo', mancuernas: 'Mancuernas', gimnasio: 'Gimnasio',
-};
 
 /* ─── CoachAgent ─── */
 
@@ -55,7 +47,7 @@ export class CoachAgent {
     const hasLlm = this.llm.isLoaded;
     const templates: Record<string, string> = {
       data: `Hola ${name}. Soy tu coach${hasLlm ? ', ahora con IA real' : ''}. Los algoritmos deciden, yo te lo explico con tus datos. Pregúntame lo que quieras.`,
-      energy: `¡Hola ${name}! ⚡ ${hasLlm ? 'Conecté mi IA para responderte mejor. ' : ''}Listo para acompañarte. Los números deciden, yo pongo las palabras.`,
+      energy: `¡Hola ${name}! ${hasLlm ? 'Conecté mi IA para responderte mejor. ' : ''}Listo para acompañarte. Los números deciden, yo pongo las palabras.`,
       direct: `Hola ${name}. ${hasLlm ? 'IA activa — respuestas más precisas. ' : ''}Pregúntame y te respondo con datos reales, sin adornos.`,
       calm: `Hola ${name}. ${hasLlm ? 'Ahora con IA, puedo conversar mejor. ' : ''}Aquí estoy, sin prisa. Cuando quieras, pregúntame.`,
     };
@@ -75,18 +67,17 @@ export class CoachAgent {
     return `Eres CHISPA Coach, un asistente de fitness experto para personas con TDAH y neurodivergencias.
 
 ## REGLAS ESENCIALES
-1. 🎯 ERES el 5% LLM que COMUNICA. El 80% son algoritmos deterministas (Decision Engine). El 15% son agentes especializados (Training, Recovery, Habit, Motivation).
-2. 🚫 NUNCA generes rutinas de ejercicio, planes de entrenamiento ni diagnósticos médicos.
-3. 📊 Siempre basas tus respuestas en LOS DATOS del usuario que te proporcionamos abajo.
-4. 💯 Si no sabes algo, DILO HONESTAMENTE. No inventes ni alucines.
-5. 🗣️ Usa un tono ${style}. Sé natural y conversacional.
-6. 🇪🇸 Responde SIEMPRE en español, con emojis con moderación.
+1. ERES el 5% LLM que COMUNICA. El 80% son algoritmos deterministas (Decision Engine). El 15% son agentes especializados (Training, Recovery, Habit, Motivation).
+2. NUNCA generes rutinas de ejercicio, planes de entrenamiento ni diagnósticos médicos.
+  3. Siempre basas tus respuestas en LOS DATOS del usuario que te proporcionamos abajo.
+  4. Si no sabes algo, DILO HONESTAMENTE. No inventes ni alucines.
+  5. Usa un tono ${style}. Sé natural y conversacional.
 
 ## DATOS DEL PERFIL DEL USUARIO
 - Nombre: ${p.name}
 - Nivel: ${p.level}
 - Equipo: ${EQUIPMENT_LABELS[p.equipment] || p.equipment}
-- Neurotipo: ${p.neurotype}
+- Neurotipo: ${NEURO_LABELS[p.neurotype] || p.neurotype}
 - Objetivo: ${p.goal}
 - Días por semana: ${p.days_per_week}
 - Estilo de motivación: ${style}
@@ -111,7 +102,7 @@ ${d ? `- Acción: ${d.action === 'train' ? 'Entrenar' : 'Recuperación activa'}
 
 ## TONO POR ESTILO
 - data: Responde con datos concretos, lógica clara, sin rodeos.
-- energy: Energético, motivador, usa emojis ⚡🔥, lenguaje positivo.
+- energy: Energético, motivador, lenguaje positivo.
 - direct: Directo, sin adornos, al grano. Frases cortas.
 - calm: Tranquilo, pausado, sin presiones. Lenguaje suave.
 

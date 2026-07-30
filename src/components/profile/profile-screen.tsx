@@ -8,6 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { STYLE_LABELS, GOAL_LABELS, NEURO_LABELS } from '@/lib/utils/constants';
+import {
+  SilverMedalIcon,
+  BronzeMedalIcon,
+  CrownIcon,
+} from '@/components/ui/icons-rpg';
 
 export function ProfileScreen() {
   const profile = useStore((s) => s.profile);
@@ -19,7 +24,21 @@ export function ProfileScreen() {
   const setTwin = useStore((s) => s.setTwin);
   const reset = useStore((s) => s.reset);
   const setView = useStore((s) => s.setView);
+  const leaderboard = useStore((s) => s.leaderboard);
   const [showConfirm, setShowConfirm] = React.useState(false);
+
+  // Leaderboard rank badge
+  const userEntry = leaderboard.find((e) => e.isCurrentUser);
+  const rankBadge = React.useMemo(() => {
+    if (!userEntry) return null;
+    const r = userEntry.rank;
+    if (r === 1) return { label: '#1', icon: <CrownIcon size={14} />, tier: 'gold' };
+    if (r <= 3) return { label: `#${r}`, icon: r === 2 ? <SilverMedalIcon size={14} /> : <BronzeMedalIcon size={14} />, tier: 'gold' };
+    if (r <= 10) return { label: 'Top 10', icon: null, tier: 'purple' };
+    if (r <= 50) return { label: 'Top 50', icon: null, tier: 'blue' };
+    if (r <= 100) return { label: 'Top 100', icon: null, tier: 'green' };
+    return null;
+  }, [userEntry]);
 
   const handleReset = () => {
     reset();
@@ -57,8 +76,24 @@ export function ProfileScreen() {
         <div>
           <span className="text-xl font-black">{profile?.name || 'Usuario'}</span>
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
-            <Badge variant="accent">{NEURO_LABELS[neuro?.type || 'nose']}</Badge>
+            <Badge variant="accent">{NEURO_LABELS[neuro?.type || 'curious']}</Badge>
             <Badge variant="ghost">{GOAL_LABELS[profile?.goal || 'energia']}</Badge>
+            {rankBadge && (
+              <span
+                className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                  rankBadge.tier === 'gold'
+                    ? 'bg-[rgba(251,191,36,0.12)] text-[#fbbf24] border-[rgba(251,191,36,0.3)]'
+                    : rankBadge.tier === 'purple'
+                    ? 'bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[rgba(167,139,250,0.3)]'
+                    : rankBadge.tier === 'blue'
+                    ? 'bg-[rgba(76,201,240,0.12)] text-[#4CC9F0] border-[rgba(76,201,240,0.3)]'
+                    : 'bg-[rgba(52,211,153,0.12)] text-[#34d399] border-[rgba(52,211,153,0.3)]'
+                }`}
+              >
+                {rankBadge.icon}{' '}
+                {rankBadge.label}
+              </span>
+            )}
           </div>
         </div>
       </Card>
@@ -67,7 +102,7 @@ export function ProfileScreen() {
       {twin && (
         <Card>
           <div className="flex items-center gap-2 mb-3">
-            <span className="font-bold text-sm">🧬 Tu Digital Twin</span>
+            <h2 className="font-bold text-sm">Tu Digital Twin</h2>
             <Badge variant="ghost">vivo</Badge>
           </div>
           <div className="space-y-3">
@@ -100,7 +135,7 @@ export function ProfileScreen() {
 
       {/* Session preferences */}
       <Card>
-        <span className="font-bold text-sm mb-3 block">Preferencias de sesión</span>
+        <h2 className="font-bold text-sm mb-3 block">Preferencias de sesión</h2>
         <p className="text-xs text-[#94a0b8] font-semibold mb-2">Duración ideal</p>
         <div className="grid grid-cols-3 gap-2.5">
           {[10, 20, 30].map((d) => (
@@ -121,7 +156,7 @@ export function ProfileScreen() {
 
       {/* Accessibility */}
       <Card>
-        <span className="font-bold text-sm mb-3 block">Accesibilidad</span>
+        <h2 className="font-bold text-sm mb-3 block">Accesibilidad</h2>
         <div className="space-y-4">
           {[
             { key: 'reduceMotion', label: 'Reducir movimiento', desc: 'Menos animaciones' },
@@ -135,6 +170,7 @@ export function ProfileScreen() {
               </div>
               <button
                 role="switch"
+                aria-label={label}
                 aria-checked={(prefs as any)[key]}
                 onClick={() => setPref(key, !(prefs as any)[key])}
                 className={`w-[52px] h-[30px] rounded-full border-none shrink-0 transition-all relative ${
@@ -156,7 +192,7 @@ export function ProfileScreen() {
 
       {/* Data */}
       <Card>
-        <span className="font-bold text-sm mb-3 block">Tus datos</span>
+        <h2 className="font-bold text-sm mb-3 block">Tus datos</h2>
         <div className="space-y-2.5">
           <Button variant="ghost" className="w-full justify-start" onClick={handleExport}>
             <Icons.Download size={18} /> Exportar datos (JSON)

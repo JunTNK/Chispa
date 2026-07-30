@@ -29,7 +29,7 @@ create table if not exists public.profiles (
   equipment text check (equipment in ('ninguno', 'mancuernas', 'gimnasio')) not null,
   limitations text[] default '{}',
   days_per_week text check (days_per_week in ('2-3', '4-5', 'flex')) not null,
-  neurotype text check (neurotype in ('tdah', 'neuro', 'nose')) not null,
+  neurotype text check (neurotype in ('adh-c', 'adh-i', 'audhd', 'spd', 'curious', 'other')) not null,
   preferred_duration integer check (preferred_duration in (10, 20, 30)) not null,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null

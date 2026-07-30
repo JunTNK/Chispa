@@ -123,68 +123,28 @@ export class LocalLLM {
     this._error = null;
     this._emitProgress({ status: 'download', progress: 0 });
 
+    // Pipeline function — declared here so both try and catch blocks can use it
+    let pipelineFn: any = null;
+
     try {
       // Cargar la librería Transformers.js desde CDN.
       // Usamos `new Function` para bypassear completamente el bundler (Next.js/Turbopack/webpack)
       // e importar directamente desde la URL en el browser.
       const mod: any = await new Function(`return import("${CDN_URL}")`)();
-      const { pipeline, env } = mod;
+      const { pipeline: pipelineBuilder, env } = mod;
+      pipelineFn = pipelineBuilder;
 
-      // Configure fallback devices: webgpu -> webgl -> cpu
       if (env) {
         env.allowLocalModels = true;
-        // Check for WebGPU support
         const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
         const preferredDevice = hasWebGPU ? 'webgpu' : 'webgl';
-        this._emitProgress({ status: 'load', progress: 0 });
-
-        const pipe = await pipeline('text-generation', this._modelId, {
-          dtype: 'q4',
-          device: preferredDevice as any,
-          progress_callback: (p: any) => {
-            if (p.status === 'progress') {
-              this._emitProgress({
-                status: 'download',
-                file: p.file,
-                progress: p.progress ?? 0,
-                total_files: p.total_files,
-                loaded_files: p.loaded_files,
-              });
-            }
-          },
-        });
-
-        this._pipeline = pipe as unknown as PipelineFn;
-        this._status = 'ready';
-        this._emitProgress({ status: 'done', progress: 1 });
+        await this._initPipeline(pipelineBuilder, preferredDevice);
       }
     } catch (err: any) {
-      // Try fallback to webgl if webgpu failed
-      if (this._status !== 'ready') {
+      // WebGPU failed — try WebGL fallback (module already cached by browser, no re-import needed)
+      if (pipelineFn) {
         try {
-          const mod: any = await new Function(`return import("${CDN_URL}")`)();
-          const { pipeline } = mod;
-          this._emitProgress({ status: 'load', progress: 0 });
-
-          const pipe = await pipeline('text-generation', this._modelId, {
-            dtype: 'q4',
-            device: 'webgl' as any,
-            progress_callback: (p: any) => {
-              if (p.status === 'progress') {
-                this._emitProgress({
-                  status: 'download',
-                  file: p.file,
-                  progress: p.progress ?? 0,
-                  total_files: p.total_files,
-                  loaded_files: p.loaded_files,
-                });
-              }
-            },
-          });
-
-          this._pipeline = pipe as unknown as PipelineFn;
-          this._status = 'ready';
-          this._emitProgress({ status: 'done', progress: 1 });
+          await this._initPipeline(pipelineFn, 'webgl');
         } catch (fallbackErr: any) {
           this._status = 'error';
           this._error = fallbackErr?.message ?? String(fallbackErr);
@@ -200,6 +160,34 @@ export class LocalLLM {
         throw err;
       }
     }
+  }
+
+  /** Initialize the ML pipeline for a specific device (webgpu | webgl) */
+  private async _initPipeline(
+    pipelineBuilder: any,
+    device: string
+  ): Promise<void> {
+    this._emitProgress({ status: 'load', progress: 0 });
+
+    const pipe = await pipelineBuilder('text-generation', this._modelId, {
+      dtype: 'q4',
+      device: device as any,
+      progress_callback: (p: any) => {
+        if (p.status === 'progress') {
+          this._emitProgress({
+            status: 'download',
+            file: p.file,
+            progress: p.progress ?? 0,
+            total_files: p.total_files,
+            loaded_files: p.loaded_files,
+          });
+        }
+      },
+    });
+
+    this._pipeline = pipe as unknown as PipelineFn;
+    this._status = 'ready';
+    this._emitProgress({ status: 'done', progress: 1 });
   }
 
   /* ─── Chat ─── */

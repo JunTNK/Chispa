@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils/helpers';
+import { useSound } from '@/lib/awards/use-sound';
 
 const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-bold transition-all duration-150 active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none select-none',
@@ -32,15 +33,33 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** Disable hover/click sound effects */
+  noSound?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, noSound = false, onMouseEnter, onClick, ...props }, ref) => {
+    const { play } = useSound();
+    const lastHoverRef = React.useRef(0);
+
     const Comp = asChild ? Slot : 'button';
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
+        onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+          onMouseEnter?.(e as any);
+          if (noSound || e.defaultPrevented) return;
+          const now = Date.now();
+          if (now - lastHoverRef.current < 200) return;
+          lastHoverRef.current = now;
+          play('hover');
+        }}
+        onClick={(e: React.MouseEvent<HTMLElement>) => {
+          onClick?.(e as any);
+          if (noSound || e.defaultPrevented) return;
+          play('click');
+        }}
         {...props}
       />
     );

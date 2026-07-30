@@ -93,6 +93,9 @@ if (typeof ResizeObserver === 'undefined') {
   };
 }
 
+// ─── vitest-axe for accessibility assertions ───
+// (axe function imported directly in test files, no matcher needed)
+
 // ─── Reset Zustand store between tests ───
 let resetStore: ((state: Record<string, unknown>) => void) | null = null;
 

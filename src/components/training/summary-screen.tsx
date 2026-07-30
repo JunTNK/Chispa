@@ -8,7 +8,17 @@ import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { updateTwin } from '@/lib/agents/decision-engine';
 import { uid, todayKey } from '@/lib/utils/helpers';
+import { RpeSelector } from '@/components/training/rpe-selector';
+import { MotivationSelector } from '@/components/training/motivation-selector';
 import { supabaseSync } from '@/lib/sync/supabase-sync';
+import type { Workout, DigitalTwin } from '@/types';
+import { Sparkles, TrendingUp, Sprout, Wrench, Zap } from 'lucide-react';
+import { useConfetti } from '@/components/ui/particles';
+import { useAchievementEval } from '@/lib/awards/use-achievement-eval';
+import { useSound } from '@/lib/awards/use-sound';
+import { pushLeaderboard } from '@/lib/sync/leaderboard';
+import { computeTotalXp, computeLevel } from '@/lib/awards/achievements';
+import { logError } from '@/lib/utils/logger';
 
 export function SummaryScreen() {
   const setView = useStore((s) => s.setView);
@@ -22,28 +32,50 @@ export function SummaryScreen() {
 
   const [rpe, setRpe] = React.useState<string | null>(null);
   const [motiv, setMotiv] = React.useState<string | null>(null);
+  const workouts = useStore((s) => s.workouts);
+  const { fire: fireConfetti } = useConfetti();
+  const { evaluate: evaluateAchievements } = useAchievementEval();
+  const { play: playSound } = useSound();
 
   const result = plan?.result;
+  const totalWorkouts = workouts.filter((w) => w.completed_rate >= 0.5).length;
+  const newLevel = Math.max(1, Math.floor((totalWorkouts + 1) / 5) + 1);
+  const oldLevel = Math.max(1, Math.floor(totalWorkouts / 5) + 1);
+  const leveledUp = newLevel > oldLevel;
+
+  // Fire confetti + level-up fanfare on level-up (moved before early return to respect hooks order)
+  React.useEffect(() => {
+    if (leveledUp) {
+      playSound('levelUp');
+      const t = setTimeout(() => {
+        fireConfetti({ particleCount: 120, spread: 160, duration: 3500 });
+        playSound('confetti');
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [leveledUp]); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (!result) return null;
 
   const handleSave = () => {
     if (!result || !profile || !twin) return;
 
-    const w = {
+    const w: Workout = {
       id: uid(),
       user_id: '',
       date: todayKey(),
-      focus: plan?.workout?.focus || 'full',
+      focus: (plan?.workout?.focus as Workout['focus']) || 'full',
       intensity: plan?.intensity || 'standard',
       duration: plan?.workout?.duration || result.minutes,
       score: Math.round(result.rate * 100),
       completed_rate: result.rate,
       exercises: result.exs || [],
       actual_minutes: result.minutes,
-      rpe: (rpe as any) || 'justo',
+      rpe: (rpe ?? 'justo') as Workout['rpe'],
+      created_at: new Date().toISOString(),
     };
 
-    addWorkout(w as any);
+    addWorkout(w);
 
     const updated = updateTwin(twin, { ...w, completed_rate: result.rate });
     setTwin(updated);
@@ -53,39 +85,109 @@ export function SummaryScreen() {
       minutes: result.minutes,
     });
 
+    // Evaluate achievements after workout
+    evaluateAchievements({
+      rpeJustoCount: rpe === 'justo'
+        ? workouts.filter((w) => w.rpe === 'justo').length + 1
+        : workouts.filter((w) => w.rpe === 'justo').length,
+      adaptationCount: plan?.result?.adapted
+        ? (workouts.filter((w) => (w as any).adapted).length) + 1
+        : workouts.filter((w) => (w as any).adapted).length,
+    });
+
     if (motiv) {
-      setTwin({ ...updated, motivation_style: motiv as any });
+      setTwin({ ...updated, motivation_style: (motiv ?? 'data') as DigitalTwin['motivation_style'] });
       logEvent('motivation_learned', { style: motiv });
     }
 
-    setPlan({ ...plan, done: true, result: { ...result, rpe, motiv } });
+    setPlan({ ...plan, done: true, result: { ...result, rpe: rpe ?? undefined, motiv: motiv ?? undefined } });
 
     // Background sync to Supabase - get workouts AFTER addWorkout
     const currentWorkouts = useStore.getState().workouts;
     supabaseSync.push({
-      workouts: [...currentWorkouts, w as any],
+      workouts: [...currentWorkouts, w],
       twin: updated,
-    }).catch(() => {});
+    }).catch(logError('summary:push-workout'));
+
+    // Push XP to leaderboard
+    const totalXp = computeTotalXp([...currentWorkouts, w]);
+    const level = computeLevel(totalXp);
+    pushLeaderboard(totalXp, level).catch(logError('summary:push-leaderboard'));
 
     setView('home');
   };
 
-  const title = result.rate >= 0.8 ? '¡Hecho! ⚡' : result.rate >= 0.4 ? 'Buen movimiento 💪' : 'Guardamos lo de hoy 🌱';
+  const title = result.rate >= 0.8 ? '¡Hecho!' : result.rate >= 0.4 ? 'Buen movimiento' : 'Guardamos lo de hoy';
   const sub = result.rate >= 0.8
     ? 'Sesión completa. El motor ya está aprendiendo de ti.'
     : result.rate >= 0.4
       ? 'Más de la mitad hecho. Eso cuenta, y mucho.'
       : 'Empezar ya es ganar. El motor lo ha registrado.';
 
+  const xpEarned = Math.round((result.doneEx / Math.max(1, result.totalEx)) * 50 + result.minutes);
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-dvh overflow-y-auto">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-dvh overflow-y-auto"
+    >
       <div className="px-4 py-8 space-y-4">
-        <h2 className="text-3xl font-black tracking-tight text-center mb-1">{title}</h2>
-        <p className="text-sm text-[#94a0b8] text-center">{sub}</p>
+        {/* Level Up Banner */}
+        {leveledUp && (
+          <motion.div
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 12 }}
+            className="text-center py-4 px-4 rounded-2xl bg-[rgba(167,139,250,0.1)] border border-[rgba(167,139,250,0.3)] level-up"
+          >
+            <motion.span
+              animate={{ rotate: [0, -10, 10, -10, 0] }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="text-3xl inline-block"
+            >
+              <Zap size={36} className="inline text-[#a78bfa] mb-1" />
+            </motion.span>
+            <h3 className="text-xl font-black level-up-text mt-1">¡SUBISTE A NIVEL {newLevel}!</h3>
+            <p className="text-xs text-[#a78bfa] mt-1">Tu consistencia te fortalece. Sigue así.</p>
+          </motion.div>
+        )}
+
+        <div className="text-center">
+          <motion.h2
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 15 }}
+            className="text-3xl font-black tracking-tight mb-1"
+          >
+            {title}
+            {result.rate >= 0.8 && <Sparkles size={32} className="inline text-emerald-400 ml-1 sparkle" />}
+            {result.rate < 0.8 && result.rate >= 0.4 && <TrendingUp size={32} className="inline text-[#ffb454] ml-1" />}
+            {result.rate < 0.4 && <Sprout size={32} className="inline text-[#94a0b8] ml-1" />}
+          </motion.h2>
+          <p className="text-sm text-[#94a0b8] text-center mt-1">{sub}</p>
+          {/* XP Earned */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(167,139,250,0.12)] border border-[rgba(167,139,250,0.25)]"
+          >
+            <Zap size={14} className="text-[#a78bfa]" />
+            <span className="text-xs font-bold text-[#a78bfa]">+{xpEarned} XP</span>
+          </motion.div>
+        </div>
 
         <div className="grid grid-cols-3 gap-2.5">
           <Card className="text-center py-4 px-2">
-            <span className="text-2xl font-black block">{result.minutes}</span>
+            <motion.span
+              key={result.minutes}
+              initial={{ scale: 1.3 }}
+              animate={{ scale: 1 }}
+              className="text-2xl font-black block counter-pop"
+            >
+              {result.minutes}
+            </motion.span>
             <span className="text-xs text-[#94a0b8]">minutos</span>
           </Card>
           <Card className="text-center py-4 px-2">
@@ -93,68 +195,27 @@ export function SummaryScreen() {
             <span className="text-xs text-[#94a0b8]">ejercicios</span>
           </Card>
           <Card className="text-center py-4 px-2">
-            <span className="text-2xl font-black block">{Math.round(result.rate * 100)}%</span>
+            <motion.span
+              key={Math.round(result.rate * 100)}
+              initial={{ scale: 1.3 }}
+              animate={{ scale: 1 }}
+              className="text-2xl font-black block counter-pop"
+            >
+              {Math.round(result.rate * 100)}%
+            </motion.span>
             <span className="text-xs text-[#94a0b8]">completado</span>
           </Card>
         </div>
 
         {result.adapted && (
           <div className="bg-[rgba(96,165,250,0.1)] border border-[rgba(96,165,250,0.25)] text-[#bfdbfe] rounded-2xl px-4 py-3 text-sm text-center">
-            🔧 El motor redujo la intensidad durante la sesión. Adaptarse no es fallar.
+            <Wrench size={16} className="inline text-blue-400 mr-1 mt-[-2px]" /> El motor redujo la intensidad durante la sesión. Adaptarse no es fallar.
           </div>
         )}
 
-        <Card>
-          <span className="font-bold text-sm flex items-center gap-2 mb-3">¿Cómo de exigente fue?</span>
-          <div className="grid grid-cols-3 gap-2.5">
-            {[
-              { val: 'suave', emoji: '😊', label: 'Suave', desc: 'Podría más' },
-              { val: 'justo', emoji: '😮‍💨', label: 'Justo', desc: 'Al punto' },
-              { val: 'duro', emoji: '🥵', label: 'Duro', desc: 'Me costó' },
-            ].map((o) => (
-              <button
-                key={o.val}
-                onClick={() => setRpe(o.val)}
-                className={`flex flex-col items-center gap-1 min-h-[64px] rounded-2xl border-2 p-2 text-center transition-all ${
-                  rpe === o.val
-                    ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                    : 'border-white/[.07] bg-[#151b2a]'
-                }`}
-              >
-                <span className="font-semibold text-sm">{o.emoji} {o.label}</span>
-                <span className="text-[11px] text-[#94a0b8]">{o.desc}</span>
-              </button>
-            ))}
-          </div>
-        </Card>
+        <RpeSelector value={rpe} onChange={setRpe} />
 
-        <Card>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="font-bold text-sm">¿Qué mensaje te motiva más?</span>
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/[.07] text-[10px] font-bold text-[#94a0b8]">
-              el motor aprende
-            </span>
-          </div>
-          <div className="space-y-2">
-            {[
-              { val: 'data', text: '📊 Recuperación 78%. Consistencia 69%. Los datos dicen que puedes.' },
-              { val: 'energy', text: '🔥 La chispa se enciende moviéndote. ¡A por hoy!' },
-              { val: 'calm', text: '🌊 Sin prisa. A tu ritmo. Un paso cada vez.' },
-            ].map((o) => (
-              <button
-                key={o.val}
-                onClick={() => setMotiv(o.val)}
-                className={`w-full text-left rounded-2xl border-2 p-3 text-sm leading-relaxed transition-all ${
-                  motiv === o.val
-                    ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                    : 'border-white/[.07] bg-[#1a2234]'
-                }`}
-              >
-                {o.text}
-              </button>
-            ))}
-          </div>
-        </Card>
+        <MotivationSelector value={motiv} onChange={setMotiv} />
 
         <Button variant="primary" size="large" className="w-full" onClick={handleSave}>
           <Icons.Check /> Guardar entrenamiento

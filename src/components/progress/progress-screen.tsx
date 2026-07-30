@@ -6,6 +6,7 @@ import { useStore } from '@/lib/store';
 import { Card } from '@/components/ui/card';
 import { RecRing } from '@/components/ui/ring';
 import { calculateConsistency } from '@/lib/agents/decision-engine';
+import { STYLE_LABELS } from '@/lib/utils/constants';
 import { daysAgoKey, daysBetween } from '@/lib/utils/helpers';
 
 /* ─── Animation Variants ─── */
@@ -269,8 +270,9 @@ export function ProgressScreen() {
                 const time = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) +
                   ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
                 let txt = ev.event;
-                if (ev.event === 'decision') txt = `Motor: sesión ${ev.decision?.intensity || ''}`;
-                if (ev.event === 'workout_completed') txt = `Entrenamiento completado (${Math.round((ev.decision?.rate as number || 0) * 100)}%)`;
+                const dec = ev.decision as Record<string, unknown>;
+                if (ev.event === 'decision') txt = `Motor: sesión ${String(dec?.intensity ?? '')}`;
+                if (ev.event === 'workout_completed') txt = `Entrenamiento completado (${Math.round((Number(dec?.rate) || 0) * 100)}%)`;
                 return (
                   <motion.div
                     key={i}
@@ -291,9 +293,4 @@ export function ProgressScreen() {
   );
 }
 
-const STYLE_LABELS: Record<string, string> = {
-  data: 'Datos y lógica',
-  energy: 'Energía',
-  direct: 'Directo',
-  calm: 'Calma',
-};
+

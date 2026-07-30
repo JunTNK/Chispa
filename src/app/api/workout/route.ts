@@ -3,7 +3,9 @@ import {
   TrainingAgent,
   MotivationEngine,
 } from '@/lib/agents/decision-engine';
+import { INTENSITY_LABELS, FOCUS_LABELS } from '@/lib/utils/constants';
 import { workoutRequestSchema } from '@/lib/api/schemas';
+import { logError } from '@/lib/utils/logger';
 import type { DecisionEngineOutput, DigitalTwin } from '@/types';
 
 /**
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // 🔒 Zod validation
+    // Zod validation
     const result = workoutRequestSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
@@ -60,21 +62,6 @@ export async function POST(request: NextRequest) {
       decision.duration
     );
 
-    // Intensity labels for readability
-    const INTENSITY_LABELS: Record<string, string> = {
-      minimal: 'Suave',
-      light: 'Ligero',
-      standard: 'Estándar',
-      push: 'Progreso',
-    };
-
-    const FOCUS_LABELS: Record<string, string> = {
-      full: 'Cuerpo completo',
-      upper: 'Tren superior',
-      lower: 'Tren inferior',
-      core: 'Core y cardio',
-    };
-
     return NextResponse.json({
       success: true,
       action: 'train',
@@ -90,7 +77,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Workout API error:', error);
+    logError('api:workout')(error);
     return NextResponse.json(
       { error: 'Internal server error', message: (error as Error).message },
       { status: 500 }

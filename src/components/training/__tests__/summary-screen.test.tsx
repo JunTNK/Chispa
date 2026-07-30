@@ -7,7 +7,7 @@ import type { Profile, DigitalTwin } from '@/types';
 const mockProfile: Profile = {
   user_id: '', name: 'Test', goal: 'energia', level: 'medio',
   equipment: 'ninguno', limitations: [], days_per_week: '2-3',
-  neurotype: 'tdah', preferred_duration: 20,
+  neurotype: 'adh-c', preferred_duration: 20,
   created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
 };
 

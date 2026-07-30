@@ -1,7 +1,19 @@
 import type { NextConfig } from "next";
 
+const withBundleAnalyzer = process.env.ANALYZE === 'true'
+  ? require('@next/bundle-analyzer')({ enabled: true, openAnalyzer: false })
+  : (config: NextConfig) => config;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: '/neurofit',
+        destination: '/neurofit-v3.html',
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
@@ -51,4 +63,4 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

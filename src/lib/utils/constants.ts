@@ -16,10 +16,16 @@ export const EQUIP_LABELS: Record<string, string> = {
   gimnasio: 'Gimnasio',
 };
 
+/** Alias de EQUIP_LABELS para consistencia con nombres usados en coach.ts */
+export const EQUIPMENT_LABELS = EQUIP_LABELS;
+
 export const NEURO_LABELS: Record<string, string> = {
-  tdah: 'TDAH',
-  neuro: 'Neurodivergente',
-  nose: 'Explorando',
+  'adh-c': 'TDAH combinado',
+  'adh-i': 'TDAH inatento',
+  audhd: 'AuDHD',
+  spd: 'Alta sensibilidad',
+  curious: 'Explorando',
+  other: 'Otra neurodivergencia',
 };
 
 export const DAYS_LABELS: Record<string, string> = {
@@ -64,8 +70,8 @@ export const REC_WORDS: Record<string, string> = {
 };
 
 export const FOCUS_MUSCLES: Record<string, string[]> = {
-  full: ['piernas', 'pecho', 'espalda', 'core', 'gluteos'],
-  upper: ['pecho', 'espalda', 'hombros', 'brazos'],
-  lower: ['piernas', 'gluteos', 'piernas'],
-  core: ['core', 'cardio', 'core'],
+  full: ['piernas', 'pecho', 'espalda', 'core', 'gluteos', 'full_body'],
+  upper: ['pecho', 'espalda', 'hombros', 'brazos', 'full_body'],
+  lower: ['piernas', 'gluteos', 'full_body', 'piernas'],
+  core: ['core', 'cardio', 'full_body', 'core'],
 };

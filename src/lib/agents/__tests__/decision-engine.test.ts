@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { DecisionEngine, calculateRecoveryScore, calculateConsistency } from '@/lib/agents/decision-engine';
+import { DecisionEngine } from '@/lib/agents/decision-agent';
+import { calculateRecoveryScore } from '@/lib/agents/recovery-engine';
+import { calculateConsistency } from '@/lib/agents/habit-engine';
+import { MotivationEngine } from '@/lib/agents/motivation-engine';
 import type { DigitalTwin, Profile, HabitScore } from '@/types';
 
 const mockTwin: DigitalTwin = {
@@ -28,7 +31,7 @@ const mockProfile: Profile = {
   equipment: 'ninguno',
   limitations: [],
   days_per_week: '2-3',
-  neurotype: 'tdah',
+  neurotype: 'adh-c',
   preferred_duration: 20,
   created_at: '',
   updated_at: '',
@@ -170,8 +173,6 @@ describe('DecisionEngine.decide', () => {
 
 /* ─── MotivationEngine ─── */
 
-import { MotivationEngine } from '@/lib/agents/decision-engine';
-
 describe('MotivationEngine', () => {
   it('returns data-style message', () => {
     const msg = MotivationEngine.message('data', 75, 65, 20);
@@ -182,7 +183,7 @@ describe('MotivationEngine', () => {
   it('returns energy-style message', () => {
     const msg = MotivationEngine.message('energy', 75, 65, 20);
     expect(msg).toContain('75%');
-    expect(msg).toContain('⚡');
+    expect(msg).toContain('chispa');
   });
 
   it('returns calm-style message', () => {

@@ -4,7 +4,9 @@ import {
   calculateRecoveryScore,
   calculateConsistency,
 } from '@/lib/agents/decision-engine';
+import { INTENSITY_LABELS } from '@/lib/utils/constants';
 import { decisionRequestSchema } from '@/lib/api/schemas';
+import { logError } from '@/lib/utils/logger';
 import type { DecisionEngineInput, DigitalTwin, Profile } from '@/types';
 
 /**
@@ -17,7 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    // 🔒 Zod validation
+    // Zod validation
     const result = decisionRequestSchema.safeParse(body);
     if (!result.success) {
       return NextResponse.json(
@@ -71,14 +73,6 @@ export async function POST(request: NextRequest) {
     // Execute the decision engine
     const decision = DecisionEngine.decide(input);
 
-    // Include human-readable labels
-    const INTENSITY_LABELS: Record<string, string> = {
-      minimal: 'Suave',
-      light: 'Ligero',
-      standard: 'Estándar',
-      push: 'Progreso',
-    };
-
     return NextResponse.json({
       success: true,
       decision,
@@ -88,7 +82,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Decision API error:', error);
+    logError('api:decision')(error);
     return NextResponse.json(
       { error: 'Internal server error', message: (error as Error).message },
       { status: 500 }

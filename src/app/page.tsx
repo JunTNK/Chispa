@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { AppLayout } from '@/components/layout/app-layout';
 import { ToastContainer } from '@/components/ui/toast';
+import { AchievementToast } from '@/components/awards/achievement-toast';
 
 /* ─── Static import (landing page — always loaded first) ─── */
 import { WelcomeScreen } from '@/components/onboarding/welcome-screen';
@@ -45,6 +46,38 @@ const ProgressScreen = dynamic(() => import('@/components/progress/progress-scre
 });
 
 const ProfileScreen = dynamic(() => import('@/components/profile/profile-screen').then(m => ({ default: m.ProfileScreen })), {
+  ssr: true,
+});
+
+const QuestScreen = dynamic(() => import('@/components/neurofit/quest-screen').then(m => ({ default: m.QuestScreen })), {
+  ssr: true,
+});
+
+const DopaminaScreen = dynamic(() => import('@/components/neurofit/dopamina-screen').then(m => ({ default: m.DopaminaScreen })), {
+  ssr: true,
+});
+
+const LogrosScreen = dynamic(() => import('@/components/awards/logros-screen').then(m => ({ default: m.LogrosScreen })), {
+  ssr: true,
+});
+
+const SistemaScreen = dynamic(() => import('@/components/neurofit/sistema-screen').then(m => ({ default: m.SistemaScreen })), {
+  ssr: true,
+});
+
+const LeaderboardScreen = dynamic(() => import('@/components/awards/leaderboard-screen').then(m => ({ default: m.LeaderboardScreen })), {
+  ssr: true,
+});
+
+const CreateWorkoutScreen = dynamic(() => import('@/components/training/create-workout-screen').then(m => ({ default: m.CreateWorkoutScreen })), {
+  ssr: false,
+});
+
+const QuickLogScreen = dynamic(() => import('@/components/training/quick-log-screen').then(m => ({ default: m.QuickLogScreen })), {
+  ssr: false,
+});
+
+const ExerciseCatalogScreen = dynamic(() => import('@/components/training/exercise-catalog-screen').then(m => ({ default: m.ExerciseCatalogScreen })), {
   ssr: true,
 });
 
@@ -120,6 +153,22 @@ export default function App() {
           return <AppLayout><ProgressScreen /></AppLayout>;
         case 'profile':
           return <AppLayout><ProfileScreen /></AppLayout>;
+        case 'quest':
+          return <AppLayout><QuestScreen /></AppLayout>;
+        case 'dopamina':
+          return <AppLayout><DopaminaScreen /></AppLayout>;
+        case 'logros':
+          return <AppLayout><LogrosScreen /></AppLayout>;
+        case 'leaderboard':
+          return <AppLayout><LeaderboardScreen /></AppLayout>;
+        case 'create-workout':
+          return <CreateWorkoutScreen />;
+        case 'quick-log':
+          return <QuickLogScreen />;
+        case 'catalog':
+          return <AppLayout><ExerciseCatalogScreen /></AppLayout>;
+        case 'sistema':
+          return <AppLayout><SistemaScreen /></AppLayout>;
         default:
           return <WelcomeScreen />;
       }
@@ -140,6 +189,7 @@ export default function App() {
         {renderScreen()}
       </AnimatePresence>
       <ToastContainer />
+      <AchievementToast />
     </div>
   );
 }

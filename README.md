@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CHISPA ⚡
 
-## Getting Started
+Tu entrenador personal con IA — adaptado a tu neurotipo, motivación y ritmo.
 
-First, run the development server:
+---
+
+## 🚀 Primeros pasos
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Scripts disponibles:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Comando | Descripción |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de producción |
+| `npm start` | Servidor de producción |
+| `npm test` | Tests unitarios (Vitest) |
+| `npm run test:e2e` | Tests E2E (Playwright) |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | TypeScript checks |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📁 Estructura del proyecto
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # Páginas y rutas Next.js App Router
+├── components/
+│   ├── auth/         # Login / registro
+│   ├── awards/       # Logros, leaderboard
+│   ├── coach/        # Chat con IA
+│   ├── layout/       # Navbar, header, app shell
+│   ├── neurofit/     # Sistema, quests, dopamina
+│   ├── onboarding/   # Flujo de bienvenida
+│   ├── profile/      # Perfil y ajustes
+│   ├── progress/     # Estadísticas y progreso
+│   ├── training/     # Home, sesión, resumen, creación
+│   └── ui/           # Componentes atómicos reutilizables
+├── hooks/            # Custom hooks globales
+├── lib/
+│   ├── agents/       # Lógica de IA (decisión, motivación, hábitos)
+│   ├── ai/           # Cliente LLM local + coach
+│   ├── api/          # Schemas de API
+│   ├── auth/         # Supabase auth
+│   ├── awards/       # Evaluación de logros
+│   ├── db/           # Clientes Supabase
+│   ├── pose/         # Motor de pose (cámara)
+│   ├── store/        # Estado global (Zustand)
+│   ├── sync/         # Sincronización y leaderboard
+│   └── utils/        # Utilidades compartidas
+└── types/            # Tipos TypeScript globales
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+public/               # Activos estáticos (SVGs, imágenes)
+docs/                 # 📖 Documentación de componentes
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 📖 Documentación de componentes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Guía | Archivo | Descripción |
+|---|---|---|
+| 🏋️ Iconos fitness | [`docs/componentes-iconos-fitness.md`](docs/componentes-iconos-fitness.md) | FullBodyIcon, UpperBodyIcon, LowerBodyIcon, CoreCardioIcon |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## 🧪 Tests
+
+```bash
+# Unitarios (Vitest)
+npm test
+
+# E2E (Playwright) — requiere servidor corriendo
+npm run dev          # en otra terminal
+npm run test:e2e
+
+# TypeScript
+npm run typecheck
+```
+
+Los iconos fitness tienen 4 suites de test:
+
+| Archivo | Tests |
+|---|---|
+| `muscle-icons.test.tsx` | 26 unitarios |
+| `muscle-icons-axe.test.tsx` | 10 accesibilidad (axe-core) |
+| `muscle-icons-snapshot.test.tsx` | 13 snapshots |
+| `muscle-icons-regression.test.tsx` | 28 regresión estructural |
+
+---
+
+## 🔧 Stack
+
+- **Framework:** Next.js 15 (App Router)
+- **UI:** React 19 + Tailwind CSS 4
+- **Animaciones:** Framer Motion
+- **Estado:** Zustand
+- **IA:** Transformers.js (in-browser LLM)
+- **Auth/Datos:** Supabase
+- **Tests:** Vitest + Testing Library + Playwright
+- **Despliegue:** Netlify

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { fmtTime } from '@/lib/utils/helpers';
@@ -9,7 +9,25 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
 import { RecRing } from '@/components/ui/ring';
-import { EXERCISE_CATALOG } from '@/lib/utils/exercises';
+import { useExercises } from '@/lib/utils/use-exercises';
+import type { WorkoutExercise } from '@/types';
+import { Dumbbell, Zap, Wind, StopCircle, Camera } from 'lucide-react';
+
+// Lazy-load FormCheck (heavy: imports pose engine + onnxruntime)
+// Only loaded when user opens the camera form-check overlay
+const FormCheck = React.lazy(() => import('./form-check').then(m => ({ default: m.FormCheck })));
+
+// Fallback shown while FormCheck chunk loads
+function FormCheckFallback() {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(5,8,14,0.8)] backdrop-blur-sm">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-[#4CC9F0] border-t-transparent animate-spin" />
+        <p className="text-sm text-[#94a0b8]">Cargando cámara...</p>
+      </div>
+    </div>
+  );
+}
 
 interface SessionExercise {
   exercise_id: string;
@@ -18,6 +36,8 @@ interface SessionExercise {
   sets: number;
   reps: number;
   rest: number;
+  completed_sets: number;
+  completed_reps: number[];
   status: 'pending' | 'done' | 'skipped';
   progressed?: boolean;
   load_type?: 'reps' | 'time';
@@ -57,6 +77,7 @@ export function SessionScreen() {
   const [, setAdapted] = React.useState(false);
   const [finished, setFinished] = React.useState(false);
   const [showComplete, setShowComplete] = React.useState(false);
+  const [showFormCheck, setShowFormCheck] = React.useState(false);
   const completeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs for stable callback references (assigned .current right after each useCallback)
@@ -77,21 +98,17 @@ export function SessionScreen() {
   const totalEx = exs.length;
   const totalSets = exs.reduce((a, e) => a + e.sets, 0);
 
-  const exerciseEmoji = useMemo(() => {
-    const lookup: Record<string, string> = {};
-    EXERCISE_CATALOG.forEach((e) => { lookup[e.name] = e.emoji; });
-    return lookup;
-  }, []);
+  const { exercises: catalog, isLoading } = useExercises();
 
   const exerciseCue = useMemo(() => {
     const lookup: Record<string, string> = {};
-    EXERCISE_CATALOG.forEach((e) => { lookup[e.name] = e.cue; });
+    catalog.forEach((e) => { lookup[e.name] = e.cue; });
     return lookup;
-  }, []);
+  }, [catalog]);
 
   useEffect(() => {
     if (plan?.workout?.exercises) {
-      const initial = plan.workout.exercises.map((e: any) => ({
+      const initial = plan.workout.exercises.map((e: WorkoutExercise) => ({
         ...e,
         status: 'pending' as const,
       }));
@@ -193,12 +210,14 @@ export function SessionScreen() {
 
   const finishSession = useCallback(() => {
     if (finished) return;
+    useStore.getState().trackDecision(4);
     setFinished(true);
     const currentExs = exsRef.current;
     const currentElapsed = elapsedRef.current;
     const doneEx = currentExs.filter((e) => e.status === 'done').length;
     const totalEx = currentExs.length;
     const currentPlan = useStore.getState().plan;
+    if (!currentPlan) return;
     setPlan({
       ...currentPlan,
       result: {
@@ -241,6 +260,7 @@ export function SessionScreen() {
     );
     setAdapted(true);
     setPaused(false);
+    useStore.getState().trackDecision(5);
     logEvent('adaptation', {});
   };
 
@@ -322,7 +342,7 @@ export function SessionScreen() {
           transition={{ type: 'spring' as const, stiffness: 200, damping: 15 }}
           className="text-5xl mb-2"
         >
-          {exerciseEmoji[ex.name] || '🏋️'}
+          <Dumbbell size={48} className="text-[#ffb454]" />
         </motion.div>
 
         <motion.h2
@@ -340,7 +360,11 @@ export function SessionScreen() {
           transition={{ delay: 0.12 }}
           className="text-sm text-[#94a0b8] my-3 leading-relaxed"
         >
-          {exerciseCue[ex.name] || 'Mantén la forma'}
+          {isLoading ? (
+            <span className="skeleton inline-block h-4 w-56 rounded-md" />
+          ) : (
+            exerciseCue[ex.name] || 'Mantén la forma'
+          )}
         </motion.p>
 
         <motion.div
@@ -403,8 +427,9 @@ export function SessionScreen() {
           >
             <motion.button
               whileTap={{ scale: 0.88 }}
-              whileHover={{ scale: 1.05 }}
-              className="w-14 h-14 rounded-full border border-white/[.07] bg-[#151b2a] flex items-center justify-center text-white transition-shadow hover:shadow-[0_0_20px_rgba(255,180,84,0.15)]"
+              whileHover={{ scale: 1.08 }}
+              aria-label="Reducir repeticiones"
+              className="w-14 h-14 rounded-full border border-[rgba(255,180,84,0.3)] bg-[#151b2a] flex items-center justify-center text-[#ffb454] transition-all hover:shadow-[0_0_24px_rgba(255,180,84,0.25)] hover:bg-[rgba(255,180,84,0.08)]"
               onClick={() => setRepsCur((r) => Math.max(1, r - 1))}
             >
               <Icons.Minus />
@@ -421,8 +446,9 @@ export function SessionScreen() {
             </motion.div>
             <motion.button
               whileTap={{ scale: 0.88 }}
-              whileHover={{ scale: 1.05 }}
-              className="w-14 h-14 rounded-full border border-white/[.07] bg-[#151b2a] flex items-center justify-center text-white transition-shadow hover:shadow-[0_0_20px_rgba(255,180,84,0.15)]"
+              whileHover={{ scale: 1.08 }}
+              aria-label="Aumentar repeticiones"
+              className="w-14 h-14 rounded-full border border-[rgba(255,180,84,0.3)] bg-[#151b2a] flex items-center justify-center text-[#ffb454] transition-all hover:shadow-[0_0_24px_rgba(255,180,84,0.25)] hover:bg-[rgba(255,180,84,0.08)]"
               onClick={() => setRepsCur((r) => Math.min(99, r + 1))}
             >
               <Icons.Plus />
@@ -454,9 +480,23 @@ export function SessionScreen() {
               )}
             </AnimatePresence>
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
-            <Button variant="ghost" onClick={skipExercise}>Saltar</Button>
-            <Button variant="ghost" onClick={() => setPaused(true)}><Icons.Pause /> Pausa</Button>
+          <div className="grid grid-cols-3 gap-2">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={skipExercise}
+              className="rounded-xl border border-white/[.07] bg-[#151b2a] px-2 py-2.5 text-xs font-semibold text-[#94a0b8] hover:bg-white/[.08] transition-colors"
+            >Saltar</motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowFormCheck(true)}
+              className="flex items-center justify-center gap-1 rounded-xl border bg-[#151b2a] px-2 py-2.5 text-xs font-semibold transition-colors"
+              style={{ color: '#4CC9F0', borderColor: 'rgba(76,201,240,0.35)' }}
+            ><Camera size={13} /> <span>Form</span></motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setPaused(true)}
+              className="flex items-center justify-center gap-1 rounded-xl border border-white/[.07] bg-[#151b2a] px-2 py-2.5 text-xs font-semibold text-[#94a0b8] hover:bg-white/[.08] transition-colors"
+            ><Icons.Pause size={13} /> <span>Pausa</span></motion.button>
           </div>
         </motion.div>
 
@@ -488,6 +528,7 @@ export function SessionScreen() {
       >
         <motion.button
           whileTap={{ scale: 0.9 }}
+          aria-label="Volver"
           className="w-11 h-11 rounded-2xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center text-white hover:bg-white/[.08] transition-colors"
           onClick={() => setPaused(true)}
         >
@@ -512,10 +553,14 @@ export function SessionScreen() {
             custom={i}
             variants={dotVariants}
             whileHover={{ scale: 1.3 }}
-            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-              i === idx ? 'bg-[#ffb454] scale-125 shadow-[0_0_6px_rgba(255,180,84,0.5)]' :
-              e.status === 'done' ? 'bg-[#34d399]' :
-              e.status === 'skipped' ? 'bg-white/[.22]' : 'bg-white/[.12]'
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              i === idx
+                ? 'bg-[#ffb454] scale-125 dot-glow'
+                : e.status === 'done'
+                  ? 'bg-[#34d399] shadow-[0_0_8px_rgba(52,211,153,0.4)]'
+                  : e.status === 'skipped'
+                    ? 'bg-white/[.22]'
+                    : 'bg-white/[.12] border border-white/[.20]'
             }`}
           />
         ))}
@@ -547,7 +592,7 @@ export function SessionScreen() {
               transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
             >
               <Card className="w-full max-w-sm">
-                <h3 className="text-xl font-black text-center mb-2">Pausa ⏸</h3>
+                 <h3 className="text-xl font-black text-center mb-2">Pausa</h3>
                 <p className="text-sm text-[#94a0b8] text-center mb-4">¿Cómo vas de energía?</p>
                 <motion.div
                   initial="initial"
@@ -555,9 +600,9 @@ export function SessionScreen() {
                   className="space-y-2.5"
                 >
                   {[
-                    { emoji: '⚡', label: 'Bien, sigo', action: () => setPaused(false) },
-                    { emoji: '😮‍💨', label: 'Cansado/a · Quitar 1 serie', action: handleEasier },
-                    { emoji: '🛑', label: 'Terminar aquí · Guardamos lo hecho', action: finishSession },
+                    { icon: Zap, label: 'Bien, sigo', action: () => setPaused(false) },
+                    { icon: Wind, label: 'Cansado/a · Quitar 1 serie', action: handleEasier },
+                    { icon: StopCircle, label: 'Terminar aquí · Guardamos lo hecho', action: finishSession },
                   ].map((opt, oi) => (
                     <motion.button
                       key={oi}
@@ -569,7 +614,7 @@ export function SessionScreen() {
                       className="flex items-center gap-3 w-full min-h-[56px] p-4 rounded-2xl border border-white/[.07] bg-[#1a2234] text-left transition-colors"
                       onClick={opt.action}
                     >
-                      <span className="text-xl">{opt.emoji}</span>
+                      <span className="text-xl text-[#ffb454]"><opt.icon size={20} /></span>
                       <span className="font-semibold text-sm">{opt.label}</span>
                     </motion.button>
                   ))}
@@ -577,6 +622,19 @@ export function SessionScreen() {
               </Card>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Form Check overlay — lazy-loaded (pose engine + onnxruntime) */}
+      <AnimatePresence>
+        {showFormCheck && ex && (
+          <Suspense fallback={<FormCheckFallback />}>
+            <FormCheck
+              exerciseName={ex.name}
+              muscleGroup={ex.muscle}
+              onClose={() => setShowFormCheck(false)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
     </motion.div>

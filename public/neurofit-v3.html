@@ -1,0 +1,1545 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>NEUROFIT AGENTIC OS · v3.0</title>
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@latest/400.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@latest/500.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/space-grotesk@latest/700.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@latest/400.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@latest/500.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@latest/600.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/inter@latest/700.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/400.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@latest/500.css" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090D; --surf:#10141B; --surf2:#171C26; --surf3:#1E2531;
+  --border:#232A38; --border2:#2E3849;
+  --txt:#F2F5FA; --dim:#8B93A7; --dim2:#5C6577;
+  --teal:#00D4AA; --orange:#FF6B35; --purple:#7C5CFC; --amber:#FFB800;
+  --red:#FF5470; --green:#2EE59D; --blue:#4CC9F0;
+  --glass:rgba(255,255,255,.038); --glassb:rgba(255,255,255,.09);
+  --r:18px; --r2:24px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Inter',system-ui,sans-serif;background:radial-gradient(1200px 600px at 20% -10%,rgba(0,212,170,.10),transparent 60%),radial-gradient(1000px 600px at 90% 110%,rgba(124,92,252,.10),transparent 60%),#04060A;color:var(--txt);display:flex;align-items:center;justify-content:center;min-height:100dvh;overflow:hidden}
+.mono{font-family:'JetBrains Mono',monospace}.disp{font-family:'Space Grotesk',sans-serif}
+.ic{flex-shrink:0;vertical-align:-3px}
+#phone{width:393px;height:852px;max-height:100dvh;background:var(--bg);border-radius:52px;border:9px solid #141922;box-shadow:0 50px 120px -30px rgba(0,0,0,.85),0 0 0 1px #000 inset,0 0 80px -20px rgba(0,212,170,.18);position:relative;overflow:hidden;display:flex;flex-direction:column;transition:filter .3s}
+#phone.dim{filter:brightness(.78) contrast(.92) saturate(.85)}
+@media(max-width:480px){body{background:var(--bg)}#phone{width:100vw;height:100dvh;max-height:100dvh;border-radius:0;border:none;box-shadow:none}}
+.notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:118px;height:30px;background:#000;border-radius:0 0 18px 18px;z-index:60}
+.statusbar{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 8px;font-size:14px;font-weight:600;flex-shrink:0;position:relative;z-index:40}
+.statusbar .right{display:flex;gap:7px;align-items:center}
+.demo-badge{font-family:'JetBrains Mono';font-size:9px;font-weight:500;background:rgba(255,184,0,.15);color:var(--amber);padding:2px 6px;border-radius:6px;border:1px solid rgba(255,184,0,.3)}
+.sb-icon{width:16px;height:11px;display:inline-block}
+.screens{flex:1;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:6px 18px 24px;opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .35s,transform .35s;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{opacity:1;pointer-events:auto;transform:none}
+.tabbar{height:72px;flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-around;padding:8px 2px 0;background:linear-gradient(180deg,rgba(7,9,13,0),var(--bg) 30%);border-top:1px solid var(--border);position:relative;z-index:40;backdrop-filter:blur(20px)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;color:var(--dim2);font-size:8.5px;font-weight:600;cursor:pointer;padding:5px 3px;border-radius:12px;transition:.2s;font-family:inherit;min-width:54px}
+.tab .ic{width:20px;height:20px}
+.tab.active{color:var(--teal)}
+.tab.active .ic{filter:drop-shadow(0 0 8px rgba(0,212,170,.5))}
+.glass{background:var(--glass);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);border:1px solid var(--glassb);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 10px 30px -16px rgba(0,0,0,.6)}
+.apphead{display:flex;align-items:center;justify-content:space-between;padding:8px 2px 12px}
+.logo{display:flex;align-items:center;gap:9px}
+.logo-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--teal),var(--purple));display:grid;place-items:center;box-shadow:0 4px 14px -4px rgba(0,212,170,.6);color:#042019}
+.logo-txt{font-family:'Space Grotesk';font-weight:700;font-size:15px;letter-spacing:.5px}
+.logo-txt span{color:var(--teal)}
+.logo-sub{font-size:8px;color:var(--dim2);letter-spacing:2px;font-weight:600;text-transform:uppercase;margin-top:-2px}
+.avatar{width:38px;height:38px;border-radius:50%;border:2px solid var(--border2);object-fit:cover;background:var(--surf2)}
+.v2chip{display:inline-flex;align-items:center;gap:7px;background:linear-gradient(135deg,rgba(124,92,252,.2),rgba(0,212,170,.15));border:1px solid rgba(124,92,252,.4);border-radius:30px;padding:5px 12px;font-size:9.5px;font-weight:700;color:#CFC4FF;font-family:'JetBrains Mono';margin-bottom:12px}
+.v2chip b{color:var(--teal)}.v2chip .ic{width:12px;height:12px}
+.greet{border-radius:var(--r2);padding:15px;display:flex;gap:12px;align-items:flex-start;position:relative;overflow:hidden;margin-bottom:14px}
+.greet::after{content:"";position:absolute;right:-30px;top:-30px;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,170,.12),transparent 70%)}
+.greet .avatar{width:42px;height:42px;flex-shrink:0;border-color:var(--teal)}
+.greet-body{flex:1;min-width:0}
+.greet-meta{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.agent-tag{font-family:'JetBrains Mono';font-size:8.5px;color:var(--teal);background:rgba(0,212,170,.1);padding:2px 7px;border-radius:6px;border:1px solid rgba(0,212,170,.2)}
+.greet-text{font-size:14.5px;line-height:1.45;font-weight:500}
+.greet-text b{color:var(--teal);font-weight:700}
+.sect{display:flex;align-items:center;justify-content:space-between;margin:16px 2px 9px}
+.sect h2{font-family:'Space Grotesk';font-size:12.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--dim);display:flex;align-items:center;gap:7px}
+.sect h2 .ic{width:14px;height:14px;color:var(--dim2)}
+.sect .hint{font-size:10px;color:var(--dim2);font-family:'JetBrains Mono'}
+.sdot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
+
+/* save banner */
+.save-banner{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(76,201,240,.12),var(--glass));border:1px solid rgba(76,201,240,.35);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;cursor:pointer;transition:.15s}
+.save-banner:active{transform:scale(.98)}
+.save-banner .sb-i{width:38px;height:38px;border-radius:12px;background:rgba(76,201,240,.15);display:grid;place-items:center;color:var(--blue);flex-shrink:0}
+.save-banner .sb-b{flex:1;min-width:0}
+.save-banner .sb-t{font-family:'Space Grotesk';font-weight:700;font-size:13px}
+.save-banner .sb-s{font-size:10px;color:var(--dim);margin-top:2px;font-family:'JetBrains Mono'}
+.save-banner .sb-go{color:var(--blue)}
+
+/* fatigue banner */
+.fat-banner{display:flex;align-items:center;gap:11px;background:linear-gradient(135deg,rgba(255,84,112,.1),var(--glass));border:1px solid rgba(255,84,112,.3);border-radius:14px;padding:11px 13px;margin-bottom:14px}
+.fat-banner .fi{color:var(--red);flex-shrink:0}
+.fat-banner .ft{flex:1;font-size:11.5px;line-height:1.4}
+.fat-banner .ft b{color:var(--red)}
+.fat-banner button{background:var(--red);color:#fff;border:none;border-radius:10px;padding:8px 11px;font-family:'Space Grotesk';font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap}
+
+.readiness{display:flex;gap:12px;align-items:center;border-radius:var(--r2);padding:14px;margin-bottom:14px}
+.rd-ring{position:relative;width:86px;height:86px;flex-shrink:0}
+.rd-ring svg{transform:rotate(-90deg)}
+.rd-num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.rd-num .v{font-family:'Space Grotesk';font-size:26px;font-weight:700;line-height:1}
+.rd-num .l{font-size:7.5px;color:var(--dim2);letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.rd-body{flex:1;min-width:0}
+.rd-title{font-size:12px;font-weight:700;display:flex;align-items:center;gap:7px}
+.rd-title .ic{width:14px;height:14px;color:var(--blue)}
+.rd-factors{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.rd-f{font-family:'JetBrains Mono';font-size:9px;color:var(--dim);background:rgba(255,255,255,.04);border:1px solid var(--border);padding:3px 7px;border-radius:6px}
+.rd-f b{color:var(--txt)}
+.rd-med{margin-top:8px;font-size:10.5px;padding:6px 9px;border-radius:9px;display:flex;align-items:center;gap:8px}
+.rd-med .ic{width:13px;height:13px}
+.rd-med.peak{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);color:var(--teal)}
+.rd-med.wait{background:rgba(255,184,0,.08);border:1px solid rgba(255,184,0,.25);color:var(--amber)}
+.rd-med.off{background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--dim2)}
+.parallel{display:flex;align-items:center;gap:9px;background:rgba(76,201,240,.07);border:1px solid rgba(76,201,240,.25);border-radius:14px;padding:10px 13px;margin-bottom:14px;font-size:12px}
+.parallel .ic{width:15px;height:15px;color:var(--blue)}
+.parallel b{color:var(--blue);font-family:'Space Grotesk';font-size:14px}
+.parallel .ps{color:var(--dim);font-size:10px;margin-left:auto}
+.pd{width:7px;height:7px;border-radius:50%;background:var(--blue);box-shadow:0 0 10px var(--blue);animation:pulse 1.6s infinite}
+.energy-row{display:flex;gap:8px}
+.energy-btn{flex:1;background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:10px 4px;text-align:center;cursor:pointer;transition:.18s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.energy-btn .el{font-size:9px;color:var(--dim2);font-weight:600}
+.energy-btn.sel{border-color:var(--teal);background:rgba(0,212,170,.08);transform:translateY(-2px)}
+.energy-btn.sel .el{color:var(--teal)}
+.energy-btn.auto{opacity:.55}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--glass);border:1px solid var(--glassb);border-radius:30px;padding:8px 15px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.18s;color:var(--dim);display:inline-flex;align-items:center;gap:7px}
+.chip .ic{width:13px;height:13px}
+.chip.sel{background:var(--txt);color:#000;border-color:var(--txt)}
+.slider-row{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:11px 14px}
+.slider-row label{font-size:11.5px;font-weight:600;color:var(--dim);white-space:nowrap;display:flex;align-items:center;gap:7px}
+.slider-row label .ic{width:15px;height:15px;color:var(--dim)}
+.slider-row input[type=range]{flex:1;accent-color:var(--teal)}
+.slider-row .sv{font-family:'Space Grotesk';font-weight:700;font-size:14px;min-width:38px;text-align:right}
+.btn{width:100%;border:none;border-radius:16px;padding:15px;font-family:'Space Grotesk';font-weight:700;font-size:14.5px;cursor:pointer;transition:.15s;letter-spacing:.3px;display:flex;align-items:center;justify-content:center;gap:9px}
+.btn:active{transform:scale(.97)}
+.btn .ic{width:17px;height:17px}
+.btn-primary{background:linear-gradient(135deg,var(--teal),#00a98a);color:#042019;box-shadow:0 10px 30px -10px rgba(0,212,170,.6)}
+.btn-ghost{background:var(--surf2);color:var(--txt);border:1px solid var(--border2)}
+.btn-danger{background:rgba(255,84,112,.12);color:var(--red);border:1px solid rgba(255,84,112,.3)}
+.linkbtn{background:none;border:none;color:var(--dim2);font-size:11px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit;padding:6px}
+.fuel-card{border-radius:var(--r);padding:13px 14px;margin-bottom:14px}
+.fuel-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;margin-bottom:10px}
+.fuel-head .ic{width:15px;height:15px;color:var(--blue)}
+.fuel-head b{margin-left:auto;font-family:'Space Grotesk';font-size:14px;color:var(--blue)}
+.water-row{display:flex;gap:6px;margin-bottom:12px}
+.water-cell{flex:1;height:34px;border-radius:9px;background:rgba(255,255,255,.04);border:1px solid var(--border);display:grid;place-items:center;cursor:pointer;color:var(--dim2);transition:.15s}
+.water-cell .ic{width:14px;height:14px}
+.water-cell.on{background:rgba(76,201,240,.15);border-color:rgba(76,201,240,.4);color:var(--blue)}
+.tdee-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--dim);margin-bottom:8px;font-family:'JetBrains Mono'}
+.tdee-row b{color:var(--txt);font-family:'Space Grotesk';font-size:13px}
+.macro{margin-bottom:7px}.macro:last-child{margin-bottom:0}
+.macro-top{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-bottom:4px;font-family:'JetBrains Mono'}
+.macro-bar{height:5px;background:rgba(255,255,255,.06);border-radius:5px;overflow:hidden}
+.macro-fill{height:100%;border-radius:5px;transition:width .6s}
+.snack-card{display:flex;align-items:center;gap:12px;background:linear-gradient(135deg,rgba(255,184,0,.1),var(--glass));border:1px solid rgba(255,184,0,.3);border-radius:var(--r);padding:13px 14px;margin-bottom:14px}
+.snack-ico{width:38px;height:38px;border-radius:12px;background:rgba(255,184,0,.15);display:grid;place-items:center;color:var(--amber);flex-shrink:0}
+.snack-card .sb{flex:1}
+.snack-card .st{font-family:'Space Grotesk';font-weight:700;font-size:13.5px}
+.snack-card .ss{font-size:10.5px;color:var(--dim);margin-top:2px}
+.snack-card button{background:var(--amber);color:#241a00;border:none;border-radius:12px;padding:9px 14px;font-family:'Space Grotesk';font-weight:700;font-size:12px;cursor:pointer}
+.plan-hero{border-radius:var(--r2);padding:17px;position:relative;overflow:hidden}
+.plan-hero .ph-bg{position:absolute;inset:0;opacity:.16;background:linear-gradient(135deg,var(--trackc),transparent 70%)}
+.plan-hero .ph-track{font-family:'JetBrains Mono';font-size:10px;letter-spacing:1.5px;text-transform:uppercase;position:relative;display:flex;align-items:center;gap:7px}
+.plan-hero .ph-track .ic{width:13px;height:13px}
+.plan-hero .ph-title{font-family:'Space Grotesk';font-size:25px;font-weight:700;line-height:1.05;margin:6px 0 12px;position:relative}
+.plan-stats{display:flex;gap:18px;position:relative}
+.plan-stat .v{font-family:'Space Grotesk';font-size:19px;font-weight:700}
+.plan-stat .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:1px}
+.dopa{margin-top:13px;position:relative}
+.dopa-bar{height:6px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden}
+.dopa-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--trackc),#fff);transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.dopa-lab{display:flex;justify-content:space-between;font-size:9px;color:var(--dim);margin-top:5px;font-family:'JetBrains Mono'}
+.blocks{margin-top:14px;display:flex;flex-direction:column}
+.block{background:var(--glass);backdrop-filter:blur(18px);border:1px solid var(--glassb);border-radius:var(--r);padding:13px 13px 13px 16px;position:relative;margin-top:-6px;box-shadow:0 -6px 16px -8px rgba(0,0,0,.6);overflow:hidden}
+.block:first-child{margin-top:0}
+.block::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bc)}
+.block-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer}
+.block-head .bl{display:flex;align-items:center;gap:9px}
+.block-head .bl .ic{width:15px;height:15px;color:var(--bc)}
+.block-type{font-family:'Space Grotesk';font-weight:700;font-size:13px}
+.block-time{font-family:'JetBrains Mono';font-size:11px;color:var(--dim);background:rgba(255,255,255,.05);padding:2px 8px;border-radius:6px}
+.roulette{background:none;border:1px solid var(--border2);border-radius:9px;width:28px;height:28px;display:grid;place-items:center;cursor:pointer;color:var(--dim);transition:.2s}
+.roulette .ic{width:14px;height:14px}
+.roulette:hover{border-color:var(--amber);color:var(--amber);transform:rotate(20deg)}
+.roulette.spin{animation:spin .5s}
+@keyframes spin{to{transform:rotate(360deg)}}
+.block-exs{max-height:0;overflow:hidden;transition:max-height .35s}
+.block.open .block-exs{max-height:420px}
+.block .block-chev{color:var(--dim2);transition:.25s}
+.block.open .block-chev{transform:rotate(180deg)}
+.ex-row{display:flex;align-items:center;gap:11px;padding:10px 0 2px;border-top:1px solid var(--border);margin-top:8px}
+.ex-row:first-child{border-top:none;margin-top:10px}
+.muscle-badge{width:38px;height:34px;border-radius:10px;background:rgba(255,255,255,.05);display:grid;place-items:center;flex-shrink:0;border:1px solid var(--border);font-family:'JetBrains Mono';font-size:8.5px;font-weight:600;letter-spacing:.5px;color:var(--dim)}
+.ex-info{flex:1;min-width:0}
+.ex-name{font-size:13.5px;font-weight:600}
+.ex-meta{font-size:10.5px;color:var(--dim);font-family:'JetBrains Mono';margin-top:2px}
+.ex-tags{display:flex;gap:4px}
+.ex-tag{font-size:8px;color:var(--dim2);background:rgba(255,255,255,.05);padding:2px 6px;border-radius:5px;text-transform:uppercase;letter-spacing:.5px}
+.wo-top{display:flex;align-items:center;justify-content:space-between;padding:4px 2px 10px}
+.wo-block-pill{font-family:'Space Grotesk';font-weight:700;font-size:13px;padding:6px 13px;border-radius:30px;border:1px solid var(--border2);background:var(--glass);display:flex;align-items:center;gap:7px}
+.wo-block-pill .ic{width:13px;height:13px}
+.wo-prog{font-family:'JetBrains Mono';font-size:11px;color:var(--dim)}
+.wo-close{background:var(--surf2);border:1px solid var(--border);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--dim)}
+.wo-close .ic{width:15px;height:15px}
+.wo-stage{display:flex;flex-direction:column;align-items:center;text-align:center;padding:4px 0}
+.wo-track-name{font-family:'JetBrains Mono';font-size:10px;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.wo-track-name .ic{width:12px;height:12px}
+.ring-wrap{position:relative;width:210px;height:210px;margin-bottom:12px}
+.ring-wrap svg{transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--surf2);stroke-width:10}
+.ring-fg{fill:none;stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .25s linear}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-time{font-family:'Space Grotesk';font-size:46px;font-weight:700;line-height:1}
+.ring-phase{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:2px;margin-top:6px;font-family:'JetBrains Mono'}
+.wo-ex-name{font-family:'Space Grotesk';font-size:22px;font-weight:700;line-height:1.1;max-width:280px}
+.wo-ex-sub{font-size:12px;color:var(--dim);margin-top:6px;font-family:'JetBrains Mono'}
+.wo-sets{display:flex;gap:7px;margin-top:12px}
+.wo-dot{width:13px;height:13px;border-radius:50%;background:var(--surf3);border:1.5px solid var(--border2);transition:.2s}
+.wo-dot.done{background:var(--teal);border-color:var(--teal)}
+.wo-dot.cur{border-color:var(--teal);box-shadow:0 0 0 4px rgba(0,212,170,.18)}
+.bpm-row{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:13px;background:var(--glass);border:1px solid var(--glassb);border-radius:30px;padding:7px 14px;width:fit-content}
+.bpm-dot{width:12px;height:12px;border-radius:50%;background:var(--purple);animation:bpmPulse var(--bpmdur,.43s) ease-in-out infinite}
+@keyframes bpmPulse{0%,100%{transform:scale(.6);opacity:.5}50%{transform:scale(1.3);opacity:1}}
+.bpm-lab{font-family:'JetBrains Mono';font-size:11px;color:var(--dim);display:flex;align-items:center;gap:6px}
+.bpm-lab .ic{width:12px;height:12px}
+.bpm-lab b{color:var(--txt)}
+.stations{display:flex;gap:6px}
+.station{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:600;color:var(--dim);cursor:pointer}
+.station.sel{border-color:var(--purple);color:var(--purple);background:rgba(124,92,252,.1)}
+.wo-actions{padding:14px 0 8px;display:flex;flex-direction:column;gap:9px}
+.wo-actions .row2{display:flex;gap:9px}
+.wo-actions .row2 .btn{flex:1;padding:12px 6px;font-size:12px}
+.wo-actions .row3{display:flex;gap:8px}
+.wo-actions .row3 .btn{flex:1;padding:11px 4px;font-size:11px}
+.mic-btn{width:50px;height:50px;border-radius:50%;background:var(--surf2);border:1px solid var(--border2);display:grid;place-items:center;cursor:pointer;color:var(--dim);flex-shrink:0;transition:.2s}
+.mic-btn.listening{border-color:var(--red);color:var(--red);animation:pulse 1s infinite}
+.mic-btn .ic{width:19px;height:19px}
+.voice-row{display:flex;gap:9px;align-items:center}
+.voice-row .btn{flex:1}
+.voice-hint{font-size:10px;color:var(--dim2);text-align:center;font-family:'JetBrains Mono';margin-top:-4px}
+/* partner card */
+.partner-card{display:flex;align-items:center;gap:11px;background:linear-gradient(135deg,rgba(124,92,252,.12),var(--glass));border:1px solid rgba(124,92,252,.35);border-radius:14px;padding:11px 13px;margin:0 0 12px}
+.partner-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;color:#fff;flex-shrink:0;font-size:14px;position:relative}
+.partner-av::after{content:"";position:absolute;bottom:-1px;right:-1px;width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid var(--surf);box-shadow:0 0 8px var(--green)}
+.partner-b{flex:1;min-width:0}
+.partner-t{font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.partner-t .ic{width:12px;height:12px;color:var(--purple)}
+.partner-bar{height:5px;background:rgba(255,255,255,.07);border-radius:5px;overflow:hidden;margin-top:6px}
+.partner-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--blue));border-radius:5px;transition:width .8s}
+.partner-s{font-size:9px;color:var(--dim);margin-top:3px;font-family:'JetBrains Mono'}
+.toast{position:absolute;top:54px;left:14px;right:14px;background:rgba(23,28,38,.92);backdrop-filter:blur(20px);border:1px solid var(--border2);border-radius:16px;padding:12px;display:flex;gap:11px;align-items:center;z-index:70;box-shadow:0 20px 50px -15px rgba(0,0,0,.8);transform:translateY(-140%);opacity:0;transition:transform .4s cubic-bezier(.2,.9,.25,1),opacity .4s}
+.toast.show{transform:none;opacity:1}
+.toast .avatar{width:34px;height:34px;flex-shrink:0}
+.toast-body{flex:1}
+.toast-tag{font-family:'JetBrains Mono';font-size:8px;color:var(--purple);letter-spacing:.5px}
+.toast-text{font-size:12.5px;font-weight:500;line-height:1.35;margin-top:2px}
+.toast .toast-act{background:var(--purple);color:#fff;border:none;border-radius:10px;padding:7px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Space Grotesk';white-space:nowrap}
+.quest-hero{border-radius:var(--r2);overflow:hidden;border:1px solid var(--border2);position:relative;background:radial-gradient(120% 100% at 50% 0%,#2a1140,#0c0716)}
+.quest-emblem{width:100%;height:150px;object-fit:cover;display:block;mask-image:linear-gradient(180deg,#000 60%,transparent)}
+.quest-info{padding:0 18px 16px;margin-top:-26px;position:relative;text-align:center}
+.quest-theme{font-family:'Space Grotesk';font-size:22px;font-weight:700}
+.quest-res{font-size:10px;color:var(--amber);font-family:'JetBrains Mono';letter-spacing:1px;text-transform:uppercase;margin-top:2px}
+.quest-points{font-family:'Space Grotesk';font-size:48px;font-weight:700;margin:8px 0 2px;background:linear-gradient(135deg,#fff,var(--amber));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.quest-pts-lab{font-size:9px;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+.quest-lvl{margin-top:14px;text-align:left}
+.quest-lvl-top{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:6px;font-family:'JetBrains Mono'}
+.quest-lvl-bar{height:9px;background:rgba(255,255,255,.07);border-radius:9px;overflow:hidden}
+.quest-lvl-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--red));border-radius:9px;transition:width .8s}
+.streak-card{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--glassb);border-radius:var(--r);padding:13px 14px;margin-bottom:14px}
+.streak-ico{width:40px;height:40px;border-radius:12px;background:rgba(255,107,53,.12);display:grid;place-items:center;color:var(--orange);flex-shrink:0}
+.streak-card .sc-b{flex:1}
+.streak-card .sc-t{font-family:'Space Grotesk';font-weight:700;font-size:14px}
+.streak-card .sc-s{font-size:10px;color:var(--dim);margin-top:2px}
+.freeze-chip{background:rgba(76,201,240,.1);border:1px solid rgba(76,201,240,.3);color:var(--blue);border-radius:10px;padding:6px 10px;font-size:11px;font-weight:700;font-family:'JetBrains Mono';display:flex;align-items:center;gap:5px}
+.freeze-chip .ic{width:11px;height:11px}
+/* boss card */
+.boss-card{border-radius:var(--r2);overflow:hidden;border:1px solid var(--border2);position:relative;margin-bottom:14px}
+.boss-img{width:100%;height:130px;object-fit:cover;display:block;mask-image:linear-gradient(180deg,#000 55%,transparent)}
+.boss-body{padding:0 15px 15px;margin-top:-22px;position:relative}
+.boss-tag{font-family:'JetBrains Mono';font-size:9px;letter-spacing:1.5px;color:var(--red);text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.boss-tag .ic{width:12px;height:12px}
+.boss-name{font-family:'Space Grotesk';font-size:20px;font-weight:700;margin:3px 0 9px}
+.boss-hp-top{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-bottom:5px;font-family:'JetBrains Mono'}
+.boss-hp-bar{height:11px;background:rgba(255,255,255,.07);border-radius:11px;overflow:hidden;border:1px solid var(--border)}
+.boss-hp-fill{height:100%;background:linear-gradient(90deg,var(--red),var(--orange));border-radius:11px;transition:width .5s;position:relative}
+.boss-hp-fill::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shine 2s infinite}
+@keyframes shine{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.boss-note{font-size:10.5px;color:var(--dim);margin-top:8px;display:flex;align-items:center;gap:7px}
+.boss-note .ic{width:12px;height:12px;color:var(--amber)}
+.boss-done{background:rgba(0,212,170,.1);border:1px solid rgba(0,212,170,.3);border-radius:var(--r);padding:13px 14px;margin-bottom:14px;display:flex;align-items:center;gap:11px}
+.boss-done .ic{width:22px;height:22px;color:var(--teal)}
+.boss-done .bd-t{font-family:'Space Grotesk';font-weight:700;font-size:13px}
+.boss-done .bd-s{font-size:10px;color:var(--dim);margin-top:2px}
+/* skill tree */
+.skill-branch{background:var(--glass);border:1px solid var(--glassb);border-radius:var(--r);padding:12px 13px;margin-bottom:9px}
+.sb-head{display:flex;align-items:center;gap:8px;margin-bottom:11px}
+.sb-head .ic{width:15px;height:15px}
+.sb-head .sb-n{font-family:'Space Grotesk';font-weight:700;font-size:12.5px}
+.sb-head .sb-xp{margin-left:auto;font-family:'JetBrains Mono';font-size:9.5px;color:var(--dim)}
+.skill-chain{display:flex;align-items:center;gap:0;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.skill-chain::-webkit-scrollbar{display:none}
+.skill-node{display:flex;flex-direction:column;align-items:center;gap:5px;flex-shrink:0;width:62px}
+.sn-circle{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--border2);background:var(--surf3);color:var(--dim2);transition:.2s}
+.sn-circle .ic{width:18px;height:18px}
+.skill-node.unlocked .sn-circle{border-color:var(--nc);background:color-mix(in srgb,var(--nc) 18%,var(--surf));color:var(--nc)}
+.skill-node.next .sn-circle{border-color:var(--nc);color:var(--nc);animation:pulse 1.4s infinite}
+.skill-node .sn-name{font-size:8.5px;color:var(--dim);text-align:center;line-height:1.2;font-family:'JetBrains Mono'}
+.skill-node.unlocked .sn-name{color:var(--txt)}
+.skill-node .sn-cost{font-size:8px;color:var(--amber);font-family:'JetBrains Mono'}
+.skill-line{width:14px;height:2px;background:var(--border2);flex-shrink:0;margin-top:-18px}
+.skill-line.on{background:var(--nc)}
+/* reward vault */
+.vault-item{display:flex;align-items:center;gap:12px;background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px 13px;margin-bottom:8px}
+.vault-ico{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex-shrink:0;background:rgba(255,255,255,.05);color:var(--dim2)}
+.vault-ico .ic{width:18px;height:18px}
+.vault-item.open .vault-ico{background:rgba(255,184,0,.15);color:var(--amber)}
+.vault-b{flex:1;min-width:0}
+.vault-t{font-size:13px;font-weight:600}
+.vault-s{font-size:10px;color:var(--dim);margin-top:2px;font-family:'JetBrains Mono'}
+.vault-act{flex-shrink:0}
+.vault-lock{color:var(--dim2);display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono';font-size:10px}
+.vault-lock .ic{width:12px;height:12px}
+.vault-claim{background:var(--amber);color:#241a00;border:none;border-radius:10px;padding:8px 13px;font-family:'Space Grotesk';font-weight:700;font-size:11px;cursor:pointer}
+.vault-claimed{color:var(--green);display:flex;align-items:center;gap:4px;font-family:'JetBrains Mono';font-size:10px}
+.vault-claimed .ic{width:12px;height:12px}
+.heatmap{background:var(--glass);border:1px solid var(--glassb);border-radius:var(--r);padding:13px}
+.hm-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px}
+.hm-cell{aspect-ratio:1;border-radius:3px;background:var(--surf3)}
+.hm-cell.l1{background:#0e4f3f}.hm-cell.l2{background:#0f7a5c}.hm-cell.l3{background:var(--teal)}
+.hm-legend{display:flex;align-items:center;gap:5px;margin-top:9px;font-size:9px;color:var(--dim2);font-family:'JetBrains Mono'}
+.hm-legend .hm-cell{width:10px;height:10px;aspect-ratio:auto}
+.pr-card{background:var(--glass);border:1px solid var(--glassb);border-radius:var(--r);padding:13px}
+.pr-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.pr-head .pl{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--dim)}
+.pr-head .pl .ic{width:13px;height:13px;color:var(--green)}
+.pr-head .pv{font-family:'JetBrains Mono';font-size:10px;color:var(--green)}
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.theme-card{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px;cursor:pointer;transition:.18s;text-align:left}
+.theme-card.sel{border-color:var(--purple);background:rgba(124,92,252,.08)}
+.theme-card .tn{font-weight:600;font-size:13px}
+.theme-card .tr{font-size:10px;color:var(--dim);font-family:'JetBrains Mono';margin-top:3px}
+.quest-log{margin-top:4px}
+.ql-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+.ql-row:last-child{border-bottom:none}
+.ql-row .ql-l{color:var(--dim)}
+.ql-row .ql-v{font-family:'Space Grotesk';font-weight:700;color:var(--amber)}
+/* dopamine menu */
+.dopa-cat{margin-bottom:16px}
+.dopa-cat-head{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.dopa-cat-head .ic{width:15px;height:15px}
+.dopa-cat-head .dc-n{font-family:'Space Grotesk';font-weight:700;font-size:12.5px}
+.dopa-cat-head .dc-t{margin-left:auto;font-family:'JetBrains Mono';font-size:9.5px;color:var(--dim)}
+.dopa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dopa-item{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:11px;cursor:pointer;transition:.15s;text-align:left;position:relative;overflow:hidden}
+.dopa-item:active{transform:scale(.96)}
+.dopa-item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--dc)}
+.dopa-item .di-top{display:flex;align-items:center;gap:8px}
+.dopa-item .di-ico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--dc) 16%,transparent);color:var(--dc);flex-shrink:0}
+.dopa-item .di-ico .ic{width:15px;height:15px}
+.dopa-item .di-n{font-size:12.5px;font-weight:600;flex:1}
+.dopa-item .di-sub{font-size:9.5px;color:var(--dim);margin-top:5px;font-family:'JetBrains Mono'}
+.dopa-item .di-dopa{position:absolute;top:9px;right:10px;font-family:'JetBrains Mono';font-size:9px;color:var(--dc)}
+/* habit stack */
+.habit-item{display:flex;align-items:center;gap:11px;background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:11px 13px;margin-bottom:8px}
+.habit-ico{width:34px;height:34px;border-radius:10px;background:rgba(0,212,170,.1);display:grid;place-items:center;color:var(--teal);flex-shrink:0}
+.habit-ico .ic{width:16px;height:16px}
+.habit-b{flex:1;min-width:0}
+.habit-anchor{font-size:10px;color:var(--dim);font-family:'JetBrains Mono'}
+.habit-action{font-size:12.5px;font-weight:600;margin-top:1px}
+.habit-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);display:grid;place-items:center;cursor:pointer;color:transparent;flex-shrink:0;transition:.18s}
+.habit-check .ic{width:13px;height:13px}
+.habit-item.done .habit-check{background:var(--teal);border-color:var(--teal);color:#042019}
+.habit-item.done .habit-action{text-decoration:line-through;color:var(--dim)}
+/* weekly review */
+.review-card{border-radius:var(--r2);padding:16px;background:linear-gradient(135deg,rgba(124,92,252,.1),var(--glass));border:1px solid rgba(124,92,252,.3)}
+.review-head{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.review-head .ic{width:16px;height:16px;color:var(--purple)}
+.review-head .rh-t{font-family:'Space Grotesk';font-weight:700;font-size:13px}
+.review-head .rh-s{margin-left:auto;font-family:'JetBrains Mono';font-size:9px;color:var(--dim)}
+.review-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.rs{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:12px;padding:9px;text-align:center}
+.rs .v{font-family:'Space Grotesk';font-weight:700;font-size:18px}
+.rs .l{font-size:8.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.review-line{font-size:12.5px;line-height:1.5;color:var(--dim);font-style:italic;border-left:2px solid var(--purple);padding-left:11px}
+/* system */
+.sys-agents{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.agent-card{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px;position:relative;overflow:hidden}
+.agent-card .ac-top{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.ac-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);flex-shrink:0}
+.ac-dot.idle{background:var(--dim2);box-shadow:none}
+.ac-dot.busy{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.ac-name{font-family:'Space Grotesk';font-weight:700;font-size:12px}
+.ac-role{font-size:9px;color:var(--dim2);letter-spacing:.5px;text-transform:uppercase}
+.ac-state{font-size:10px;color:var(--dim);font-family:'JetBrains Mono';line-height:1.4;margin-top:2px}
+.stack{display:flex;flex-direction:column;gap:7px}
+.stack-layer{background:var(--glass);border:1px solid var(--glassb);border-left:3px solid var(--sc);border-radius:12px;padding:10px 13px;display:flex;flex-direction:column;gap:3px}
+.stack-layer .sl-n{font-family:'Space Grotesk';font-weight:700;font-size:12px;color:var(--sc);display:flex;align-items:center;gap:7px}
+.stack-layer .sl-n .ic{width:13px;height:13px}
+.stack-layer .sl-t{font-size:10px;color:var(--dim);font-family:'JetBrains Mono'}
+/* decision fatigue meter */
+.fat-meter{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px 14px;margin-top:9px}
+.fat-top{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.fat-top .ic{width:15px;height:15px}
+.fat-top .ft-n{font-size:12px;font-weight:700;flex:1}
+.fat-top .ft-v{font-family:'Space Grotesk';font-weight:700;font-size:13px}
+.fat-bar{height:7px;background:rgba(255,255,255,.06);border-radius:7px;overflow:hidden}
+.fat-fill{height:100%;border-radius:7px;transition:width .4s,background .4s}
+.fat-s{font-size:9.5px;color:var(--dim);margin-top:6px;font-family:'JetBrains Mono'}
+/* caffeine */
+.caf-card{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px 14px;margin-top:9px}
+.caf-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.caf-top .ic{width:15px;height:15px;color:var(--amber)}
+.caf-top .ct-n{font-size:12px;font-weight:700;flex:1}
+.caf-top .ct-v{font-family:'Space Grotesk';font-weight:700;font-size:13px;color:var(--amber)}
+.caf-btns{display:flex;gap:7px;margin-bottom:9px}
+.caf-btn{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:8px;font-size:11px;font-weight:600;cursor:pointer;color:var(--dim);display:flex;flex-direction:column;align-items:center;gap:2px}
+.caf-btn .ic{width:14px;height:14px}
+.caf-btn .cm{font-family:'JetBrains Mono';font-size:9px;color:var(--dim2)}
+.caf-warn{font-size:10px;padding:6px 9px;border-radius:9px;display:flex;align-items:center;gap:7px}
+.caf-warn .ic{width:12px;height:12px}
+.caf-warn.bad{background:rgba(255,84,112,.1);border:1px solid rgba(255,84,112,.3);color:var(--red)}
+.caf-warn.ok{background:rgba(0,212,170,.08);border:1px solid rgba(0,212,170,.25);color:var(--teal)}
+/* low-stim */
+.lowstim{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px 14px;margin-top:9px}
+.ls-top{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ls-top .ic{width:15px;height:15px;color:var(--purple)}
+.ls-top .lt-n{font-size:12px;font-weight:700;flex:1}
+.ls-top .lt-v{font-family:'JetBrains Mono';font-size:9.5px;color:var(--teal)}
+.ls-bars{display:flex;align-items:flex-end;gap:3px;height:54px}
+.ls-bar{flex:1;border-radius:3px 3px 0 0;background:var(--surf3);position:relative;min-height:4px;transition:.2s}
+.ls-bar.quiet{background:linear-gradient(180deg,var(--teal),#0f7a5c)}
+.ls-bar.mid{background:var(--amber)}
+.ls-bar.busy{background:var(--red)}
+.ls-labels{display:flex;gap:3px;margin-top:4px}
+.ls-labels span{flex:1;font-size:7px;color:var(--dim2);text-align:center;font-family:'JetBrains Mono'}
+.pipe{background:var(--glass);border:1px solid var(--glassb);border-radius:16px;margin-top:10px;overflow:hidden}
+.pipe-head{padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.pipe-head .ph-l{display:flex;align-items:center;gap:8px}
+.pipe-intent{font-family:'JetBrains Mono';font-size:11px;color:var(--teal)}
+.pipe-lat{font-family:'JetBrains Mono';font-size:10px;color:var(--dim);display:flex;align-items:center;gap:4px}
+.pipe-steps{padding:6px 14px 14px}
+.pipe-step{padding:11px 0;border-bottom:1px dashed var(--border)}
+.pipe-step:last-child{border-bottom:none}
+.ps-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.ps-num{width:20px;height:20px;border-radius:6px;background:var(--surf3);display:grid;place-items:center;font-family:'JetBrains Mono';font-size:10px;color:var(--dim);flex-shrink:0}
+.ps-title{font-size:11px;font-weight:600;flex:1}
+.ps-badge{font-family:'JetBrains Mono';font-size:8.5px;padding:2px 7px;border-radius:5px}
+.ps-badge.algo{background:rgba(0,212,170,.12);color:var(--teal)}
+.ps-badge.llm{background:rgba(124,92,252,.12);color:var(--purple)}
+.ps-badge.pass{background:rgba(46,229,157,.12);color:var(--green)}
+.ps-badge.fail{background:rgba(255,84,112,.12);color:var(--red)}
+.json-box{background:#0a0d13;border:1px solid var(--border);border-radius:10px;padding:10px 11px;font-family:'JetBrains Mono';font-size:10px;line-height:1.55;overflow-x:auto;white-space:pre;color:#c7d0e0}
+.json-box .jk{color:#7dd3fc}.json-box .js{color:#86efac}.json-box .jn{color:#fca5a5}
+.zod-list{display:flex;flex-direction:column;gap:5px}
+.zod-row{display:flex;align-items:center;gap:8px;font-size:10.5px;font-family:'JetBrains Mono'}
+.zod-row .zi{width:14px;height:14px;border-radius:4px;display:grid;place-items:center;flex-shrink:0}
+.zod-row .zi .ic{width:9px;height:9px}
+.zod-row.ok .zi{background:rgba(46,229,157,.15);color:var(--green)}
+.zod-row.no .zi{background:rgba(255,84,112,.15);color:var(--red)}
+.zod-row.no{color:var(--red)}.zod-row.ok{color:var(--dim)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:12px 14px;margin-top:9px;gap:12px}
+.toggle-row .tl{font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px}
+.toggle-row .tl .ic{width:15px;height:15px;color:var(--dim)}
+.toggle-row .ts{font-size:10px;color:var(--dim2);margin-top:2px}
+.switch{width:46px;height:27px;border-radius:20px;background:var(--surf3);border:1px solid var(--border2);position:relative;cursor:pointer;transition:.2s;flex-shrink:0}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:21px;height:21px;border-radius:50%;background:var(--dim);transition:.2s}
+.switch.on{background:rgba(0,212,170,.2);border-color:var(--teal)}
+.switch.on::after{left:21px;background:var(--teal)}
+.audit-box{background:linear-gradient(135deg,rgba(255,184,0,.08),var(--glass));border:1px solid rgba(255,184,0,.25);border-radius:14px;padding:12px 14px;margin-top:10px;display:flex;gap:11px;align-items:flex-start}
+.audit-box .ai{color:var(--amber);padding-top:1px}
+.audit-box .ai .ic{width:16px;height:16px}
+.audit-box .at{font-size:11.5px;line-height:1.45}
+.audit-box .at b{color:var(--amber)}
+select.sel-dark{background:var(--surf2);color:var(--txt);border:1px solid var(--border2);border-radius:10px;padding:7px 10px;font-family:'JetBrains Mono';font-size:11px;cursor:pointer}
+.rm-q{margin-bottom:18px}
+.rm-qhead{display:flex;align-items:center;gap:9px;margin-bottom:9px}
+.rm-qhead .qt{font-family:'Space Grotesk';font-weight:700;font-size:14px}
+.rm-status{font-family:'JetBrains Mono';font-size:8.5px;padding:3px 8px;border-radius:6px;letter-spacing:.5px;display:inline-flex;align-items:center;gap:5px}
+.rm-status .ic{width:10px;height:10px}
+.rm-status.done{background:rgba(0,212,170,.15);color:var(--teal);border:1px solid rgba(0,212,170,.3)}
+.rm-status.next{background:rgba(255,184,0,.12);color:var(--amber);border:1px solid rgba(255,184,0,.3)}
+.rm-status.vision{background:rgba(124,92,252,.12);color:#B9A6FF;border:1px solid rgba(124,92,252,.3)}
+.rm-item{display:flex;gap:11px;padding:9px 0;border-bottom:1px solid var(--border);font-size:12.5px;line-height:1.4;align-items:flex-start}
+.rm-item:last-child{border-bottom:none}
+.rm-item .ri{flex-shrink:0;width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:grid;place-items:center;color:var(--dim)}
+.rm-item .ri .ic{width:14px;height:14px}
+.rm-item.done .ri{background:rgba(0,212,170,.1);border-color:rgba(0,212,170,.3);color:var(--teal)}
+.rm-item .rn{font-weight:600}
+.rm-item .rd{font-size:10.5px;color:var(--dim);margin-top:2px}
+.rm-item:not(.done){opacity:.78}
+.overlay{position:absolute;inset:0;background:rgba(4,6,10,.88);backdrop-filter:blur(12px);z-index:90;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:auto}
+.ov-card{width:100%;max-width:330px;background:rgba(16,20,27,.95);backdrop-filter:blur(24px);border:1px solid var(--border2);border-radius:var(--r2);padding:24px 22px;text-align:center;box-shadow:0 40px 90px -30px rgba(0,0,0,.9)}
+.ov-ico{width:52px;height:52px;border-radius:16px;background:rgba(124,92,252,.12);display:grid;place-items:center;color:var(--purple);margin:0 auto 10px}
+.ov-ico .ic{width:24px;height:24px}
+.ov-ico.teal{background:rgba(0,212,170,.12);color:var(--teal)}
+.ov-ico.amber{background:rgba(255,184,0,.12);color:var(--amber)}
+.ov-ico.blue{background:rgba(76,201,240,.12);color:var(--blue)}
+.ov-ico.red{background:rgba(255,84,112,.12);color:var(--red)}
+.ov-tag{font-family:'JetBrains Mono';font-size:9px;letter-spacing:2px;color:var(--purple);text-transform:uppercase}
+.ov-title{font-family:'Space Grotesk';font-size:21px;font-weight:700;margin:8px 0 10px;line-height:1.15}
+.ov-text{font-size:13.5px;color:var(--dim);line-height:1.5;margin-bottom:16px}
+.ov-steps{display:flex;justify-content:center;gap:7px;margin-bottom:16px}
+.ov-step{width:30px;height:4px;border-radius:4px;background:var(--surf3)}
+.ov-step.on{background:var(--teal)}
+.launch-steps{display:flex;flex-direction:column;gap:9px;margin-bottom:14px;text-align:left}
+.launch-step{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;transition:.18s}
+.launch-step .ls-i{color:var(--dim);display:grid;place-items:center;width:22px}
+.launch-step .ls-i .ic{width:17px;height:17px}
+.launch-step .ls-t{flex:1;font-size:13px;font-weight:600}
+.launch-step .ls-c{width:24px;height:24px;border-radius:50%;border:2px solid var(--border2);display:grid;place-items:center;color:transparent;transition:.18s;flex-shrink:0}
+.launch-step .ls-c .ic{width:12px;height:12px}
+.launch-step.done{border-color:var(--teal);background:rgba(0,212,170,.07)}
+.launch-step.done .ls-i{color:var(--teal)}
+.launch-step.done .ls-c{background:var(--teal);border-color:var(--teal);color:#042019}
+.launch-progress{height:6px;background:var(--surf3);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.launch-progress div{height:100%;background:linear-gradient(90deg,var(--orange),var(--amber));border-radius:6px;transition:width .3s}
+.countdown-num{font-family:'Space Grotesk';font-size:120px;font-weight:700;background:linear-gradient(135deg,var(--teal),var(--purple));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:cdPop .9s ease infinite}
+@keyframes cdPop{0%{transform:scale(.5);opacity:0}30%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:.9}}
+.breath-wrap{display:flex;flex-direction:column;align-items:center}
+.breath-circle{width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(124,92,252,.35),rgba(124,92,252,.05));border:2px solid var(--purple);display:grid;place-items:center;animation:breathe 8s ease-in-out infinite;margin-bottom:18px}
+.breath-circle span{font-family:'Space Grotesk';font-size:17px;font-weight:700}
+@keyframes breathe{0%,100%{transform:scale(.7)}50%{transform:scale(1.1)}}
+.breath-time{font-family:'Space Grotesk';font-size:32px;font-weight:700}
+.breath-lab{font-size:11px;color:var(--dim);margin-top:4px;letter-spacing:1px}
+.snack-ring{position:relative;width:170px;height:170px;margin:0 auto 14px}
+.snack-ring svg{transform:rotate(-90deg)}
+.snack-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.snack-center .v{font-family:'Space Grotesk';font-size:38px;font-weight:700}
+.snack-center .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+.snack-exname{font-family:'Space Grotesk';font-weight:700;font-size:18px;margin-bottom:4px}
+.snack-prog{font-family:'JetBrains Mono';font-size:11px;color:var(--dim);margin-bottom:14px}
+.pose-box{background:#0a0d13;border:1px solid var(--border);border-radius:14px;padding:8px;margin-bottom:12px}
+.pose-svg{width:100%;height:auto;display:block}
+.cue-row{display:flex;align-items:center;gap:9px;font-size:11.5px;padding:7px 0;border-bottom:1px dashed var(--border);text-align:left;font-family:'JetBrains Mono'}
+.cue-row:last-child{border-bottom:none}
+.cue-row .ci{width:16px;height:16px;flex-shrink:0;display:grid;place-items:center}
+.cue-row .ci .ic{width:14px;height:14px}
+.cue-row.ok{color:var(--dim)}.cue-row.ok .ci{color:var(--green)}
+.cue-row.warn{color:var(--amber)}.cue-row.warn .ci{color:var(--amber)}
+.comp-pts{font-family:'Space Grotesk';font-size:42px;font-weight:700;color:var(--amber);margin:6px 0}
+.comp-stats{display:flex;justify-content:center;gap:22px;margin:12px 0 16px}
+.comp-stat .v{font-family:'Space Grotesk';font-weight:700;font-size:18px}
+.comp-stat .l{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:1px}
+.empty{color:var(--dim2);font-size:12px;text-align:center;padding:26px 10px;font-family:'JetBrains Mono'}
+@keyframes pop{0%{transform:scale(.9);opacity:0}100%{transform:scale(1);opacity:1}}
+.pop{animation:pop .3s ease}
+</style>
+</head>
+<body>
+<div id="phone">
+  <div class="notch"></div>
+  <div class="statusbar">
+    <span id="clock">9:41</span>
+    <div class="right">
+      <span class="demo-badge" id="demoBadge">DEMO ×4</span>
+      <svg class="sb-icon" viewBox="0 0 18 12" fill="currentColor"><path d="M1 8h2v3H1zM5 6h2v5H5zM9 3h2v8H9zM13 0h2v11h-2z"/></svg>
+      <svg class="sb-icon" viewBox="0 0 26 12" fill="none" stroke="currentColor"><rect x="1" y="1" width="21" height="10" rx="3" stroke-width="1"/><rect x="3" y="3" width="15" height="6" rx="1.5" fill="currentColor" stroke="none"/><rect x="23" y="4" width="2" height="4" rx="1" fill="currentColor" stroke="none"/></svg>
+    </div>
+  </div>
+  <div class="screens">
+    <div class="screen active" id="scr-home"></div>
+    <div class="screen" id="scr-workout"></div>
+    <div class="screen" id="scr-quest"></div>
+    <div class="screen" id="scr-dopa"></div>
+    <div class="screen" id="scr-system"></div>
+    <div class="screen" id="scr-roadmap"></div>
+    <div class="toast" id="toast">
+      <img class="avatar" id="toastAvatar" alt="coach">
+      <div class="toast-body"><div class="toast-tag" id="toastTag">BODY DOUBLE · AGENTE</div><div class="toast-text" id="toastText"></div></div>
+      <button class="toast-act" id="toastAct" style="display:none"></button>
+    </div>
+    <div class="overlay" id="ov-launch"><div class="ov-card"><div class="ov-ico amber" id="launchIco"></div><div class="ov-tag">Launch Sequence · inicio de tarea</div><div class="ov-title">Secuencia de despegue</div><div class="ov-text" style="margin-bottom:12px">4 pasos físicos. Sin pensar. Marca cada uno.</div><div class="launch-progress"><div id="launchFill" style="width:0%"></div></div><div class="launch-steps" id="launchSteps"></div><button class="btn btn-primary" id="launchGo" data-action="launch-go" disabled style="opacity:.4">Despegar</button><button class="linkbtn" data-action="launch-skip" style="margin-top:8px">omitir secuencia →</button></div></div>
+    <div class="overlay" id="ov-countdown"><div class="ov-tag" style="margin-bottom:10px">EMPEZANDO</div><div class="countdown-num" id="cdNum">3</div></div>
+    <div class="overlay" id="ov-snack"><div class="ov-card"><div class="ov-ico amber" id="snackIco"></div><div class="ov-tag">Movement Snack · 2 min</div><div class="snack-ring" style="margin-top:14px"><svg width="170" height="170" viewBox="0 0 170 170"><circle class="ring-bg" cx="85" cy="85" r="74"/><circle class="ring-fg" id="snackFg" cx="85" cy="85" r="74" stroke="var(--amber)" stroke-dasharray="465" stroke-dashoffset="0"/></svg><div class="snack-center"><div class="v" id="snackTime">40</div><div class="l">seg</div></div></div><div class="snack-exname" id="snackEx">—</div><div class="snack-prog" id="snackProg">1 / 3</div><button class="btn btn-ghost" data-action="snack-end">Terminar snack</button></div></div>
+    <div class="overlay" id="ov-bridge"><div class="ov-card"><div class="ov-ico teal" id="bridgeIco"></div><div class="ov-tag" id="bridgeTag">Dopamine Bridge</div><div class="ov-title" id="bridgeTitle">Cargando dopamina</div><div class="ov-text" id="bridgeText"></div><div class="snack-ring" style="margin:0 auto 14px;width:140px;height:140px"><svg width="140" height="140" viewBox="0 0 140 140"><circle class="ring-bg" cx="70" cy="70" r="60"/><circle class="ring-fg" id="bridgeFg" cx="70" cy="70" r="60" stroke="var(--teal)" stroke-dasharray="377" stroke-dashoffset="0"/></svg><div class="snack-center"><div class="v" id="bridgeTime" style="font-size:32px">30</div><div class="l">seg</div></div></div><button class="btn btn-primary" id="bridgeGo" data-action="bridge-go" disabled style="opacity:.4">Al workout →</button><button class="linkbtn" data-action="bridge-close" style="margin-top:8px">cerrar</button></div></div>
+    <div class="overlay" id="ov-shatter"><div class="ov-card"><div class="ov-ico blue" id="shatterIco"></div><div class="ov-tag">Task Paralysis Shatterer</div><div class="ov-title" id="shatterTitle">Paso 1 de 3</div><div class="ov-text" id="shatterText"></div><div class="ov-steps" id="shatterSteps"></div><button class="btn btn-primary" data-action="shatter-next" id="shatterBtn">Hecho</button></div></div>
+    <div class="overlay" id="ov-form"><div class="ov-card" style="max-width:340px"><div class="ov-ico blue" id="formIco"></div><div class="ov-tag">Form Check · visión on-device</div><div class="ov-title">Análisis de postura</div><div class="pose-box" id="poseBox"></div><div id="cueList" style="margin-bottom:14px"></div><div style="display:flex;gap:10px"><button class="btn btn-ghost" data-action="form-again">Re-analizar</button><button class="btn btn-primary" data-action="form-close">Listo</button></div></div></div>
+    <div class="overlay" id="ov-cleanser"><div class="breath-wrap"><div class="breath-circle"><span>respira</span></div><div class="breath-time" id="cleanserTime">90</div><div class="breath-lab">PALATE CLEANSER · 4-4-4</div><button class="linkbtn" data-action="cleanser-skip" style="margin-top:16px;color:var(--dim)">saltar pausa →</button></div></div>
+    <div class="overlay" id="ov-complete"><div class="ov-card"><div class="ov-ico teal" id="compIco"></div><div class="ov-tag" id="compTag">QUEST · ONE PIECE</div><div class="comp-pts" id="compPts">+0</div><div class="ov-text" id="compText" style="margin-bottom:6px"></div><div class="comp-stats"><div class="comp-stat"><div class="v" id="compTime">0</div><div class="l">min</div></div><div class="comp-stat"><div class="v" id="compEx">0</div><div class="l">ejercicios</div></div><div class="comp-stat"><div class="v" id="compSets">0</div><div class="l">sets</div></div></div><button class="btn btn-primary" data-action="finish">Cerrar app. Descansar.</button></div></div>
+  </div>
+  <div class="tabbar" id="tabbar"></div>
+</div>
+
+<script>
+/* ============================================================
+   NEUROFIT AGENTIC OS v3.0 — Executive Function OS
+   New: Dopamine Menu · Save Points · Boss Battle · Skill Tree ·
+   Reward Vault · Body Double · Caffeine×Meds · Decision Fatigue ·
+   Social Battery · Low-Stim Hours · Habit Stacking · Weekly Review
+   ============================================================ */
+const COACH_IMG="https://image.qwenlm.ai/public_source/4392f9bb-7563-4a87-a4ca-945f265547f0/1365424b8-f62e-4f7e-b7ad-bcd9cf8a9435.png";
+const QUEST_IMG="https://image.qwenlm.ai/public_source/4392f9bb-7563-4a87-a4ca-945f265547f0/139dcdb73-03e9-4186-85b9-b79dd96f3210.png";
+const BOSS_IMG="https://image.qwenlm.ai/public_source/4392f9bb-7563-4a87-a4ca-945f265547f0/1ffe24eca-50b0-4f7b-aba1-67b9c5f0cb07.png";
+
+const I={
+  home:'<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  dumbbell:'<path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/>',
+  trophy:'<path d="M8 21h8M12 17v4M7 4h10v6a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/>',
+  cpu:'<rect x="6" y="6" width="12" height="12" rx="2"/><rect x="10" y="10" width="4" height="4"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>',
+  route:'<circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.5 19H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/>',
+  zap:'<path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  moon:'<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/>',
+  moonStar:'<path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/><path d="M17.5 3.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  activity:'<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
+  pill:'<path d="M10.5 20.5a5 5 0 0 1-7-7l10-10a5 5 0 0 1 7 7z"/><path d="M8.5 8.5l7 7"/>',
+  rocket:'<path d="M4.5 16.5L3 21l4.5-1.5"/><path d="M12 15l-3-3a22 22 0 0 1 2-8 10 10 0 0 1 9 9 22 22 0 0 1-8 2z"/><path d="M9 12H5l2-3M12 15v4l3-2"/><circle cx="15" cy="9" r="1.5"/>',
+  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/>',
+  music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+  shield:'<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10z"/>',
+  shieldCheck:'<path d="M12 22s8-3.5 8-10V5l-8-3-8 3v7c0 6.5 8 10 8 10z"/><path d="M9 11.5l2 2 4-4"/>',
+  snowflake:'<path d="M12 2v20M3.5 7l17 10M3.5 17l17-10"/><path d="M12 6l-2-2M12 6l2-2M12 18l-2 2M12 18l2 2"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2.6-1.5-4C8 5.5 9 3 12 2c-.5 2 .5 3.5 2 5s3 3.5 3 6a5 5 0 0 1-10 0c0-1 .3-2 .8-2.8.3 1.3 1 2.3 1.7 2.8z"/>',
+  headphones:'<path d="M3 14v-2a9 9 0 0 1 18 0v2"/><rect x="3" y="14" width="4" height="7" rx="2"/><rect x="17" y="14" width="4" height="7" rx="2"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-2.6-6.4M21 3v6h-6"/>',
+  check:'<path d="M5 13l4 4L19 7"/>',
+  checkCircle:'<circle cx="12" cy="12" r="9"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>',
+  alert:'<circle cx="12" cy="12" r="9"/><path d="M12 8v4.5M12 16h.01"/>',
+  x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  chevronDown:'<path d="M6 9l6 6 6-6"/>',
+  play:'<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',
+  skipFwd:'<path d="M5 5v14l9-7zM19 5v14"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  timer:'<circle cx="12" cy="13" r="8"/><path d="M12 9.5v3.5l2.5 2.5M9 2h6"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  dice:'<rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor" stroke="none"/>',
+  sparkles:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9zM5 16l.7 1.6L7.3 18l-1.6.7L5 20.3 4.3 18.7 2.7 18l1.6-.7z"/>',
+  watch:'<circle cx="12" cy="12" r="6"/><path d="M12 9.5v2.5l1.8 1M9.7 6.3L9.2 2h5.6l-.5 4.3M9.7 17.7L9.2 22h5.6l-.5-4.3"/>',
+  camera:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h4l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>',
+  crown:'<path d="M3 7l4.5 4L12 4l4.5 7L21 7l-1.5 13h-15z"/>',
+  ghost:'<path d="M12 2a8 8 0 0 0-8 8v12l3-2.5L10 22l2-2.5L14 22l3-2.5L20 22V10a8 8 0 0 0-8-8z"/><circle cx="9" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="11" r="1.1" fill="currentColor" stroke="none"/>',
+  trendingUp:'<path d="M22 7l-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>',
+  stethoscope:'<path d="M4 3v5a6 6 0 0 0 12 0V3"/><path d="M10 14v2a6 6 0 0 0 12 0v-3"/><circle cx="22" cy="10" r="2"/>',
+  droplet:'<path d="M12 2.7s6.5 7 6.5 11.3a6.5 6.5 0 0 1-13 0C5.5 9.7 12 2.7 12 2.7z"/>',
+  wave:'<path d="M2 12c2-4.5 4-4.5 6 0s4 4.5 6 0 4-4.5 6 0"/>',
+  layers:'<path d="M12 2L2 7l10 5 10-5z"/><path d="M2 12l10 5 10-5M2 17l10 5 10-5"/>',
+  unlock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.9-1"/>',
+  volumeX:'<path d="M11 5L6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/>',
+  swap:'<path d="M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/>',
+  leaf:'<path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 12-9 4 0 4 4 4 4 0 8-4 12-9 12z"/><path d="M4 21c3-5 7-9 12-12"/>',
+  footprints:'<path d="M6.5 21c2 0 3.2-1.6 3.2-3.7S8.3 13 6.5 13 3 14.8 3 17s1.5 4 3.5 4z"/><path d="M17.5 13c2 0 3.2-1.6 3.2-3.7S19.3 5 17.5 5 14 6.8 14 9s1.5 4 3.5 4z"/>',
+  mapPin:'<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  gauge:'<path d="M12 15l4.5-6.5"/><path d="M20.2 17a9 9 0 1 0-16.4 0"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  sliders:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  radio:'<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19.1 4.9a10 10 0 0 1 0 14.2M4.9 19.1a10 10 0 0 1 0-14.2"/>',
+  lock:'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v9"/>',
+  database:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  gitBranch:'<circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v3a6 6 0 0 0 6 6h3"/>',
+  smartphone:'<rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/>',
+  calendar:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  chartBar:'<path d="M3 21h18M7 17V9M12 17V5M17 17v-6"/>',
+  dna:'<path d="M7 2c0 4.5 10 6.5 10 10s-10 5.5-10 10M17 2c0 4.5-10 6.5-10 10s10 5.5 10 10M8.5 6h7M8.5 18h7"/>',
+  brain:'<path d="M9.5 2A2.5 2.5 0 0 0 7 4.5v.6A3 3 0 0 0 4 8a3 3 0 0 0-1 2.2A3 3 0 0 0 4 13a3 3 0 0 0 2 5.5V19a3 3 0 0 0 6 0V4.5A2.5 2.5 0 0 0 9.5 2zM14.5 2A2.5 2.5 0 0 1 17 4.5v.6A3 3 0 0 1 20 8a3 3 0 0 1 1 2.2A3 3 0 0 1 20 13a3 3 0 0 1-2 5.5V19a3 3 0 0 1-6 0V4.5A2.5 2.5 0 0 1 14.5 2z"/>',
+  heartPulse:'<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3.4 1-4.5 2.5C10.9 4 9.3 3 7.5 3A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/><path d="M4 12h3.5l1.5-2 2 4 1.5-2H16"/>',
+  utensils:'<path d="M4 2v7a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2M6 2v20M20 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3zM17 15v7"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  wifi:'<path d="M5 12.5a11 11 0 0 1 14 0M8.5 16a6 6 0 0 1 7 0M12 20h.01M2 9a16 16 0 0 1 20 0"/>',
+  wind:'<path d="M9.6 4.6A2 2 0 1 1 11 8H2M12.6 19.4A2 2 0 1 0 14 16H2M17.7 7.7A2.5 2.5 0 1 1 19.5 12H2"/>',
+  coffee:'<path d="M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v6a5 5 0 0 1-5 5H8a5 5 0 0 1-5-5z"/><path d="M6 2v2M10 2v2M14 2v2"/>',
+  anchor:'<circle cx="12" cy="5" r="3"/><path d="M12 8v13M5 12H2a10 10 0 0 0 20 0h-3"/>',
+  sword:'<path d="M14.5 17.5L3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2"/>',
+  gift:'<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M5 12v9h14v-9M12 8s-1.5-5-4.5-5S4 6 6 7s6 1 6 1M12 8s1.5-5 4.5-5S20 6 18 7s-6 1-6 1"/>',
+  save:'<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+  video:'<path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/>',
+  gamepad:'<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15.5 11.5h.01M17.5 13.5h.01"/>',
+  batteryCharging:'<rect x="2.5" y="7" width="16" height="10" rx="2.5"/><path d="M21.5 10.5v3M10 9l-2 3h3l-2 3"/>',
+  repeat:'<path d="M17 2l4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3"/>',
+  eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+};
+const icon=(n,s=18,cls='')=>`<svg class="ic ${cls}" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]||''}</svg>`;
+function batteryIcon(lvl,s=22){const bars=Math.max(1,Math.round(lvl/5*4));const col=lvl<=1?'var(--red)':lvl<=2?'var(--amber)':'currentColor';let b='';for(let i=0;i<bars;i++)b+=`<path d="M${6.2+i*3.1} 9.6v4.8" stroke="${col}"/>`;return `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2.5" y="7" width="16" height="10" rx="2.5"/><path d="M21.5 10.5v3"/>${b}</svg>`;}
+
+const TRACKS={
+  powerbuilding_express:{name:"Powerbuilding Express",color:"#FF6B35",icon:"dumbbell",bpm:140},
+  dopamine_reset:{name:"Dopamine Reset",color:"#00D4AA",icon:"zap",bpm:150},
+  mobility_flow:{name:"Mobility Flow",color:"#7C5CFC",icon:"wave",bpm:90},
+  hybrid_grind:{name:"Hybrid Grind",color:"#FFB800",icon:"layers",bpm:130},
+};
+const BLOCK_DEFS=[
+  {type:"appetizer",label:"Appetizer",pct:.15,icon:"leaf"},
+  {type:"entree",label:"Entree",pct:.55,icon:"dumbbell"},
+  {type:"side",label:"Side",pct:.20,icon:"activity"},
+  {type:"dessert",label:"Dessert",pct:.10,icon:"sparkles"},
+];
+const BANNED=["tú puedes","eres increíble","no te rindas","eres un campeón","dale con todo","sin excusas","cree en ti","nunca pares","hoy es tu día","vas a lograrlo"];
+const THEMES={
+  one_piece:{name:"One Piece",resource:"Haki",nouns:["Gear Fifth","Haki Supremo","Yonko","Grand Line","Nakama"]},
+  elden_ring:{name:"Elden Ring",resource:"Runas",nouns:["Elden Lord","Tarnished","Erdtree","Runa Mayor"]},
+  dragon_ball:{name:"Dragon Ball",resource:"Ki",nouns:["Super Saiyan","Genki Dama","Kamehameha","Ultra Instinto"]},
+  zelda:{name:"Zelda",resource:"Rupees",nouns:["Hylian","Trifuerza","Maestro Espada","Héroe"]},
+};
+const EX_RAW=[
+ ["ex_001","Flexión","chest","none",12,3,45,2,8,1,"quick",0],["ex_002","Press banca manc.","chest","dumbbell",10,4,60,3,6,1,"heavy",0],["ex_003","Flexión inclinada","chest","none",15,3,40,1,9,1,"easy",0],["ex_004","Apertura manc.","chest","dumbbell",12,3,50,2,5,0,"stretch",0],["ex_005","Flexión diamante","chest","none",8,3,50,3,7,1,"novel",0],["ex_007","Dominada","back","pullup_bar",6,4,90,4,9,1,"power",0],["ex_008","Remo manc.","back","dumbbell",10,3,60,2,7,1,"rhythm",0],["ex_009","Apertura banda","back","band",15,3,30,1,8,0,"posture",0],["ex_011","Peso muerto","back","barbell",5,4,120,5,10,1,"power",0],["ex_012","Jalón al pecho","back","machine",10,3,60,2,6,1,"guided",0],["ex_013","Sentadilla libre","legs","none",15,3,45,1,8,1,"quick",0],["ex_014","Sentadilla goblet","legs","dumbbell",10,4,60,2,7,1,"heavy",0],["ex_015","Sentadilla barra","legs","barbell",8,4,90,4,8,1,"power",0],["ex_017","Zancada caminando","legs","none",12,3,60,2,9,1,"movement",0],["ex_018","Swing kettlebell","legs","kettlebell",15,4,45,3,10,1,"explosive",0],["ex_020","Elevación gemelos","legs","none",20,3,30,1,4,0,"quick",0],["ex_021","Press militar","shoulders","dumbbell",10,3,60,3,6,1,"heavy",0],["ex_022","Elevación lateral","shoulders","dumbbell",12,3,45,2,7,0,"burn",0],["ex_023","Flexión pica","shoulders","none",8,3,50,3,8,1,"novel",0],["ex_024","Face pull banda","shoulders","band",15,3,30,1,7,0,"posture",0],["ex_026","Curl manc.","arms","dumbbell",12,3,45,1,7,0,"pump",0],["ex_027","Fondo tríceps","arms","none",10,3,50,2,7,1,"burn",0],["ex_028","Curl martillo","arms","dumbbell",12,3,45,1,6,0,"rhythm",0],["ex_030","Dominada supina","arms","pullup_bar",6,3,75,4,8,1,"power",0],["ex_031","Plancha","core","none",1,3,30,1,5,0,"static",0],["ex_032","Bicho muerto","core","none",10,3,30,1,7,0,"control",0],["ex_033","Escalador","core","none",20,3,30,2,9,1,"fast",0],["ex_035","Giro ruso","core","none",15,3,30,2,7,0,"rhythm",0],["ex_037","Burpee","full_body","none",8,3,60,4,9,1,"explosive",1],["ex_039","Jumping jack","full_body","none",20,3,20,1,8,0,"cardio",1],["ex_040","Gateo oso","full_body","none",10,3,40,2,9,1,"fun",0],["ex_041","Thruster","full_body","dumbbell",10,3,60,3,8,1,"explosive",0],["ex_043","Cuerdas batalla","full_body","none",1,4,45,3,10,0,"loud",1],["ex_045","Gato-vaca","full_body","none",10,2,15,1,7,0,"gentle",0],["ex_046","Mejor estiramiento","full_body","none",5,2,15,1,8,0,"flow",0],["ex_048","Rotación torácica","back","none",8,2,15,1,7,0,"gentle",0],["ex_050","Gusano","full_body","none",6,2,20,2,8,1,"flow",0],
+];
+const EXERCISES=EX_RAW.map(r=>({id:r[0],name:r[1],muscle:r[2],equip:r[3],reps:r[4],sets:r[5],rest:r[6],diff:r[7],adhd:r[8],compound:r[9],tag:r[10],sensory:r[11],estSec:r[5]*(r[4]*3+r[6])}));
+const EX_MAP=Object.fromEntries(EXERCISES.map(e=>[e.id,e]));
+const EQUIP_AVAIL=["none","dumbbell","band","pullup_bar","kettlebell","barbell","machine"];
+const MUSCLE_ABBR={chest:"PEC",back:"ESP",legs:"PIE",shoulders:"HOM",arms:"BRA",core:"COR",full_body:"FULL"};
+
+const TEMPLATES={
+ tmpl_greet_003:{text:"Día <b>{racha}</b> de racha. O no. Da igual. Hoy: <b>{track}</b>."},
+ tmpl_greet_005:{text:"Energía en <b>{energia}/5</b>. Ok. Ajusté el plan. <b>{track}</b> suave hoy."},
+ tmpl_greet_012:{text:"Ok. <b>{track}</b>. Sin pensar. Solo haz el primer movimiento."},
+ tmpl_auto_001:{text:"Autopilot activo. Decidí por ti: <b>{track}</b>. Cero decisiones. Solo empieza."},
+ tmpl_check_001:{text:"Set {set_actual}/{set_total} de {ejercicio}. Quedan {tiempo} min. Sigue."},
+ tmpl_check_009:{text:"Set {set_actual}. No pienses en el {set_total}. Solo este."},
+ tmpl_check_014:{text:"Check-in: sigues aquí. Eso ya es mucho. {ejercicio} ahora."},
+ tmpl_check_019:{text:"¿Distracción? Ok. Vuelve. {ejercicio}. Set {set_actual}. Solo eso."},
+ tmpl_skip_001:{text:"Saltaste {ejercicio}. Ok. Sin culpa. Seguimos con {siguiente}."},
+ tmpl_skip_003:{text:"No pasa nada. {ejercicio} no era obligatorio. Siguiente: {siguiente}."},
+ tmpl_skip_009:{text:"Skip. Ok. No hay \"deberías\". Hay lo que hiciste. Siguiente."},
+ tmpl_reward_001:{text:"Has recargado {puntos} {recurso} de {tema}."},
+ tmpl_paralysis_001:{text:"Ponte las zapatillas. Solo eso. Nada más."},
+ tmpl_paralysis_005:{text:"De pie. Eso es todo ahora. Solo de pie."},
+ tmpl_paralysis_009:{text:"Solo el primer ejercicio: {ejercicio}. {reps} reps. Después decides."},
+ tmpl_cleanser_001:{text:"90 seg. Respira. 4 dentro. 4 fuera. Nada más."},
+ tmpl_cleanser_005:{text:"Reset. 4-4-4. Inhala 4. Mantén 4. Exhala 4."},
+ tmpl_time_001:{text:"He ajustado tus tiempos. Sueles necesitar {extra} min más para {tipo}."},
+ tmpl_time_004:{text:"Time-blindness detectado. Añadí {extra} min al estimado. Ok."},
+ tmpl_done_001:{text:"Hecho. {duracion} min. {ejercicios} ejercicios. Cierra la app. Descansa."},
+ tmpl_done_003:{text:"Terminaste. No necesitas hacer más. {duracion} min es suficiente."},
+ tmpl_hyper_001:{text:"Hyperfocus detectado. Estás en flow. ¿Añado 1 ejercicio más al bloque?"},
+ tmpl_cap_001:{text:"Llevas {extra} min de más. Suficiente por hoy. Cortamos aquí. Ok."},
+ tmpl_snack_001:{text:"Snack de movimiento. {ejercicio}. 40 seg. Eso es todo."},
+ tmpl_form_001:{text:"Form check: {ok}/{total} en rango. {cue}. Ajusta y sigue."},
+ tmpl_bridge_001:{text:"Puente de dopamina: {actividad}. Carga rápida. Luego el workout entra solo."},
+ tmpl_boss_001:{text:"Jefe herido: -{dmg} HP. Sigue golpeando. Quedan {hp}."},
+ tmpl_review_001:{text:"Semana vista. {workouts} sesiones. No hay semanas malas. Solo datos."},
+ tmpl_title_001:{text:"Operación {noun}"},tmpl_title_002:{text:"Misión {noun}"},tmpl_title_003:{text:"Protocolo {noun}"},
+};
+
+function orchestratorDecide(ctx){
+  let track,reasons=[];
+  if(ctx.energy<=2&&ctx.time<=15){track="mobility_flow";reasons.push("energía≤2 + tiempo≤15 → movilidad");}
+  else if(ctx.energy<=2){track="dopamine_reset";reasons.push("energía≤2 → cardio suave para activar");}
+  else if(ctx.energy>=4&&ctx.time>=30){track="powerbuilding_express";reasons.push("energía≥4 + tiempo≥30 → fuerza");}
+  else if(ctx.energy===3){track=ctx.lastUpper?"dopamine_reset":"hybrid_grind";reasons.push("energía=3 → "+(ctx.lastUpper?"evitar tren sup.":"híbrido"));}
+  else{track="hybrid_grind";reasons.push("default → híbrido");}
+  return {track,reasons,confidence:.95};
+}
+function fits(ex,trackId,ctx){
+  if(!EQUIP_AVAIL.includes(ex.equip))return false;
+  if(ex.diff>(ctx.energy<=2?2:ctx.energy>=4?5:3))return false;
+  if(trackId==="dopamine_reset"&&!["full_body","core","legs"].includes(ex.muscle))return false;
+  if(trackId==="powerbuilding_express"&&ex.adhd<6)return false;
+  if(STATE.sensory.swap&&ex.sensory)return false;
+  return true;
+}
+function scoreEx(ex,blockType,ctx,used){
+  let s=0;
+  if(!used.has(ex.muscle))s+=30;s+=ex.adhd*3;
+  if(blockType==="entree"&&ex.compound)s+=25;
+  if((blockType==="side"||blockType==="dessert")&&!ex.compound)s+=20;
+  if(ctx.energy<=2)s+=(5-ex.diff)*5+(ex.estSec<60?12:0);
+  if(ctx.energy>=4&&ex.diff>=3)s+=10;
+  if(ex.tag==="novel"&&ctx.streak>3)s+=12;
+  return s;
+}
+function pickExercises(cands,targetMin,blockType,ctx){
+  const scored=cands.map(ex=>({ex,s:scoreEx(ex,blockType,ctx,new Set())})).sort((a,b)=>b.s-a.s);
+  const sel=[],used=new Set();let acc=0;const tgt=targetMin*60;
+  for(const{ex}of scored){
+    if(used.has(ex.muscle)&&sel.length>0&&Math.random()>.4)continue;
+    if(acc+ex.estSec>tgt*1.15&&sel.length>0)continue;
+    sel.push(ex);used.add(ex.muscle);acc+=ex.estSec;
+    if(sel.length>=3)break;if(acc>=tgt*0.8&&sel.length>=1)break;
+  }
+  return sel;
+}
+function coachBuildPlan(trackId,ctx){
+  const totalSec=ctx.time*60;
+  const blocks=BLOCK_DEFS.map(def=>{
+    const tMin=Math.max(2,Math.round(totalSec*def.pct/60));
+    const cands=EXERCISES.filter(ex=>fits(ex,trackId,ctx));
+    return {...def,tMin,exercises:pickExercises(cands,tMin,def.type,ctx)};
+  }).filter(b=>b.exercises.length>0);
+  const all=blocks.flatMap(b=>b.exercises);
+  const uniq=new Set(all.map(e=>e.muscle)).size;
+  const avgAdhd=all.reduce((s,e)=>s+e.adhd,0)/Math.max(1,all.length);
+  const dopa=Math.min(10,Math.max(1,Math.round(4+uniq+avgAdhd/3+(ctx.time<=30?1:0))));
+  return {id:"wp_"+Date.now(),track:trackId,blocks,totalMin:ctx.time,dopa,
+    estSec:blocks.reduce((s,b)=>s+b.exercises.reduce((x,e)=>x+e.estSec,0),0),
+    totalSets:all.reduce((s,e)=>s+e.sets,0),totalEx:all.length};
+}
+function auditorUpdate(o,r){return Math.round((0.7*o+0.3*r)*100)/100;}
+function repsToPoints(reps,theme){return Math.round(reps*(theme==="one_piece"?1.5:1));}
+
+function nowMin(){const d=new Date();return d.getHours()*60+d.getMinutes();}
+function medWindowInfo(){
+  const[h,m]=STATE.meds.time.split(":").map(Number);
+  const intake=h*60+m,peakStart=intake+60,dur=STATE.meds.type==="long"?420:210,peakEnd=peakStart+dur,n=nowMin();
+  let score,status;
+  if(n>=peakStart&&n<=peakEnd){score=100;status={cls:"peak",ico:"checkCircle",txt:"En pico de medicación — ventana óptima para fuerza"};}
+  else if(n<intake){score=30;status={cls:"wait",ico:"clock",txt:"Medicación en "+fmtMin(intake-n)};}
+  else if(n<peakStart){score=60+40*(n-intake)/60;status={cls:"wait",ico:"clock",txt:"Pico en "+fmtMin(peakStart-n)};}
+  else{score=Math.max(20,100-(n-peakEnd)/60*15);status={cls:"off",ico:"moon",txt:"Fuera de pico — mejor cardio suave o movilidad"};}
+  return {score:Math.round(score),status,peakEnd};
+}
+function fmtMin(min){min=Math.max(0,Math.round(min));const h=Math.floor(min/60),m=min%60;return h>0?h+"h "+m+"m":m+"m";}
+function chronotypeScore(){const n=nowMin();const win=STATE.chronotype==="leon"?[420,720]:[1020,1320];if(n>=win[0]&&n<=win[1])return 100;const d=n<win[0]?win[0]-n:n-win[1];return Math.max(20,100-d/60*12);}
+function computeReadiness(){
+  const sleep=Math.min(100,STATE.sleepH/8*100);
+  const hrv=Math.min(100,Math.max(0,(STATE.hrv-40)/45*100));
+  const med=medWindowInfo().score;
+  const recovery=Math.max(20,100-(STATE.workoutsThisWeek%7)*8);
+  const chrono=chronotypeScore();
+  const total=Math.round(0.35*sleep+0.20*hrv+0.20*med+0.15*recovery+0.10*chrono);
+  return {total,sleep:Math.round(sleep),hrv:Math.round(hrv),med,recovery:Math.round(recovery),chrono:Math.round(chrono)};
+}
+
+function llmConstrainedGenerate(intent,templateId,variables){
+  const tmpl=TEMPLATES[templateId];if(!tmpl)throw new Error("template missing");
+  let text=tmpl.text;
+  for(const[k,v]of Object.entries(variables))text=text.split(`{${k}}`).join(String(v));
+  const latency=Math.round(140+Math.random()*180);
+  return {output:{text,template_used:templateId,variables_filled:variables},latency};
+}
+function zodValidate(output){
+  const checks=[
+    {label:"JSON parseable",pass:!!(output&&typeof output.text==="string")},
+    {label:"text ≤ 30 palabras",pass:output.text.replace(/<[^>]+>/g,"").split(/\s+/).filter(Boolean).length<=30},
+    {label:"sin frases prohibidas",pass:!BANNED.some(b=>output.text.toLowerCase().includes(b))},
+    {label:"template_id ∈ schema",pass:/^tmpl_[a-z]+_\d{3}$/.test(output.template_used)},
+    {label:"variables rellenadas",pass:!/\{[a-z_]+\}/.test(output.text)},
+  ];
+  return {success:checks.every(c=>c.pass),checks};
+}
+const pipelineLog=[];
+function runPipeline(intent,templateId,variables,algorithmJSON){
+  let output,latency,zod,fallback=false;
+  try{
+    const r=llmConstrainedGenerate(intent,templateId,variables);
+    output=r.output;latency=r.latency;zod=zodValidate(output);
+    if(!zod.success){fallback=true;output={...output,text:fallbackFill(templateId,variables)};}
+  }catch(e){fallback=true;latency=0;output={text:fallbackFill(templateId,variables),template_used:templateId,variables_filled:variables};zod={success:false,checks:[{label:"excepción LLM",pass:false}]};}
+  pipelineLog.unshift({ts:Date.now(),intent,templateId,algorithmJSON,variables,output,zod,latency,fallback});
+  if(pipelineLog.length>30)pipelineLog.pop();
+  return output.text;
+}
+function fallbackFill(id,vars){let t=(TEMPLATES[id]||{text:"Ok. Seguimos."}).text;for(const[k,v]of Object.entries(vars))t=t.split(`{${k}}`).join(String(v));return t.replace(/\{[^}]+\}/g,"—");}
+
+const STATE={
+  energy:3,time:30,theme:"one_piece",streak:5,streakFreezes:2,workoutsThisWeek:6,lastUpper:false,
+  timeBlindFactor:1.0,plan:null,ctxSnapshot:null,demoScale:0.25,lastAuditMsg:null,
+  quest:{points:340,log:[]},
+  autopilot:true,chronotype:"leon",meds:{time:"08:00",type:"long"},
+  sleepH:7,hrv:68,water:5,
+  sensory:{quiet:false,dim:false,swap:false},
+  music:{station:"Phonk",bpm:140},
+  parallel:347,
+  hyperStreak:0,hyperOffered:false,capWarned:false,
+  shatter:{active:false,step:0,timer:null},
+  launchDone:[false,false,false,false],
+  // v3.0
+  savePoint:null,
+  boss:{name:"Elden Beast",hp:640,maxHp:1000,defeated:false},
+  xp:340,
+  vault:[
+    {id:"v1",name:"30 min de videojuego",ico:"gamepad",cost:1,claimed:false},
+    {id:"v2",name:"Episodio de tu serie",ico:"video",cost:2,claimed:false},
+    {id:"v3",name:"Snack favorito",ico:"utensils",cost:3,claimed:false},
+    {id:"v4",name:"Compra < 20€",ico:"gift",cost:5,claimed:false},
+  ],
+  caffeineMg:160,caffeineLast:"09:30",
+  decisionFatigue:18,
+  socialBattery:3,
+  bodyDouble:false,partnerProgress:0,
+  habitStacks:[
+    {anchor:"Café de la mañana",action:"2 min de estiramiento",done:true},
+    {anchor:"Cepillarse los dientes",action:"10 sentadillas",done:false},
+    {anchor:"Cerrar el portátil",action:"Caminar 5 min",done:false},
+  ],
+};
+const FUEL={tdee:2380,p:156,c:300,f:62};
+const LAUNCH_STEPS=[{i:"droplet",t:"Agua lista"},{i:"footprints",t:"Zapatillas puestas"},{i:"headphones",t:"Playlist / BPM"},{i:"mapPin",t:"Espacio despejado"}];
+const STATIONS=[{n:"Phonk",bpm:140},{n:"Lo-fi",bpm:90},{n:"Techno",bpm:150}];
+const SKILL_TREE=[
+  {branch:"Fuerza",color:"#FF6B35",icon:"dumbbell",nodes:[{id:"ex_001",cost:0},{id:"ex_013",cost:100},{id:"ex_014",cost:250},{id:"ex_011",cost:500}]},
+  {branch:"Cardio",color:"#00D4AA",icon:"zap",nodes:[{id:"ex_039",cost:0},{id:"ex_033",cost:150},{id:"ex_037",cost:400}]},
+  {branch:"Movilidad",color:"#7C5CFC",icon:"wave",nodes:[{id:"ex_045",cost:0},{id:"ex_046",cost:120},{id:"ex_050",cost:300}]},
+  {branch:"Core",color:"#FFB800",icon:"target",nodes:[{id:"ex_031",cost:0},{id:"ex_035",cost:180},{id:"ex_032",cost:350}]},
+];
+const DOPAMINE_MENU=[
+  {cat:"appetizer",label:"Aperitivo",time:"5 min",color:"#00D4AA",icon:"leaf",items:[
+    {icon:"zap",name:"Jumping jacks",sub:"30 seg",dopa:7,sec:30},
+    {icon:"music",name:"Canción + baile",sub:"1 tema",dopa:9,sec:30},
+    {icon:"droplet",name:"Agua fría en cara",sub:"10 seg",dopa:6,sec:20},
+    {icon:"wind",name:"10 respiraciones",sub:"1 min",dopa:5,sec:30},
+    {icon:"footprints",name:"Caminar a ventana",sub:"1 min",dopa:5,sec:30},
+    {icon:"activity",name:"Sacudir el cuerpo",sub:"30 seg",dopa:7,sec:30},
+  ]},
+  {cat:"entree",label:"Principal",time:"20 min",color:"#FF6B35",icon:"dumbbell",items:[
+    {icon:"dumbbell",name:"Workout del día",sub:"plan completo",dopa:10,sec:0},
+    {icon:"footprints",name:"Caminar fuera",sub:"20 min",dopa:8,sec:0},
+    {icon:"wave",name:"Nadar",sub:"20 min",dopa:9,sec:0},
+    {icon:"route",name:"Bici",sub:"20 min",dopa:8,sec:0},
+  ]},
+  {cat:"dessert",label:"Postre",time:"10 min",color:"#7C5CFC",icon:"sparkles",items:[
+    {icon:"leaf",name:"Estirar",sub:"10 min",dopa:6,sec:0},
+    {icon:"utensils",name:"Snack proteico",sub:"1 pieza",dopa:7,sec:0},
+    {icon:"droplet",name:"Ducha caliente",sub:"10 min",dopa:8,sec:0},
+    {icon:"moon",name:"Tumbarse sin pantalla",sub:"5 min",dopa:5,sec:0},
+  ]},
+];
+const LOWSTIM=[{h:6,o:15},{h:8,o:55},{h:10,o:80},{h:12,o:65},{h:14,o:30},{h:16,o:70},{h:18,o:95},{h:20,o:60},{h:22,o:20}];
+
+const PLAYER={active:false,plan:null,bi:0,ei:0,set:1,phase:"idle",timerTotal:0,timerLeft:0,tick:null,workoutStart:0,completedSets:0,completedEx:0,repsDone:0,checkinTick:null,_cleanserIv:null,partnerTick:null};
+function curBlock(){return PLAYER.plan.blocks[PLAYER.bi];}
+function curEx(){return curBlock()?.exercises[PLAYER.ei];}
+function currentOverall(){const p=PLAYER.plan;if(!p)return 0;const b=curBlock();return Math.round(((PLAYER.bi+(b?(PLAYER.ei+1)/Math.max(1,b.exercises.length):0))/p.blocks.length)*100);}
+
+function addFatigue(n){STATE.decisionFatigue=Math.min(100,STATE.decisionFatigue+n);}
+
+function startWorkout(){
+  if(!STATE.plan)return;
+  clearShatter();
+  PLAYER.active=true;PLAYER.plan=STATE.plan;PLAYER.bi=0;PLAYER.ei=0;PLAYER.set=1;
+  PLAYER.completedSets=0;PLAYER.completedEx=0;PLAYER.repsDone=0;
+  PLAYER.workoutStart=Date.now();
+  STATE.hyperStreak=0;STATE.hyperOffered=false;STATE.capWarned=false;
+  STATE.partnerProgress=0;
+  switchTab("workout");beginExercise();startCheckinLoop();if(STATE.bodyDouble)startPartnerTick();
+}
+function beginExercise(){PLAYER.phase="exercise";const ex=curEx();PLAYER.timerTotal=Math.max(8,ex.reps*3);PLAYER.timerLeft=PLAYER.timerTotal;renderWorkout();startTick();}
+function startTick(){
+  clearInterval(PLAYER.tick);
+  PLAYER.tick=setInterval(()=>{
+    PLAYER.timerLeft-=1;
+    if(PLAYER.timerLeft<=0){if(PLAYER.phase==="exercise")completeSet(true);else if(PLAYER.phase==="rest")advanceFromRest();}
+    updateRing();checkCap();
+  },1000*STATE.demoScale);
+}
+function completeSet(){
+  const ex=curEx();
+  PLAYER.completedSets++;PLAYER.repsDone+=ex.reps;STATE.hyperStreak++;
+  // boss damage
+  if(!STATE.boss.defeated){
+    const dmg=ex.reps*2;const before=STATE.boss.hp;
+    STATE.boss.hp=Math.max(0,STATE.boss.hp-dmg);
+    if(STATE.boss.hp<=0){
+      STATE.boss.defeated=true;const pts=500;STATE.quest.points+=pts;
+      const theme=THEMES[STATE.theme];
+      showToast("Jefe derrotado. +"+pts+" "+theme.resource+". Boss battle completa.","BOSS BATTLE · VICTORIA","");
+      STATE.quest.log.unshift({label:"Boss: "+STATE.boss.name,pts,ts:Date.now()});
+    }else{
+      const t=runPipeline("boss_hit","tmpl_boss_001",{dmg,hp:STATE.boss.hp},{agent:"quest",event:"boss_damage",dmg,hp:STATE.boss.hp});
+    }
+  }
+  maybeHyperfocus();
+  if(PLAYER.set>=ex.sets){
+    PLAYER.completedEx++;
+    if(PLAYER.ei<curBlock().exercises.length-1){PLAYER.ei++;PLAYER.set=1;startRest();}
+    else if(PLAYER.bi<PLAYER.plan.blocks.length-1)startCleanser();
+    else finishWorkout();
+  }else{PLAYER.set++;startRest();}
+}
+function startRest(){PLAYER.phase="rest";const ex=curEx();PLAYER.timerTotal=Math.max(8,Math.round(ex.rest/3));PLAYER.timerLeft=PLAYER.timerTotal;renderWorkout();startTick();}
+function advanceFromRest(){
+  const ex=curEx();
+  if(PLAYER.set>=ex.sets){
+    PLAYER.completedEx++;
+    if(PLAYER.ei<curBlock().exercises.length-1){PLAYER.ei++;PLAYER.set=1;beginExercise();}
+    else if(PLAYER.bi<PLAYER.plan.blocks.length-1)startCleanser();
+    else finishWorkout();
+  }else{PLAYER.set++;beginExercise();}
+}
+function maybeHyperfocus(){
+  if(STATE.hyperStreak>=6&&!STATE.hyperOffered&&PLAYER.bi<PLAYER.plan.blocks.length-1){
+    STATE.hyperOffered=true;
+    const txt=runPipeline("hyperfocus","tmpl_hyper_001",{},{agent:"coach",event:"hyperfocus_detected",consecutive:STATE.hyperStreak});
+    showToast(txt,"BODY DOUBLE · HYPERFOCUS","+1 ejercicio",()=>extendHyperfocus());
+  }
+}
+function extendHyperfocus(){
+  const novel=EXERCISES.filter(e=>e.tag==="novel"&&fits(e,PLAYER.plan.track,STATE.ctxSnapshot||buildCtx()));
+  const pick=novel[Math.floor(Math.random()*novel.length)]||EXERCISES[0];
+  curBlock().exercises.push({...pick});STATE.plan.totalEx++;
+  showToast("Hyperfocus protegido. +1 ejercicio añadido. Sigue en flow.","COACH","");
+  renderWorkout();
+}
+function checkCap(){
+  if(STATE.capWarned||!PLAYER.active)return;
+  const real=(Date.now()-PLAYER.workoutStart)/1000/STATE.demoScale;
+  if(real>PLAYER.plan.estSec*1.5){
+    STATE.capWarned=true;const extra=Math.round((real-PLAYER.plan.estSec)/60);
+    const txt=runPipeline("overtraining_cap","tmpl_cap_001",{extra:Math.max(1,extra)},{agent:"auditor",event:"overtraining_guard",realSec:Math.round(real),estSec:PLAYER.plan.estSec});
+    showToast(txt,"AUDITOR · ANTI-BURNOUT","Terminar",()=>finishWorkout());
+  }
+}
+function skipExercise(){
+  addFatigue(10);
+  const ex=curEx();STATE.hyperStreak=0;
+  const blk=curBlock();
+  blk.exercises=blk.exercises.filter(e=>e.id!==ex.id);
+  const next=blk.exercises[PLAYER.ei]||blk.exercises[0];
+  const tmpl=["tmpl_skip_001","tmpl_skip_003","tmpl_skip_009"][Math.floor(Math.random()*3)];
+  const txt=runPipeline("skip",tmpl,{ejercicio:ex.name,siguiente:next?next.name:"siguiente bloque"},{agent:"coach",action:"skip_recalc",removed:ex.id,blockRemaining:blk.exercises.length});
+  showToast(txt,"COACH · SIN CULPA","");
+  if(blk.exercises.length===0){if(PLAYER.bi<PLAYER.plan.blocks.length-1)startCleanser();else finishWorkout();return;}
+  if(PLAYER.ei>=blk.exercises.length)PLAYER.ei=0;
+  PLAYER.set=1;beginExercise();
+}
+function finishWorkout(){
+  clearInterval(PLAYER.tick);clearInterval(PLAYER.checkinTick);clearInterval(PLAYER.partnerTick);
+  PLAYER.phase="done";PLAYER.active=false;
+  const realSec=(Date.now()-PLAYER.workoutStart)/1000;
+  const realUnscaled=realSec/STATE.demoScale;
+  const ratio=Math.max(.6,Math.min(2.5,realUnscaled/Math.max(1,PLAYER.plan.estSec)));
+  STATE.timeBlindFactor=auditorUpdate(STATE.timeBlindFactor,ratio);
+  const extra=Math.round((STATE.timeBlindFactor-1)*PLAYER.plan.totalMin);
+  if(extra>=2){STATE.lastAuditMsg=runPipeline("time_adjust",Math.random()<.5?"tmpl_time_001":"tmpl_time_004",{extra,tipo:TRACKS[PLAYER.plan.track].name.split(" ")[0].toLowerCase()},{agent:"auditor",ratio:Math.round(ratio*100)/100,newF:STATE.timeBlindFactor});}
+  // XP + skill unlocks
+  STATE.xp+=PLAYER.repsDone;
+  const pts=repsToPoints(PLAYER.repsDone,STATE.theme);
+  STATE.quest.points+=pts;
+  STATE.quest.log.unshift({label:TRACKS[PLAYER.plan.track].name,pts,ts:Date.now()});
+  if(STATE.quest.log.length>6)STATE.quest.log.pop();
+  STATE.streak++;STATE.workoutsThisWeek++;
+  const theme=THEMES[STATE.theme];
+  const rTxt=runPipeline("reward","tmpl_reward_001",{puntos:pts,recurso:theme.resource,tema:theme.name},{agent:"quest",reps:PLAYER.repsDone});
+  const dTxt=runPipeline("completion",Math.random()<.5?"tmpl_done_001":"tmpl_done_003",{duracion:Math.round(realUnscaled/60)||PLAYER.plan.totalMin,ejercicios:PLAYER.completedEx},{agent:"coach",event:"workout_complete"});
+  document.getElementById("compTag").textContent="QUEST · "+theme.name.toUpperCase();
+  document.getElementById("compPts").textContent="+"+pts+" "+theme.resource;
+  document.getElementById("compText").textContent=(rTxt+" "+dTxt).replace(/<[^>]+>/g,"");
+  document.getElementById("compTime").textContent=Math.round(realUnscaled/60)||PLAYER.plan.totalMin;
+  document.getElementById("compEx").textContent=PLAYER.completedEx;
+  document.getElementById("compSets").textContent=PLAYER.completedSets;
+  showOverlay("ov-complete");
+  renderSystem();renderQuest();renderDopa();
+}
+function startCheckinLoop(){
+  clearInterval(PLAYER.checkinTick);
+  PLAYER.checkinTick=setInterval(()=>{
+    if(!PLAYER.active||PLAYER.phase==="cleanser")return;
+    const ex=curEx();if(!ex)return;
+    const remMin=Math.max(1,Math.round(estimateRemaining()/60));
+    const tmpl=["tmpl_check_001","tmpl_check_009","tmpl_check_014","tmpl_check_019"][Math.floor(Math.random()*4)];
+    const txt=runPipeline("checkin",tmpl,{set_actual:PLAYER.set,set_total:ex.sets,ejercicio:ex.name,tiempo:remMin},{agent:"accountability",phase:PLAYER.phase,bi:PLAYER.bi,ei:PLAYER.ei});
+    showToast(txt,"BODY DOUBLE · CHECK-IN","");renderSystem();
+  },13000*STATE.demoScale);
+}
+function startPartnerTick(){
+  clearInterval(PLAYER.partnerTick);
+  PLAYER.partnerTick=setInterval(()=>{
+    if(!STATE.bodyDouble||!PLAYER.active)return;
+    const target=Math.min(100,currentOverall()+3+Math.round(Math.random()*7));
+    STATE.partnerProgress+=Math.sign(target-STATE.partnerProgress)*Math.max(1,Math.round(Math.abs(target-STATE.partnerProgress)*0.35));
+    const el=document.getElementById("partnerFill");if(el)el.style.width=STATE.partnerProgress+"%";
+  },1700);
+}
+function estimateRemaining(){
+  let s=0;const b=curBlock();
+  for(let i=PLAYER.ei;i<b.exercises.length;i++){const e=b.exercises[i];const sl=(i===PLAYER.ei)?(e.sets-PLAYER.set+1):e.sets;s+=sl*e.estSec;}
+  for(let j=PLAYER.bi+1;j<PLAYER.plan.blocks.length;j++)s+=PLAYER.plan.blocks[j].exercises.reduce((x,e)=>x+e.estSec,0);
+  return s;
+}
+function updateRing(){
+  const fg=document.querySelector("#scr-workout .ring-fg");
+  const timeEl=document.getElementById("ringTime");
+  const phaseEl=document.getElementById("ringPhase");
+  if(!fg)return;
+  const C=2*Math.PI*95;
+  const prog=PLAYER.timerTotal>0?PLAYER.timerLeft/PLAYER.timerTotal:0;
+  fg.style.strokeDashoffset=C*(1-Math.max(0,Math.min(1,prog)));
+  if(timeEl)timeEl.textContent=Math.max(0,Math.ceil(PLAYER.timerLeft));
+  if(phaseEl)phaseEl.textContent=PLAYER.phase==="rest"?"DESCANSO":"TRABAJO";
+}
+
+/* SAVE POINTS */
+function saveAndExit(){
+  STATE.savePoint={
+    bi:PLAYER.bi,ei:PLAYER.ei,set:PLAYER.set,phase:PLAYER.phase,
+    plan:JSON.parse(JSON.stringify(PLAYER.plan)),
+    timerLeft:PLAYER.timerLeft,timerTotal:PLAYER.timerTotal,
+    completedSets:PLAYER.completedSets,completedEx:PLAYER.completedEx,repsDone:PLAYER.repsDone,
+    workoutStart:PLAYER.workoutStart,savedAt:Date.now(),
+  };
+  clearInterval(PLAYER.tick);clearInterval(PLAYER.checkinTick);clearInterval(PLAYER.partnerTick);
+  PLAYER.active=false;PLAYER.phase="idle";PLAYER.plan=null;
+  showToast("Save point creado. Retoma cuando quieras.","SAVE POINT","");
+  switchTab("home");renderHome();
+}
+function resumeSave(){
+  const sp=STATE.savePoint;if(!sp)return;
+  PLAYER.plan=sp.plan;PLAYER.bi=sp.bi;PLAYER.ei=sp.ei;PLAYER.set=sp.set;
+  PLAYER.completedSets=sp.completedSets;PLAYER.completedEx=sp.completedEx;PLAYER.repsDone=sp.repsDone;
+  PLAYER.workoutStart=sp.workoutStart;PLAYER.timerTotal=sp.timerTotal;PLAYER.timerLeft=sp.timerLeft;
+  PLAYER.phase=sp.phase==="cleanser"?"exercise":sp.phase;
+  PLAYER.active=true;STATE.plan=sp.plan;STATE.savePoint=null;
+  switchTab("workout");renderWorkout();startTick();startCheckinLoop();if(STATE.bodyDouble)startPartnerTick();
+}
+function discardSave(){STATE.savePoint=null;renderHome();showToast("Save point descartado. Ok.","SAVE POINT","");}
+
+function runFormCheck(){
+  const knee=82+Math.round(Math.random()*26),hip=78+Math.round(Math.random()*28),backOk=Math.random()<.72,depthOk=Math.random()<.8;
+  const cues=[
+    {ok:knee>=88&&knee<=104,txt:`Rodilla ${knee}° · ${knee>=88&&knee<=104?"en rango":"ajusta profundidad"}`},
+    {ok:hip>=85&&hip<=100,txt:`Cadera ${hip}° · ${hip>=85&&hip<=100?"buena bisagra":"empuja cadera atrás"}`},
+    {ok:backOk,txt:`Espalda · ${backOk?"neutra":"redondeada, sube el pecho"}`},
+    {ok:depthOk,txt:`Profundidad · ${depthOk?"paralelo alcanzado":"baja 5 cm más"}`},
+  ];
+  const okCount=cues.filter(c=>c.ok).length;const firstWarn=cues.find(c=>!c.ok);
+  runPipeline("form_check","tmpl_form_001",{ok:okCount,total:cues.length,cue:firstWarn?firstWarn.txt.split("·")[1].trim():"todo limpio"},{agent:"form",model:"mediapipe-pose-sim",landmarks:33,joint_angles:{knee,hip},back:backOk?"neutral":"rounded"});
+  document.getElementById("poseBox").innerHTML=poseSVG(knee,hip,backOk);
+  document.getElementById("cueList").innerHTML=cues.map(c=>`<div class="cue-row ${c.ok?"ok":"warn"}"><span class="ci">${icon(c.ok?"checkCircle":"alert",14)}</span>${c.txt}</div>`).join("");
+  showOverlay("ov-form");
+}
+function poseSVG(knee,hip,backOk){
+  const j={head:[150,44],neck:[146,70],shoulder:[142,82],elbow:[168,110],wrist:[186,138],hip:[112,140],knee:[148,182],ankle:[140,228],toe:[164,234]};
+  if(!backOk){j.shoulder=[150,88];j.neck:[152,76];j.head:[158,50];}
+  const L=(a,b)=>`<line x1="${j[a][0]}" y1="${j[a][1]}" x2="${j[b][0]}" y2="${j[b][1]}" stroke="var(--teal)" stroke-width="3" stroke-linecap="round"/>`;
+  const ang=(from,via,to,label,off)=>{const a1=Math.atan2(j[from][1]-j[via][1],j[from][0]-j[via][0]);const a2=Math.atan2(j[to][1]-j[via][1],j[to][0]-j[via][0]);const r=20;const p1=[j[via][0]+r*Math.cos(a1),j[via][1]+r*Math.sin(a1)];const p2=[j[via][0]+r*Math.cos(a2),j[via][1]+r*Math.sin(a2)];return `<path d="M${p1[0].toFixed(1)},${p1[1].toFixed(1)} A${r},${r} 0 0 1 ${p2[0].toFixed(1)},${p2[1].toFixed(1)}" fill="none" stroke="var(--amber)" stroke-width="2"/><text x="${j[via][0]+off[0]}" y="${j[via][1]+off[1]}" fill="var(--amber)" font-size="11" font-family="JetBrains Mono">${label}</text>`;};
+  const dot=k=>`<circle cx="${j[k][0]}" cy="${j[k][1]}" r="4.5" fill="#0a0d13" stroke="var(--blue)" stroke-width="2"/>`;
+  return `<svg viewBox="0 0 260 268" class="pose-svg"><line x1="20" y1="246" x2="240" y2="246" stroke="var(--border2)" stroke-width="1.5" stroke-dasharray="4 7"/>${L('neck','shoulder')}${L('shoulder','hip')}${L('hip','knee')}${L('knee','ankle')}${L('ankle','toe')}${L('shoulder','elbow')}${L('elbow','wrist')}<circle cx="${j.head[0]}" cy="${j.head[1]}" r="13" fill="none" stroke="var(--teal)" stroke-width="3"/>${ang('hip','knee','ankle',knee+"°",[14,6])}${ang('shoulder','hip','knee',hip+"°",[-46,4])}${Object.keys(j).filter(k=>k!=='head').map(dot).join("")}<text x="14" y="20" fill="var(--dim2)" font-size="9" font-family="JetBrains Mono">33 landmarks · on-device</text></svg>`;
+}
+
+let toastTimer=null,toastCb=null;
+function showToast(text,tag,actLabel,cb){
+  const t=document.getElementById("toast");
+  document.getElementById("toastText").innerHTML=text;
+  document.getElementById("toastTag").textContent=tag||"BODY DOUBLE · AGENTE";
+  const act=document.getElementById("toastAct");toastCb=cb||null;
+  if(actLabel){act.style.display="";act.textContent=actLabel;}else{act.style.display="none";}
+  t.classList.add("show");clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove("show"),actLabel?8000:4200);
+}
+document.getElementById("toastAct").addEventListener("click",()=>{if(toastCb)toastCb();document.getElementById("toast").classList.remove("show");});
+function showOverlay(id){document.getElementById(id).classList.add("show");}
+function hideOverlay(id){document.getElementById(id).classList.remove("show");}
+
+const SHATTER_STEPS=[
+  {tmpl:"tmpl_paralysis_001",vars:{},btn:"Hecho"},
+  {tmpl:"tmpl_paralysis_005",vars:{},btn:"De pie"},
+  {tmpl:"tmpl_paralysis_009",varsFn:()=>{const e=STATE.plan?.blocks[0]?.exercises[0];return{ejercicio:e?e.name:"el primero",reps:e?e.reps:10};},btn:"Empezar ahora"},
+];
+function triggerShatter(){if(!STATE.plan)generatePlan();STATE.shatter.active=true;STATE.shatter.step=0;renderShatter();showOverlay("ov-shatter");}
+function renderShatter(){
+  const s=SHATTER_STEPS[STATE.shatter.step];const vars=s.varsFn?s.varsFn():s.vars;
+  const txt=runPipeline("paralysis_shatter",s.tmpl,vars,{agent:"orchestrator",event:"inactivity_15min",step:STATE.shatter.step+1});
+  document.getElementById("shatterTitle").textContent=`Paso ${STATE.shatter.step+1} de 3`;
+  document.getElementById("shatterText").textContent=txt.replace(/<[^>]+>/g,"");
+  document.getElementById("shatterBtn").textContent=s.btn;
+  document.getElementById("shatterSteps").innerHTML=SHATTER_STEPS.map((_,i)=>`<div class="ov-step ${i<=STATE.shatter.step?'on':''}"></div>`).join("");
+  renderSystem();
+}
+function shatterNext(){if(STATE.shatter.step<SHATTER_STEPS.length-1){STATE.shatter.step++;renderShatter();}else{hideOverlay("ov-shatter");STATE.shatter.active=false;openLaunch();}}
+function clearShatter(){clearTimeout(STATE.shatter.timer);}
+function armShatterTimer(){clearShatter();STATE.shatter.timer=setTimeout(()=>{if(STATE.plan&&!PLAYER.active)triggerShatter();},22000);}
+
+function openLaunch(){STATE.launchDone=[false,false,false,false];renderLaunch();showOverlay("ov-launch");}
+function renderLaunch(){
+  const done=STATE.launchDone.filter(Boolean).length;
+  document.getElementById("launchFill").style.width=(done/4*100)+"%";
+  document.getElementById("launchSteps").innerHTML=LAUNCH_STEPS.map((s,i)=>`<div class="launch-step ${STATE.launchDone[i]?'done':''}" data-action="launch-check" data-v="${i}"><span class="ls-i">${icon(s.i,17)}</span><span class="ls-t">${s.t}</span><span class="ls-c">${icon("check",12)}</span></div>`).join("");
+  const go=document.getElementById("launchGo");go.disabled=done<4;go.style.opacity=done<4?".4":"1";
+}
+function launchGo(){hideOverlay("ov-launch");showOverlay("ov-countdown");let n=3;document.getElementById("cdNum").textContent=n;const iv=setInterval(()=>{n--;if(n>0)document.getElementById("cdNum").textContent=n;else{clearInterval(iv);hideOverlay("ov-countdown");startWorkout();}},900);}
+
+const SNACK={iv:null,idx:0,left:0,exs:[],reps:0};
+function startSnack(){const quick=EXERCISES.filter(e=>e.estSec<90&&e.diff<=3&&(!STATE.sensory.swap||!e.sensory));SNACK.exs=[...quick].sort(()=>Math.random()-.5).slice(0,3);SNACK.idx=0;SNACK.reps=0;showOverlay("ov-snack");nextSnackEx();}
+function nextSnackEx(){
+  if(SNACK.idx>=SNACK.exs.length){endSnack(true);return;}
+  const ex=SNACK.exs[SNACK.idx];SNACK.left=40;SNACK.reps+=ex.reps;
+  document.getElementById("snackEx").textContent=ex.name;
+  document.getElementById("snackProg").textContent=(SNACK.idx+1)+" / 3 · "+ex.reps+" reps";
+  document.getElementById("snackTime").textContent=SNACK.left;
+  runPipeline("movement_snack","tmpl_snack_001",{ejercicio:ex.name},{agent:"coach",event:"snack",idx:SNACK.idx});
+  clearInterval(SNACK.iv);const C=2*Math.PI*74;
+  SNACK.iv=setInterval(()=>{SNACK.left-=1;document.getElementById("snackTime").textContent=Math.max(0,SNACK.left);document.getElementById("snackFg").style.strokeDashoffset=C*(1-SNACK.left/40);if(SNACK.left<=0){SNACK.idx++;nextSnackEx();}},1000*STATE.demoScale);
+}
+function endSnack(completed){
+  clearInterval(SNACK.iv);hideOverlay("ov-snack");
+  if(completed){const pts=repsToPoints(SNACK.reps,STATE.theme);STATE.quest.points+=pts;STATE.quest.log.unshift({label:"Movement Snack",pts,ts:Date.now()});const theme=THEMES[STATE.theme];const txt=runPipeline("reward","tmpl_reward_001",{puntos:pts,recurso:theme.resource,tema:theme.name},{agent:"quest",event:"snack_complete"});showToast(txt,"QUEST · SNACK","");renderQuest();}
+}
+
+/* DOPAMINE BRIDGE */
+const BRIDGE={iv:null,left:0,total:30,name:""};
+function startBridge(item){
+  BRIDGE.left=item.sec||30;BRIDGE.total=item.sec||30;BRIDGE.name=item.name;
+  document.getElementById("bridgeTitle").textContent=item.name;
+  document.getElementById("bridgeText").textContent=runPipeline("dopamine_bridge","tmpl_bridge_001",{actividad:item.name},{agent:"coach",event:"dopamine_bridge",dopa:item.dopa}).replace(/<[^>]+>/g,"");
+  document.getElementById("bridgeTime").textContent=BRIDGE.left;
+  document.getElementById("bridgeGo").disabled=true;document.getElementById("bridgeGo").style.opacity=".4";
+  showOverlay("ov-bridge");
+  clearInterval(BRIDGE.iv);const C=2*Math.PI*60;
+  BRIDGE.iv=setInterval(()=>{
+    BRIDGE.left-=1;document.getElementById("bridgeTime").textContent=Math.max(0,BRIDGE.left);
+    document.getElementById("bridgeFg").style.strokeDashoffset=C*(1-BRIDGE.left/BRIDGE.total);
+    if(BRIDGE.left<=0){clearInterval(BRIDGE.iv);const g=document.getElementById("bridgeGo");g.disabled=false;g.style.opacity="1";}
+  },1000*STATE.demoScale);
+}
+function bridgeGo(){clearInterval(BRIDGE.iv);hideOverlay("ov-bridge");if(!STATE.plan)generatePlan();openLaunch();}
+
+function roulette(btn){
+  addFatigue(6);
+  btn.classList.add("spin");setTimeout(()=>btn.classList.remove("spin"),500);
+  const dessert=STATE.plan.blocks.find(b=>b.type==="dessert");if(!dessert)return;
+  const novel=EXERCISES.filter(e=>e.tag==="novel"&&fits(e,STATE.plan.track,STATE.ctxSnapshot||buildCtx()));if(!novel.length)return;
+  setTimeout(()=>{dessert.exercises=[novel[Math.floor(Math.random()*novel.length)]];renderHome();showToast("Novelty inyectada. Nuevo ejercicio en Dessert.","COACH · ANTI-ABURRIMIENTO","");},450);
+}
+function voiceCommand(){
+  const btn=document.getElementById("micBtn");if(!btn)return;btn.classList.add("listening");
+  const finish=(cmd)=>{btn.classList.remove("listening");const hint=document.getElementById("voiceHint");if(hint)hint.textContent='> "'+cmd+'"';if(cmd.includes("complet")||cmd.includes("hecho")){if(PLAYER.phase==="exercise")completeSet();}else if(cmd.includes("saltar"))skipExercise();else if(cmd.includes("descanso"))startRest();};
+  try{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(SR){const rec=new SR();rec.lang="es-ES";rec.maxAlternatives=1;rec.onresult=(e)=>finish(e.results[0][0].transcript.toLowerCase());rec.onerror=()=>setTimeout(()=>finish("completar set"),1200);rec.onend=()=>btn.classList.remove("listening");rec.start();return;}}catch(e){}
+  setTimeout(()=>finish(["completar set","saltar ejercicio","completar set"][Math.floor(Math.random()*3)]),1500);
+}
+
+function buildCtx(){return {energy:STATE.energy,time:STATE.time,sleep:STATE.sleepH,sleepQ:4,streak:STATE.streak,workoutsThisWeek:STATE.workoutsThisWeek,lastUpper:STATE.lastUpper,equipment:EQUIP_AVAIL,theme:STATE.theme,timeBlindFactor:STATE.timeBlindFactor,skippedLast:false};}
+function generatePlan(auto){
+  const ctx=buildCtx();STATE.ctxSnapshot=ctx;const dec=orchestratorDecide(ctx);
+  STATE.plan=coachBuildPlan(dec.track,ctx);
+  pipelineLog.unshift({ts:Date.now(),intent:"orchestrator_decision",templateId:"—",algorithmJSON:{agent:"orchestrator",tree:dec.reasons,track:dec.track,confidence:dec.confidence,autopilot:!!auto,readiness:computeReadiness().total,socialBattery:STATE.socialBattery},variables:{},output:{text:"(sin LLM: decisión pura)",template_used:"—",variables_filled:{}},zod:{success:true,checks:[{label:"árbol determinista",pass:true}]},latency:0,fallback:false});
+  renderHome();renderSystem();armShatterTimer();
+}
+
+function renderHome(){
+  const ctx=buildCtx();STATE.ctxSnapshot=ctx;const dec=orchestratorDecide(ctx);const track=TRACKS[dec.track];
+  const rd=computeReadiness();const med=medWindowInfo();const C=2*Math.PI*36;
+  const rdColor=rd.total>=70?"var(--teal)":rd.total>=40?"var(--amber)":"var(--dim)";
+  let gText;
+  if(STATE.autopilot){gText=runPipeline("greeting","tmpl_auto_001",{track:track.name},{agent:"orchestrator",mode:"autopilot",decision:dec});}
+  else{const gTmpl=STATE.energy<=2?"tmpl_greet_005":(STATE.streak>3?"tmpl_greet_003":"tmpl_greet_012");gText=runPipeline("greeting",gTmpl,{track:track.name,energia:STATE.energy,racha:STATE.streak,duracion:STATE.time},{agent:"orchestrator",decision:dec});}
+
+  let html=`
+  <div class="apphead"><div class="logo"><div class="logo-mark">${icon("brain",18)}</div><div><div class="logo-txt">NEURO<span>FIT</span></div><div class="logo-sub">Agentic OS · v3.0</div></div></div><img class="avatar" src="${COACH_IMG}" alt="coach"></div>
+  <div class="v2chip">${icon("sparkles",12)} v3.0 · <b>Executive Function OS</b> · Dopamina · Save Points · Boss · Skill Tree · Vault</div>
+  <div class="greet glass"><img class="avatar" src="${COACH_IMG}" alt="coach"><div class="greet-body"><div class="greet-meta"><span class="agent-tag">ORQUESTADOR → LLM → ZOD ✓</span></div><div class="greet-text">${gText}</div></div></div>`;
+
+  if(STATE.savePoint){
+    const sp=STATE.savePoint;const ex=sp.plan.blocks[sp.bi]?.exercises[sp.ei];
+    const ago=Math.max(1,Math.round((Date.now()-sp.savedAt)/60000));
+    html+=`<div class="save-banner" data-action="resume"><div class="sb-i">${icon("save",18)}</div><div class="sb-b"><div class="sb-t">Retomar save point</div><div class="sb-s">${sp.plan.blocks[sp.bi]?.label||"—"} · set ${sp.set} · ${ex?ex.name:"—"} · hace ${ago}m</div></div><div class="sb-go">${icon("repeat",18)}</div></div>`;
+  }
+  if(STATE.decisionFatigue>70&&!STATE.autopilot){
+    html+=`<div class="fat-banner"><span class="fi">${icon("batteryCharging",18)}</span><div class="ft"><b>Fatiga de decisión alta.</b> Demasiadas elecciones hoy. Déjame decidir por ti.</div><button data-action="fat-autopilot">Autopilot</button></div>`;
+  }
+  html+=`<div class="parallel">${icon("radio",15)}<b id="parallelCount">${STATE.parallel}</b>&nbsp;personas entrenando ahora<span class="ps">parallel play</span></div>
+  <div class="readiness glass"><div class="rd-ring"><svg width="86" height="86" viewBox="0 0 86 86"><circle cx="43" cy="43" r="36" fill="none" stroke="var(--surf3)" stroke-width="7"/><circle cx="43" cy="43" r="36" fill="none" stroke="${rdColor}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C*(1-rd.total/100)}"/></svg><div class="rd-num"><div class="v" style="color:${rdColor}">${rd.total}</div><div class="l">readiness</div></div></div><div class="rd-body"><div class="rd-title">${icon("watch",14)} Readiness Score <button class="linkbtn" data-action="sync-wearable" style="padding:2px 6px;font-size:10px;display:inline-flex;align-items:center;gap:4px">${icon("refresh",11)} sync</button></div><div class="rd-factors"><span class="rd-f">sueño <b>${STATE.sleepH}h</b></span><span class="rd-f">HRV <b>${STATE.hrv}</b></span><span class="rd-f">med <b>${rd.med}</b></span><span class="rd-f">recup <b>${rd.recovery}</b></span><span class="rd-f">${STATE.chronotype==="leon"?"mañana":"noche"} <b>${rd.chrono}</b></span></div><div class="rd-med ${med.status.cls}">${icon(med.status.ico,13)} ${med.status.txt}</div></div></div>
+  ${STATE.lastAuditMsg?`<div class="audit-box"><div class="ai">${icon("timer",16)}</div><div class="at"><b>Auditor:</b> ${STATE.lastAuditMsg.replace(/<[^>]+>/g,"")} <span style="color:var(--dim2)">(factor ${STATE.timeBlindFactor}×)</span></div></div>`:""}
+  <div class="toggle-row" style="margin-top:0"><div><div class="tl">${icon("cpu",15)} Autopilot (cero decisiones)</div><div class="ts">El app elige energía, tiempo y plan por ti</div></div><div class="switch ${STATE.autopilot?'on':''}" data-action="toggle-autopilot"></div></div>
+  <div class="sect"><h2>${icon("gauge",14)} Tu energía</h2><span class="hint">${STATE.autopilot?"auto desde readiness":"manual"}</span></div>
+  <div class="energy-row">${[1,2,3,4,5].map(n=>{const el=["mín","baja","media","alta","máx"][n-1];return `<div class="energy-btn ${STATE.energy===n?'sel':''} ${STATE.autopilot?'auto':''}" data-action="set-energy" data-v="${n}">${batteryIcon(n,22)}<span class="el">${el}</span></div>`;}).join("")}</div>
+  <div class="sect"><h2>${icon("clock",14)} Tiempo disponible</h2><span class="hint">anti time-blindness</span></div>
+  <div class="chips">${[15,20,30,40].map(t=>`<div class="chip ${STATE.time===t?'sel':''}" data-action="set-time" data-v="${t}">${t} min</div>`).join("")}</div>
+  <div class="sect"><h2>${icon("heartPulse",14)} Batería social</h2><span class="hint">afecta el plan</span></div>
+  <div class="chips">${[1,2,3,4,5].map(n=>`<div class="chip ${STATE.socialBattery===n?'sel':''}" data-action="set-social" data-v="${n}">${["aislado","baja","media","social","a tope"][n-1]}</div>`).join("")}</div>
+  <div class="sect"><h2>${icon("sliders",14)} Ajustes rápidos</h2></div>
+  <div class="slider-row"><label>${icon("moon",15)} Sueño</label><input type="range" min="4" max="10" step="0.5" value="${STATE.sleepH}" data-action="set-sleep"><span class="sv">${STATE.sleepH}h</span></div>
+  <div style="height:8px"></div>
+  <div class="chips"><div class="chip ${STATE.chronotype==='leon'?'sel':''}" data-action="set-chronotype" data-v="leon">${icon("sun",13)} León (mañana)</div><div class="chip ${STATE.chronotype==='lobo'?'sel':''}" data-action="set-chronotype" data-v="lobo">${icon("moonStar",13)} Lobo (noche)</div></div>
+  <div style="height:8px"></div>
+  <div class="toggle-row" style="margin-top:0"><div><div class="tl">${icon("pill",15)} Ventana de medicación</div><div class="ts">Fuerza en pico · cardio fuera</div></div><div style="display:flex;gap:6px"><select class="sel-dark" data-action="set-medtime">${["07:00","08:00","09:00","10:00"].map(t=>`<option ${STATE.meds.time===t?'selected':''}>${t}</option>`).join("")}</select><select class="sel-dark" data-action="set-medtype"><option value="long" ${STATE.meds.type==='long'?'selected':''}>larga</option><option value="short" ${STATE.meds.type==='short'?'selected':''}>corta</option></select></div></div>
+  <div class="sect"><h2>${icon("droplet",14)} Fuel · nutrición</h2><span class="hint">Mifflin-St Jeor</span></div>
+  <div class="fuel-card glass"><div class="fuel-head">${icon("droplet",15)} Hidratación <b>${STATE.water}/8</b></div><div class="water-row">${Array.from({length:8}).map((_,i)=>`<div class="water-cell ${i<STATE.water?'on':''}" data-action="water" data-v="${i}">${icon("droplet",14)}</div>`).join("")}</div><div class="tdee-row"><span>TDEE objetivo</span><b>${FUEL.tdee.toLocaleString("es")} kcal</b></div><div class="macro"><div class="macro-top"><span>Proteína</span><span>${FUEL.p}g</span></div><div class="macro-bar"><div class="macro-fill" style="width:${FUEL.p/200*100}%;background:var(--teal)"></div></div></div><div class="macro"><div class="macro-top"><span>Carbohidratos</span><span>${FUEL.c}g</span></div><div class="macro-bar"><div class="macro-fill" style="width:${FUEL.c/320*100}%;background:var(--amber)"></div></div></div><div class="macro"><div class="macro-top"><span>Grasa</span><span>${FUEL.f}g</span></div><div class="macro-bar"><div class="macro-fill" style="width:${FUEL.f/80*100}%;background:var(--purple)"></div></div></div></div>
+  <div class="snack-card"><div class="snack-ico">${icon("zap",18)}</div><div class="sb"><div class="st">Movement Snack · 2 min</div><div class="ss">3 ejercicios rápidos. Para el hueco entre tareas.</div></div><button data-action="snack-start">Hacer</button></div>
+  <div style="margin-top:4px"><button class="btn btn-primary" data-action="generate">${icon("zap",17)} ${STATE.plan?'Regenerar plan':'Generar plan agéntico'}</button></div>`;
+
+  if(STATE.plan){
+    const p=STATE.plan,tr=TRACKS[p.track];const theme=THEMES[STATE.theme];
+    const noun=theme.nouns[Math.floor(Math.random()*theme.nouns.length)];
+    const title=runPipeline("workout_title",["tmpl_title_001","tmpl_title_002","tmpl_title_003"][Math.floor(Math.random()*3)],{noun,track_short:tr.name.split(" ")[0]},{agent:"coach",track:p.track,energy:STATE.energy});
+    html+=`<div class="sect"><h2>${icon("layers",14)} Plan de hoy</h2><span class="hint">${p.blocks.length} bloques · Ladder-style</span></div>
+    <div class="plan-hero glass" style="--trackc:${tr.color}"><div class="ph-bg"></div><div class="ph-track" style="color:${tr.color}">${icon(tr.icon,13)} ${tr.name}</div><div class="ph-title">${title.replace(/<[^>]+>/g,"")}</div><div class="plan-stats"><div class="plan-stat"><div class="v">${p.totalMin}'</div><div class="l">duración</div></div><div class="plan-stat"><div class="v">${p.totalEx}</div><div class="l">ejercicios</div></div><div class="plan-stat"><div class="v">${p.totalSets}</div><div class="l">sets</div></div></div><div class="dopa"><div class="dopa-bar"><div class="dopa-fill" style="width:${p.dopa*10}%"></div></div><div class="dopa-lab"><span>dopamina algorítmica</span><span>${p.dopa}/10</span></div></div></div>
+    <div class="blocks">${p.blocks.map((b,i)=>`<div class="block ${i===0?'open':''}" style="--bc:${tr.color}"><div class="block-head" data-action="toggle-block"><div class="bl">${icon(b.icon,15)}<span class="block-type">${b.label}</span><span class="block-time">${b.tMin}'</span></div><div style="display:flex;gap:7px;align-items:center">${b.type==='dessert'?`<button class="roulette" data-action="roulette" title="Novelty Roulette">${icon("dice",14)}</button>`:""}${icon("chevronDown",16,"block-chev")}</div></div><div class="block-exs">${b.exercises.map(e=>`<div class="ex-row"><div class="muscle-badge">${MUSCLE_ABBR[e.muscle]}</div><div class="ex-info"><div class="ex-name">${e.name}</div><div class="ex-meta">${e.sets}×${e.reps} · ${e.rest}s · ${e.muscle}</div></div><div class="ex-tags"><span class="ex-tag">${e.tag}</span></div></div>`).join("")}</div></div>`).join("")}</div>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:center"><button class="btn btn-primary" data-action="start">${icon("play",17)} Empezar workout</button><button class="linkbtn" data-action="shatter">no puedo empezar ahora</button></div>`;
+  }else{html+=`<div class="empty">Ajusta (o deja que Autopilot lo haga). El orquestador elige el track, el coach arma los bloques.</div>`;}
+  document.getElementById("scr-home").innerHTML=html;
+}
+
+function renderWorkout(){
+  if(!PLAYER.plan){document.getElementById("scr-workout").innerHTML=`<div class="empty">Sin workout activo. Genera un plan en "Hoy".</div>`;return;}
+  const p=PLAYER.plan,tr=TRACKS[p.track];const b=curBlock(),ex=curEx();
+  const overall=currentOverall();const C=2*Math.PI*95;
+  const ringColor=PLAYER.phase==="rest"?"var(--purple)":tr.color;
+  const bpm=PLAYER.phase==="rest"?60:(STATE.music.bpm||tr.bpm);const bpmdur=(60/bpm).toFixed(2);
+  let partnerHtml="";
+  if(STATE.bodyDouble){
+    partnerHtml=`<div class="partner-card"><div class="partner-av">A</div><div class="partner-b"><div class="partner-t">${icon("video",12)} Alex entrena contigo</div><div class="partner-bar"><div class="partner-fill" id="partnerFill" style="width:${STATE.partnerProgress}%"></div></div><div class="partner-s">body double · emparejado en vivo</div></div></div>`;
+  }
+  document.getElementById("scr-workout").innerHTML=`
+  <div class="wo-top"><button class="wo-close" data-action="wo-close">${icon("x",15)}</button><div class="wo-block-pill" style="border-color:${tr.color};color:${tr.color}">${b?icon(b.icon,13)+" "+b.label:"—"}</div><div class="wo-prog">${overall}%</div></div>
+  ${partnerHtml}
+  <div class="wo-stage"><div class="wo-track-name" style="color:${tr.color}">${icon(tr.icon,12)} ${tr.name}</div><div class="ring-wrap"><svg width="210" height="210" viewBox="0 0 210 210"><circle class="ring-bg" cx="105" cy="105" r="95"/><circle class="ring-fg" cx="105" cy="105" r="95" stroke="${ringColor}" stroke-dasharray="${C}" stroke-dashoffset="0" style="filter:drop-shadow(0 0 8px ${ringColor}88)"/></svg><div class="ring-center"><div class="ring-time" id="ringTime">${Math.ceil(PLAYER.timerLeft)}</div><div class="ring-phase" id="ringPhase">${PLAYER.phase==="rest"?"DESCANSO":"TRABAJO"}</div></div></div><div class="wo-ex-name">${ex?ex.name:"—"}</div><div class="wo-ex-sub">${ex?`set ${PLAYER.set} / ${ex.sets} · ${ex.reps} reps · ${ex.muscle}`:""}</div><div class="wo-sets">${ex?Array.from({length:ex.sets}).map((_,i)=>`<div class="wo-dot ${i<PLAYER.set-1?'done':''} ${i===PLAYER.set-1?'cur':''}"></div>`).join(""):""}</div><div class="bpm-row"><span class="bpm-dot" style="--bpmdur:${bpmdur}s"></span><span class="bpm-lab">${icon("music",12)} <b>${bpm}</b> BPM</span><div class="stations">${STATIONS.map(s=>`<div class="station ${STATE.music.station===s.n?'sel':''}" data-action="set-station" data-v="${s.n}" data-b="${s.bpm}">${s.n}</div>`).join("")}</div></div></div>
+  <div class="wo-actions"><div class="voice-row">${PLAYER.phase==="rest"?`<button class="btn btn-primary" data-action="rest-skip">${icon("skipFwd",16)} Saltar descanso</button>`:`<button class="btn btn-primary" data-action="complete-set">${icon("check",17)} Completar set ${PLAYER.set}</button>`}<button class="mic-btn" id="micBtn" data-action="voice">${icon("mic",19)}</button></div><div class="voice-hint" id="voiceHint">voz: "completar" · "saltar" · "descanso"</div><div class="row2"><button class="btn btn-ghost" data-action="form-check" style="color:var(--blue);border-color:rgba(76,201,240,.35)">${icon("camera",14)} Form</button><button class="btn btn-ghost" data-action="skip-ex">${icon("skipFwd",14)} Saltar sin culpa</button></div><div class="row3"><button class="btn btn-ghost" data-action="save-exit" style="color:var(--blue)">${icon("save",13)} Guardar</button><button class="btn btn-ghost" data-action="bodydouble">${icon("video",13)} ${STATE.bodyDouble?"Body double ✓":"Body double"}</button><button class="btn btn-danger" data-action="abandon">${icon("x",13)} Abandonar</button></div></div>`;
+  updateRing();
+}
+
+function sparkSVG(){
+  let seed=7;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  const vals=[];let v=42;for(let i=0;i<12;i++){v+=Math.round(rnd()*9-2);vals.push(Math.max(30,v));}
+  const w=290,h=56,max=Math.max(...vals),min=Math.min(...vals);
+  const pts=vals.map((val,i)=>[8+i*(w-16)/11,h-8-((val-min)/(max-min||1))*(h-20)]);
+  const line=pts.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+  const area=`8,${h-4} `+line+` ${w-8},${h-4}`;const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:64px;display:block"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="var(--purple)"/><stop offset="1" stop-color="var(--teal)"/></linearGradient><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(0,212,170,.22)"/><stop offset="1" stop-color="rgba(0,212,170,0)"/></linearGradient></defs><polygon points="${area}" fill="url(#ag)"/><polyline points="${line}" fill="none" stroke="url(#sg)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((p,i)=>i===pts.length-1?`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="var(--teal)"/>`:`<circle cx="${p[0]}" cy="${p[1]}" r="2" fill="var(--surf3)" stroke="var(--dim2)" stroke-width="1"/>`).join("")}<text x="${last[0]-34}" y="${last[1]-8}" fill="var(--teal)" font-size="9" font-family="JetBrains Mono">PR</text></svg>`;
+}
+function renderQuest(){
+  const theme=THEMES[STATE.theme];const lvl=Math.floor(STATE.quest.points/200)+1;const intoLvl=STATE.quest.points%200;const pct=Math.round(intoLvl/200*100);
+  let seed=42;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};let cells="";
+  for(let w=0;w<12;w++){for(let d=0;d<7;d++){const recency=(w/12);const p=0.35+recency*0.35;let lvlCls="";if(rnd()<p){const i=rnd();lvlCls=i<.3?"l1":i<.7?"l2":"l3";}cells+=`<div class="hm-cell ${lvlCls}"></div>`;}}
+  // skill tree
+  let treeHtml=SKILL_TREE.map(br=>{
+    let foundNext=false;
+    const nodes=br.nodes.map((n,idx)=>{
+      const ex=EX_MAP[n.id];const unlocked=STATE.xp>=n.cost;
+      let cls=unlocked?"unlocked":(!foundNext?"next":"locked");
+      if(!unlocked&&!foundNext)foundNext=true;
+      const line=idx>0?`<div class="skill-line ${STATE.xp>=br.nodes[idx-1].cost?'on':''}" style="--nc:${br.color}"></div>`:"";
+      const costLab=!unlocked?`<div class="sn-cost">${n.cost} XP</div>`:`<div class="sn-cost" style="color:var(--green)">✓</div>`;
+      return line+`<div class="skill-node ${cls}" style="--nc:${br.color}"><div class="sn-circle">${icon(ex?({chest:"dumbbell",back:"dumbbell",legs:"dumbbell",shoulders:"dumbbell",arms:"dumbbell",core:"target",full_body:"zap"}[ex.muscle]||"zap"):"lock",18)}</div><div class="sn-name">${ex?ex.name.split(" ")[0]:"?"}</div>${costLab}</div>`;
+    }).join("");
+    return `<div class="skill-branch"><div class="sb-head" style="color:${br.color}">${icon(br.icon,15)}<span class="sb-n">${br.branch}</span><span class="sb-xp">${STATE.xp} XP</span></div><div class="skill-chain">${nodes}</div></div>`;
+  }).join("");
+  // boss
+  const bossHtml=STATE.boss.defeated
+    ?`<div class="boss-done">${icon("trophy",22)}<div><div class="bd-t">Jefe derrotado esta semana</div><div class="bd-s">+500 ${theme.resource}. Nuevo jefe el lunes.</div></div></div>`
+    :`<div class="boss-card"><img class="boss-img" src="${BOSS_IMG}" alt="boss"><div class="boss-body"><div class="boss-tag">${icon("gamepad",12)} BOSS BATTLE · SEMANAL</div><div class="boss-name">${STATE.boss.name}</div><div class="boss-hp-top"><span>HP</span><span>${STATE.boss.hp} / ${STATE.boss.maxHp}</span></div><div class="boss-hp-bar"><div class="boss-hp-fill" style="width:${STATE.boss.hp/STATE.boss.maxHp*100}%"></div></div><div class="boss-note">${icon("sword",12)} Cada set = reps × 2 de daño. Derrotar = +500 ${theme.resource}.</div></div></div>`;
+  // vault
+  const vaultHtml=STATE.vault.map(v=>{
+    const open=STATE.workoutsThisWeek>=v.cost;
+    let act;
+    if(v.claimed)act=`<span class="vault-claimed">${icon("checkCircle",12)} reclamado</span>`;
+    else if(open)act=`<button class="vault-claim" data-action="vault-claim" data-v="${v.id}">Reclamar</button>`;
+    else act=`<span class="vault-lock">${icon("lock",12)} ${v.cost-STATE.workoutsThisWeek} más</span>`;
+    return `<div class="vault-item ${open&&!v.claimed?'open':''}"><div class="vault-ico">${icon(v.ico,18)}</div><div class="vault-b"><div class="vault-t">${v.name}</div><div class="vault-s">Premack · requiere ${v.cost} workout${v.cost>1?'s':''}</div></div><div class="vault-act">${act}</div></div>`;
+  }).join("");
+
+  document.getElementById("scr-quest").innerHTML=`
+  <div class="apphead"><div class="logo"><div class="logo-mark" style="background:linear-gradient(135deg,var(--purple),var(--red));color:#fff">${icon("trophy",17)}</div><div><div class="logo-txt">QUEST</div><div class="logo-sub">Hyper-fixación</div></div></div></div>
+  <div class="streak-card"><div class="streak-ico">${icon("flame",19)}</div><div class="sc-b"><div class="sc-t">${STATE.streak} días seguidos</div><div class="sc-s">RSD Shield: nunca "rompes" la racha. Se protege.</div></div><div class="freeze-chip">${icon("snowflake",11)} ×${STATE.streakFreezes}</div></div>
+  ${bossHtml}
+  <div class="quest-hero"><img class="quest-emblem" src="${QUEST_IMG}" alt="emblem"><div class="quest-info"><div class="quest-theme">${theme.name}</div><div class="quest-res">recurso · ${theme.resource}</div><div class="quest-points">${STATE.quest.points}</div><div class="quest-pts-lab">${theme.resource} acumulados</div><div class="quest-lvl"><div class="quest-lvl-top"><span>Nivel ${lvl}</span><span>${intoLvl}/200 → Nv.${lvl+1}</span></div><div class="quest-lvl-bar"><div class="quest-lvl-fill" style="width:${pct}%"></div></div></div></div></div>
+  <div class="sect"><h2>${icon("gitBranch",14)} Skill Tree</h2><span class="hint">${STATE.xp} XP</span></div>
+  ${treeHtml}
+  <div class="sect"><h2>${icon("gift",14)} Reward Vault</h2><span class="hint">Premack</span></div>
+  ${vaultHtml}
+  <div class="sect"><h2>${icon("trendingUp",14)} Progresión de fuerza</h2><span class="hint">12 sesiones · PR</span></div>
+  <div class="pr-card"><div class="pr-head"><span class="pl">${icon("trendingUp",13)} Carga estimada</span><span class="pv">+18% vs inicio</span></div>${sparkSVG()}</div>
+  <div class="sect"><h2>${icon("grid",14)} Consistencia · 12 semanas</h2><span class="hint">progreso sin números</span></div>
+  <div class="heatmap"><div class="hm-grid">${cells}</div><div class="hm-legend">menos <div class="hm-cell"></div><div class="hm-cell l1"></div><div class="hm-cell l2"></div><div class="hm-cell l3"></div> más</div></div>
+  <div class="sect"><h2>${icon("target",14)} Tema de fijación</h2><span class="hint">1 rep = pts</span></div>
+  <div class="theme-grid">${Object.entries(THEMES).map(([k,t])=>`<div class="theme-card ${STATE.theme===k?'sel':''}" data-action="set-theme" data-v="${k}"><div class="tn">${t.name}</div><div class="tr">${t.resource} · ${t.nouns[0]}</div></div>`).join("")}</div>
+  <div class="sect"><h2>${icon("chartBar",14)} Últimas ganancias</h2><span class="hint">quest mapper</span></div>
+  <div class="quest-log">${STATE.quest.log.length?STATE.quest.log.map(l=>`<div class="ql-row"><span class="ql-l">${l.label}</span><span class="ql-v">+${l.pts} ${theme.resource}</span></div>`).join(""):`<div class="empty">Completa un workout o un snack para ganar ${theme.resource}.</div>`}</div>`;
+}
+
+function renderDopa(){
+  const menuHtml=DOPAMINE_MENU.map(cat=>`
+    <div class="dopa-cat"><div class="dopa-cat-head" style="color:${cat.color}">${icon(cat.icon,15)}<span class="dc-n">${cat.label}</span><span class="dc-t">${cat.time}</span></div>
+    <div class="dopa-grid">${cat.items.map((it,idx)=>`<div class="dopa-item" style="--dc:${cat.color}" data-action="dopa-tap" data-cat="${cat.cat}" data-idx="${idx}"><span class="di-dopa">★${it.dopa}</span><div class="di-top"><div class="di-ico">${icon(it.icon,15)}</div><div class="di-n">${it.name}</div></div><div class="di-sub">${it.sub}</div></div>`).join("")}</div></div>`).join("");
+  const habitHtml=STATE.habitStacks.map((h,i)=>`<div class="habit-item ${h.done?'done':''}"><div class="habit-ico">${icon("anchor",16)}</div><div class="habit-b"><div class="habit-anchor">después de: ${h.anchor}</div><div class="habit-action">${h.action}</div></div><div class="habit-check" data-action="habit-toggle" data-v="${i}">${icon("check",13)}</div></div>`).join("");
+  const doneH=STATE.habitStacks.filter(h=>h.done).length;
+  // weekly review
+  const wk=STATE.workoutsThisWeek;const mins=wk*28;
+  const reviewLine=runPipeline("weekly_review","tmpl_review_001",{workouts:wk},{agent:"auditor",event:"weekly_review",workouts:wk,minutes:mins,adjust:STATE.timeBlindFactor}).replace(/<[^>]+>/g,"");
+  document.getElementById("scr-dopa").innerHTML=`
+  <div class="apphead"><div class="logo"><div class="logo-mark" style="background:linear-gradient(135deg,var(--teal),var(--amber));color:#042019">${icon("sparkles",17)}</div><div><div class="logo-txt">DOPAMINA</div><div class="logo-sub">El Menú Dopamina</div></div></div></div>
+  <div class="audit-box" style="background:linear-gradient(135deg,rgba(0,212,170,.08),var(--glass));border-color:rgba(0,212,170,.25)"><div class="ai">${icon("brain",16)}</div><div class="at" style="font-size:11px;line-height:1.5">Herramienta clínica real para ADHD: elige una <b style="color:var(--teal)">actividad de bajo esfuerzo</b> como puente. La dopamina sube y el workout entra solo. Cero fuerza de voluntad.</div></div>
+  ${menuHtml}
+  <div class="sect"><h2>${icon("anchor",14)} Habit Stacking</h2><span class="hint">${doneH}/${STATE.habitStacks.length} hoy</span></div>
+  ${habitHtml}
+  <div class="sect"><h2>${icon("calendar",14)} Weekly Review</h2><span class="hint">sin culpa</span></div>
+  <div class="review-card"><div class="review-head">${icon("calendar",16)}<span class="rh-t">Resumen de la semana</span><span class="rh-s">auto · Auditor</span></div><div class="review-stats"><div class="rs"><div class="v">${wk}</div><div class="l">sesiones</div></div><div class="rs"><div class="v">${mins}</div><div class="l">minutos</div></div><div class="rs"><div class="v">${STATE.xp}</div><div class="l">XP total</div></div></div><div class="review-line">"${reviewLine}"</div></div>
+  <div style="height:20px"></div>`;
+}
+
+function jsonHL(obj){const s=JSON.stringify(obj,null,2);return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?)/g,m=>{let cls="jn";if(/^"/.test(m))cls=/:$/.test(m)?"jk":"js";return `<span class="${cls}">${m}</span>`;});}
+function renderSystem(){
+  const dec=STATE.ctxSnapshot?orchestratorDecide(STATE.ctxSnapshot):{track:"—",reasons:[]};
+  const agents=[
+    {name:"Orquestador",role:"CEO · árbol",st:STATE.plan?"decidió "+dec.track:"esperando input",dot:"idle"},
+    {name:"Coach",role:"scoring bloques",st:STATE.plan?STATE.plan.totalEx+" ejercicios":"—",dot:"idle"},
+    {name:"Body Double",role:"state machine",st:PLAYER.active?"check-ins ("+PLAYER.phase+")":"inactivo",dot:PLAYER.active?"busy":"idle"},
+    {name:"Auditor",role:"regresión lineal",st:"factor "+STATE.timeBlindFactor+"×",dot:"idle"},
+  ];
+  const last=pipelineLog[0];
+  const fat=STATE.decisionFatigue;const fatColor=fat>70?"var(--red)":fat>40?"var(--amber)":"var(--teal)";
+  // caffeine warning
+  const[h]=STATE.meds.time.split(":").map(Number);const nowH=new Date().getHours();
+  let cafWarn;
+  if(nowH>=14)cafWarn={cls:"bad",ico:"alert",txt:"Pasadas las 14h. La cafeína puede romper el sueño y el pico de mañana."};
+  else if(Math.abs(nowH-h)<=2&&STATE.caffeineMg>0)cafWarn={cls:"bad",ico:"alert",txt:"Cerca de tu medicación. La cafeína puede subir ansiedad/taquicardia."};
+  else cafWarn={cls:"ok",ico:"checkCircle",txt:"Cafeína en ventana segura. Vida media ~5h."};
+  // low-stim
+  const lsBars=LOWSTIM.map(s=>{const cls=s.o<35?"quiet":s.o<70?"mid":"busy";return `<div class="ls-bar ${cls}" style="height:${s.o}%"></div>`;}).join("");
+  const lsLabels=LOWSTIM.map(s=>`<span>${s.h}</span>`).join("");
+  const quietHours=LOWSTIM.filter(s=>s.o<35).map(s=>s.h+":00").join(", ");
+
+  document.getElementById("scr-system").innerHTML=`
+  <div class="apphead"><div class="logo"><div class="logo-mark" style="background:linear-gradient(135deg,var(--amber),var(--orange));color:#241a00">${icon("cpu",17)}</div><div><div class="logo-txt">SISTEMA</div><div class="logo-sub">Híbrido 80/20</div></div></div></div>
+  <div class="audit-box" style="background:linear-gradient(135deg,rgba(0,212,170,.08),var(--glass));border-color:rgba(0,212,170,.25)"><div class="ai">${icon("brain",16)}</div><div class="at" style="font-size:11px;line-height:1.5">El <b style="color:var(--teal)">algoritmo</b> decide y calcula. El <b style="color:var(--purple)">LLM on-device</b> (Qwen 2.5 1.5B) solo rellena plantillas con <b style="color:var(--purple)">GBNF</b>. <b style="color:var(--green)">Zod</b> bloquea alucinaciones antes de la UI.</div></div>
+  <div class="sect"><h2>${icon("users",14)} Agentes</h2><span class="hint">4 activos</span></div>
+  <div class="sys-agents">${agents.map(a=>`<div class="agent-card"><div class="ac-top"><span class="ac-dot ${a.dot}"></span><div><div class="ac-name">${a.name}</div><div class="ac-role">${a.role}</div></div></div><div class="ac-state">${a.st}</div></div>`).join("")}</div>
+  <div class="fat-meter"><div class="fat-top">${icon("batteryCharging",15,"")}<span class="ft-n">Fatiga de decisión</span><span class="ft-v" style="color:${fatColor}">${fat}%</span></div><div class="fat-bar"><div class="fat-fill" style="width:${fat}%;background:${fatColor}"></div></div><div class="fat-s">${fat>70?"Demasiadas elecciones. Activa Autopilot.":fat>40?"Subiendo. Considera Autopilot para lo siguiente.":"Baja. Puedes elegir con claridad."} Cada decisión manual suma fatiga.</div></div>
+  <div class="caf-card"><div class="caf-top">${icon("coffee",15)}<span class="ct-n">Cafeína × medicación</span><span class="ct-v">${STATE.caffeineMg} mg</span></div><div class="caf-btns"><div class="caf-btn" data-action="caf-add" data-v="60">${icon("coffee",14)}Espresso<span class="cm">+60mg</span></div><div class="caf-btn" data-action="caf-add" data-v="80">${icon("coffee",14)}Latte<span class="cm">+80mg</span></div><div class="caf-btn" data-action="caf-reset">${icon("refresh",14)}Reset<span class="cm">0mg</span></div></div><div class="caf-warn ${cafWarn.cls}">${icon(cafWarn.ico,12)} ${cafWarn.txt}</div></div>
+  <div class="lowstim"><div class="ls-top">${icon("moonStar",15)}<span class="lt-n">Horas low-stim del gym</span><span class="lt-v">${quietHours||"—"}</span></div><div class="ls-bars">${lsBars}</div><div class="ls-labels">${lsLabels}</div><div class="fat-s" style="margin-top:7px">Gym Anxiety Mode: entrena en franjas verdes (menos gente, menos estímulo sensorial).</div></div>
+  <div class="sect"><h2>${icon("headphones",14)} Perfil sensorial</h2><span class="hint">neurodivergente</span></div>
+  <div class="toggle-row" style="margin-top:0"><div><div class="tl">${icon("volumeX",15)} Modo silencio</div><div class="ts">Sin sonidos, solo hápticos</div></div><div class="switch ${STATE.sensory.quiet?'on':''}" data-action="sensory-quiet"></div></div>
+  <div class="toggle-row"><div><div class="tl">${icon("moonStar",15)} Modo dim</div><div class="ts">Reduce brillo y contraste</div></div><div class="switch ${STATE.sensory.dim?'on':''}" data-action="sensory-dim"></div></div>
+  <div class="toggle-row"><div><div class="tl">${icon("swap",15)} Sensory swap</div><div class="ts">Reemplaza ejercicios de alto impacto sensorial</div></div><div class="switch ${STATE.sensory.swap?'on':''}" data-action="sensory-swap"></div></div>
+  <div class="toggle-row"><div><div class="tl">${icon("zap",15)} Modo demo (timers ×4)</div><div class="ts">Acelera el flujo para probar</div></div><div class="switch ${STATE.demoScale<1?'on':''}" data-action="toggle-demo"></div></div>
+  <div class="sect"><h2>${icon("layers",14)} Stack de producción</h2><span class="hint">Clean Architecture</span></div>
+  <div class="stack"><div class="stack-layer" style="--sc:var(--blue)"><span class="sl-n">${icon("smartphone",13)} Presentation</span><span class="sl-t">.NET MAUI / React Native · frosted glass UI · offline-first</span></div><div class="stack-layer" style="--sc:var(--teal)"><span class="sl-n">${icon("gitBranch",13)} Application</span><span class="sl-t">MediatR · FluentValidation ≈ Zod · Mapster · agent bus</span></div><div class="stack-layer" style="--sc:var(--purple)"><span class="sl-n">${icon("box",13)} Domain (DDD)</span><span class="sl-t">Entities con invariantes · domain events · reglas de fitness puras</span></div><div class="stack-layer" style="--sc:var(--amber)"><span class="sl-n">${icon("database",13)} Infrastructure</span><span class="sl-t">EF Core · SQL Server + SQLite local · FatSecret · ExerciseDB</span></div><div class="stack-layer" style="--sc:var(--red)"><span class="sl-n">${icon("lock",13)} Ops & Identity</span><span class="sl-t">Docker Compose · JWT + refresh rotation · CI/CD</span></div></div>
+  <div class="sect"><h2>${icon("activity",14)} Pipeline en vivo</h2><span class="hint">${pipelineLog.length} llamadas</span></div>
+  ${last?renderPipe(last):`<div class="empty">Aún no hay llamadas al LLM. Genera un plan o inicia un workout.</div>`}
+  <div style="height:20px"></div>`;
+}
+function renderPipe(p){
+  return `<div class="pipe"><div class="pipe-head"><div class="ph-l"><span class="pipe-intent">intent: ${p.intent}</span>${p.fallback?'<span class="ps-badge fail">FALLBACK</span>':'<span class="ps-badge pass">ZOD ✓</span>'}</div><span class="pipe-lat">${icon("zap",10)} ${p.latency}ms · on-device</span></div><div class="pipe-steps"><div class="pipe-step"><div class="ps-head"><div class="ps-num">1</div><div class="ps-title">Algoritmo → JSON estricto</div><span class="ps-badge algo">determinista</span></div><div class="json-box">${jsonHL(p.algorithmJSON)}</div></div><div class="pipe-step"><div class="ps-head"><div class="ps-num">2</div><div class="ps-title">LLM constrained (GBNF + slots)</div><span class="ps-badge llm">Qwen 1.5B</span></div><div class="json-box" style="color:#a78bfa">grammar: root ::= object\ntemplate: ${p.templateId}\nslots: ${jsonHL(p.variables)}</div></div><div class="pipe-step"><div class="ps-head"><div class="ps-num">3</div><div class="ps-title">Output LLM (sin texto libre)</div><span class="ps-badge llm">JSON</span></div><div class="json-box">${jsonHL(p.output)}</div></div><div class="pipe-step"><div class="ps-head"><div class="ps-num">4</div><div class="ps-title">Validación Zod</div><span class="ps-badge ${p.zod.success?'pass':'fail'}">${p.zod.success?'PASS':'FAIL'}</span></div><div class="zod-list">${p.zod.checks.map(c=>`<div class="zod-row ${c.pass?'ok':'no'}"><span class="zi">${icon(c.pass?"check":"x",9)}</span>${c.label}</div>`).join("")}</div></div></div></div>`;
+}
+
+const ROADMAP=[
+  {q:"Q3 2026",status:"done",label:"EN ESTE BUILD (v3.0)",items:[
+    ["sparkles","Dopamine Menu","Herramienta clínica real: aperitivo/principal/postre como puente de dopamina al workout."],
+    ["save","Save Points","Pausa y retoma el workout exactamente donde lo dejaste. Mecánica de videojuego para interrupciones."],
+    ["gamepad","Boss Battle semanal","Jefe con HP. Cada set hace daño. Derrotarlo = recompensa grande."],
+    ["gitBranch","Skill Tree","Ramas de fuerza/cardio/movilidad/core que se desbloquean con XP."],
+    ["gift","Reward Vault (Premack)","Recompensas de la vida real bloqueadas hasta N workouts. Primero trabajo, luego juego."],
+    ["video","Body Double en vivo","Presencia sincronizada de un compañero con barra de progreso compartida."],
+    ["coffee","Cafeína × Medicación","Tracker con alertas de interacción y ventana segura."],
+    ["batteryCharging","Decision Fatigue Meter","Mide tu fatiga de decisión y fuerza Autopilot cuando sube."],
+    ["heartPulse","Social Battery","Input que ajusta el plan (solo vs. paralelo vs. grupo)."],
+    ["moonStar","Low-Stim Gym Hours","Mapa de franjas tranquilas del gym (Gym Anxiety Mode)."],
+    ["anchor","Habit Stacking","Ancla 2 min de ejercicio a hábitos existentes."],
+    ["calendar","Weekly Review sin culpa","Resumen auto-generado por el Auditor. Cero juicio."],
+    ["cpu","Autopilot + Readiness","Cero decisiones: el app elige energía, tiempo y plan."],
+    ["pill","Ventana de medicación","Fuerza en pico del estimulante, cardio fuera."],
+    ["rocket","Launch Sequence + RSD Shield","Inicio tipo cohete y streak freeze sin fracaso."],
+    ["camera","Form Check on-device","33 landmarks y ángulos articulares rule-based."],
+    ["droplet","Fuel · TDEE + macros + agua","Mifflin-St Jeor e hidratación en un toque."],
+  ]},
+  {q:"Q4 2026",status:"next",label:"PLANIFICADO",items:[
+    ["gitBranch","NCF Recommendations","Filtrado colaborativo neural (GMF + MLP) para recomendar ejercicios (Fitness-Coach)."],
+    ["cpu","DQN Adaptive Agent","RL con reward de forma/fatiga que refina la selección."],
+    ["watch","Closed-loop wearable","Whoop/Oura HRV → ajusta la carga automáticamente."],
+    ["users","Pods sociales de 3-4","Accountability async de baja demanda, sin presión social."],
+    ["smartphone","Anclas hápticas","Patrones de tap en la muñeca para contar reps sin mirar."],
+    ["box","Backend Clean Architecture","DDD + MediatR + FluentValidation + Docker (modelo ForgeFit)."],
+    ["lock","Identity seguro","JWT con rotación de refresh tokens, sin cuenta obligatoria local."],
+    ["crown","Quests estacionales","Boss battles y colecciones por temporada."],
+  ]},
+  {q:"2027",status:"vision",label:"VISIÓN",items:[
+    ["brain","Agente RL adaptativo on-device","Fine-tune de los algoritmos según tu respuesta real, sin nube."],
+    ["ghost","Ghost AR","Compite contra tu yo pasado proyectado en tu espacio."],
+    ["calendar","Planificador multi-variable","Medicación × ciclo × clima × calendario × energía social."],
+    ["stethoscope","Modo clínico","Reportes exportables para terapeuta/coach, alineados con ICF."],
+    ["dna","Digital twin de adherencia","Predice abandonos y ajusta el plan antes de que ocurran."],
+    ["database","Event-Driven / CQRS","Escala del backend cuando el dominio lo pida, sin sobre-ingeniería."],
+  ]},
+];
+function renderRoadmap(){
+  const stIco={done:"checkCircle",next:"clock",vision:"sparkles"};
+  document.getElementById("scr-roadmap").innerHTML=`
+  <div class="apphead"><div class="logo"><div class="logo-mark" style="background:linear-gradient(135deg,var(--blue),var(--purple));color:#fff">${icon("route",17)}</div><div><div class="logo-txt">ROADMAP</div><div class="logo-sub">2026 · 2027</div></div></div></div>
+  <div class="audit-box" style="background:linear-gradient(135deg,rgba(76,201,240,.08),var(--glass));border-color:rgba(76,201,240,.25)"><div class="ai">${icon("route",16)}</div><div class="at" style="font-size:11px;line-height:1.5">La mejor app fitness para ADHD no es la que más motiva. Es la que <b style="color:var(--blue)">menos fricción pone</b> entre ti y el movimiento. Cada feature reduce una barrera ejecutiva.</div></div>
+  ${ROADMAP.map(sec=>`<div class="rm-q"><div class="rm-qhead"><span class="qt">${sec.q}</span><span class="rm-status ${sec.status}">${icon(stIco[sec.status],10)} ${sec.label}</span></div>${sec.items.map(it=>`<div class="rm-item ${sec.status==='done'?'done':''}"><span class="ri">${icon(it[0],14)}</span><div><div class="rn">${it[1]}</div><div class="rd">${it[2]}</div></div></div>`).join("")}</div>`).join("")}
+  <div style="height:20px"></div>`;
+}
+
+document.getElementById("phone").addEventListener("click",e=>{
+  const tabEl=e.target.closest("[data-tab]");if(tabEl){switchTab(tabEl.dataset.tab);return;}
+  const actEl=e.target.closest("[data-action]");if(!actEl)return;
+  const a=actEl.dataset.action,v=actEl.dataset.v;
+  switch(a){
+    case "set-energy": if(!STATE.autopilot){STATE.energy=+v;addFatigue(8);renderHome();} break;
+    case "set-time": STATE.time=+v;addFatigue(8);renderHome(); break;
+    case "set-theme": STATE.theme=v;renderQuest(); break;
+    case "set-social": STATE.socialBattery=+v;renderHome(); break;
+    case "generate": generatePlan(false); break;
+    case "start": openLaunch(); break;
+    case "shatter": triggerShatter(); break;
+    case "shatter-next": shatterNext(); break;
+    case "complete-set": completeSet(); break;
+    case "rest-skip": advanceFromRest(); break;
+    case "skip-ex": skipExercise(); break;
+    case "form-check": runFormCheck(); break;
+    case "form-again": runFormCheck(); break;
+    case "form-close": hideOverlay("ov-form"); break;
+    case "save-exit": saveAndExit(); break;
+    case "abandon": case "wo-close": abandonWorkout(); break;
+    case "resume": resumeSave(); break;
+    case "bodydouble": STATE.bodyDouble=!STATE.bodyDouble;if(STATE.bodyDouble&&PLAYER.active){STATE.partnerProgress=currentOverall();startPartnerTick();}else clearInterval(PLAYER.partnerTick);renderWorkout(); break;
+    case "fat-autopilot": STATE.autopilot=true;STATE.decisionFatigue=Math.max(0,STATE.decisionFatigue-50);STATE.energy=Math.max(1,Math.min(5,Math.ceil(computeReadiness().total/20)));generatePlan(true);renderHome();renderSystem(); break;
+    case "dopa-tap": {const cat=DOPAMINE_MENU.find(c=>c.cat===v);const it=cat.items[+actEl.dataset.idx];if(cat.cat==="appetizer")startBridge(it);else if(cat.cat==="entree"){if(it.name.includes("Workout")){if(!STATE.plan)generatePlan();openLaunch();}else showToast(it.name+" · "+it.sub+" — registrado como actividad principal.","DOPAMINA","");}else showToast(it.name+" · "+it.sub+" — perfecto como cierre.","DOPAMINA","");} break;
+    case "bridge-go": bridgeGo(); break;
+    case "bridge-close": clearInterval(BRIDGE.iv);hideOverlay("ov-bridge"); break;
+    case "habit-toggle": STATE.habitStacks[+v].done=!STATE.habitStacks[+v].done;renderDopa(); break;
+    case "vault-claim": {const vv=STATE.vault.find(x=>x.id===v);if(vv&&!vv.claimed&&STATE.workoutsThisWeek>=vv.cost){vv.claimed=true;showToast("Recompensa desbloqueada: "+vv.name+". Disfrútala sin culpa.","REWARD VAULT · PREMACK","");renderQuest();}} break;
+    case "caf-add": STATE.caffeineMg+=+v;const now=new Date();STATE.caffeineLast=now.getHours()+":"+String(now.getMinutes()).padStart(2,"0");renderSystem(); break;
+    case "caf-reset": STATE.caffeineMg=0;renderSystem(); break;
+    case "cleanser-skip": clearInterval(PLAYER._cleanserIv);endCleanser(); break;
+    case "finish": hideOverlay("ov-complete");STATE.plan=null;PLAYER.plan=null;switchTab("home");renderHome(); break;
+    case "toggle-demo": STATE.demoScale=STATE.demoScale<1?1:0.25;document.getElementById("demoBadge").style.display=STATE.demoScale<1?"":"none";renderSystem();if(PLAYER.active){startTick();startCheckinLoop();} break;
+    case "toggle-block": actEl.closest(".block").classList.toggle("open"); break;
+    case "toggle-autopilot": STATE.autopilot=!STATE.autopilot;if(STATE.autopilot){STATE.decisionFatigue=Math.max(0,STATE.decisionFatigue-40);STATE.energy=Math.max(1,Math.min(5,Math.ceil(computeReadiness().total/20)));generatePlan(true);}renderHome();renderSystem(); break;
+    case "set-chronotype": STATE.chronotype=v;renderHome(); break;
+    case "set-medtime": STATE.meds.time=actEl.value;renderHome(); break;
+    case "set-medtype": STATE.meds.type=actEl.value;renderHome(); break;
+    case "set-sleep": STATE.sleepH=parseFloat(actEl.value);renderHome(); break;
+    case "water": {const i=+v;STATE.water=(STATE.water===i+1)?i:i+1;renderHome();} break;
+    case "sync-wearable": STATE.hrv=Math.round(55+Math.random()*30);renderHome();showToast("Wearable sincronizado. HRV: "+STATE.hrv+" ms.","AUDITOR · WEARABLE",""); break;
+    case "sensory-quiet": STATE.sensory.quiet=!STATE.sensory.quiet;renderSystem(); break;
+    case "sensory-dim": STATE.sensory.dim=!STATE.sensory.dim;document.getElementById("phone").classList.toggle("dim",STATE.sensory.dim);renderSystem(); break;
+    case "sensory-swap": STATE.sensory.swap=!STATE.sensory.swap;if(STATE.plan)generatePlan(false);renderSystem();renderHome(); break;
+    case "snack-start": startSnack(); break;
+    case "snack-end": endSnack(false); break;
+    case "roulette": roulette(actEl); break;
+    case "voice": voiceCommand(); break;
+    case "set-station": STATE.music.station=v;STATE.music.bpm=+actEl.dataset.b;renderWorkout(); break;
+    case "launch-check": STATE.launchDone[+v]=!STATE.launchDone[+v];renderLaunch(); break;
+    case "launch-go": launchGo(); break;
+    case "launch-skip": hideOverlay("ov-launch");startWorkout(); break;
+  }
+});
+function abandonWorkout(){clearInterval(PLAYER.tick);clearInterval(PLAYER.checkinTick);clearInterval(PLAYER.partnerTick);PLAYER.active=false;PLAYER.phase="idle";PLAYER.plan=null;renderWorkout();switchTab("home");}
+function startCleanser(){
+  clearInterval(PLAYER.tick);clearInterval(PLAYER.checkinTick);PLAYER.phase="cleanser";
+  const txt=runPipeline("palate_cleanser",Math.random()<.5?"tmpl_cleanser_001":"tmpl_cleanser_005",{},{agent:"accountability",event:"block_transition"});
+  showToast(txt,"BODY DOUBLE · TRANSICIÓN","");
+  let left=Math.round(90*STATE.demoScale);document.getElementById("cleanserTime").textContent=Math.round(left/STATE.demoScale);showOverlay("ov-cleanser");
+  PLAYER._cleanserIv=setInterval(()=>{left-=STATE.demoScale;document.getElementById("cleanserTime").textContent=Math.max(0,Math.round(left/STATE.demoScale));if(left<=0){clearInterval(PLAYER._cleanserIv);endCleanser();}},1000*STATE.demoScale);
+}
+function endCleanser(){clearInterval(PLAYER._cleanserIv);hideOverlay("ov-cleanser");PLAYER.bi++;PLAYER.ei=0;PLAYER.set=1;beginExercise();startCheckinLoop();}
+
+const TABS=[{id:"home",ico:"home",l:"Hoy"},{id:"workout",ico:"dumbbell",l:"Workout"},{id:"quest",ico:"trophy",l:"Quest"},{id:"dopa",ico:"sparkles",l:"Dopamina"},{id:"system",ico:"cpu",l:"Sistema"},{id:"roadmap",ico:"route",l:"2026·27"}];
+document.getElementById("tabbar").innerHTML=TABS.map((t,i)=>`<button class="tab ${i===0?'active':''}" data-tab="${t.id}">${icon(t.ico,20)}${t.l}</button>`).join("");
+function switchTab(name){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.tab===name));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("active",s.id==="scr-"+name));
+  if(name==="workout")renderWorkout();if(name==="quest")renderQuest();if(name==="system")renderSystem();if(name==="home")renderHome();if(name==="roadmap")renderRoadmap();if(name==="dopa")renderDopa();
+}
+document.getElementById("launchIco").innerHTML=icon("rocket",24);
+document.getElementById("snackIco").innerHTML=icon("zap",24);
+document.getElementById("bridgeIco").innerHTML=icon("sparkles",24);
+document.getElementById("shatterIco").innerHTML=icon("unlock",24);
+document.getElementById("formIco").innerHTML=icon("camera",24);
+document.getElementById("compIco").innerHTML=icon("zap",24);
+
+setInterval(()=>{STATE.parallel=Math.max(180,STATE.parallel+Math.round((Math.random()-.5)*14));const el=document.getElementById("parallelCount");if(el)el.textContent=STATE.parallel;},2500);
+function tickClock(){const d=new Date();document.getElementById("clock").textContent=d.getHours()+":"+String(d.getMinutes()).padStart(2,"0");}
+document.getElementById("toastAvatar").src=COACH_IMG;
+tickClock();setInterval(tickClock,30000);
+
+STATE.energy=Math.max(1,Math.min(5,Math.ceil(computeReadiness().total/20)));
+generatePlan(true);
+renderQuest();renderDopa();renderSystem();renderRoadmap();
+</script>
+</body>
+</html>
