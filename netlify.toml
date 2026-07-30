@@ -6,3 +6,12 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Security headers — set here because Netlify CDN strips Next.js headers from next.config.ts
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
