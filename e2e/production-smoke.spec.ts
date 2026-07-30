@@ -110,24 +110,17 @@ test.describe('🔥 Production Smoke', () => {
     console.log('✅ 3. Login + bundle — 0 chunk errors, 0 JS errors');
   });
 
-  test('4. API routes respond', async ({ page }) => {
-    const results = await Promise.allSettled([
-      page.request.get('/api/analytics'),
-      page.request.get('/api/decision'),
-      page.request.get('/api/workout'),
-    ]);
-
-    const fulfilled = results.filter(r => r.status === 'fulfilled');
-    console.log(`  APIs responded: ${fulfilled.length}/3`);
-    for (const [i, route] of ['/api/analytics', '/api/decision', '/api/workout'].entries()) {
-      const r = results[i];
-      if (r.status === 'fulfilled') {
-        expect(r.value.status()).not.toBe(404);
-        console.log(`  ${route} → ${r.value.status()}`);
-      } else {
-        console.log(`  ${route} → unreachable (expected offline-first, no Supabase)`);
-      }
+  test('4. API routes respond with GET', async ({ page }) => {
+    const routes = ['/api/analytics', '/api/decision', '/api/workout'] as const;
+    for (const route of routes) {
+      const res = await page.request.get(route);
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      expect(body.ok).toBe(true);
+      expect(body.route).toBe(route);
+      expect(body.methods).toContain('POST');
+      console.log(`  ${route} → 200 GET (POST available)`);
     }
-    console.log('✅ 4. API routes — checked');
+    console.log('✅ 4. API routes — all respond with GET');
   });
 });

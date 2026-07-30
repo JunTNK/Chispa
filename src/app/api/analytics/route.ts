@@ -1,6 +1,19 @@
 import { NextResponse } from 'next/server';
 
 /**
+ * GET /api/analytics — Health check / route info.
+ * Used by production smoke test to verify the route exists.
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: '/api/analytics',
+    methods: ['POST'],
+    description: 'Receives Core Web Vitals metrics from the client',
+  });
+}
+
+/**
  * POST /api/analytics — Receives Core Web Vitals metrics from the client.
  *
  * In production, this can be extended to:

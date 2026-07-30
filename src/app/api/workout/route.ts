@@ -9,6 +9,19 @@ import { logError } from '@/lib/utils/logger';
 import type { DecisionEngineOutput, DigitalTwin } from '@/types';
 
 /**
+ * GET /api/workout — Health check / route info.
+ * Used by production smoke test to verify the route exists.
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: '/api/workout',
+    methods: ['POST'],
+    description: 'Generates a complete workout plan from a decision output',
+  });
+}
+
+/**
  * POST /api/workout
  *
  * Generates a complete workout plan from a decision output.

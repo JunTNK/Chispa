@@ -10,6 +10,19 @@ import { logError } from '@/lib/utils/logger';
 import type { DecisionEngineInput, DigitalTwin, Profile } from '@/types';
 
 /**
+ * GET /api/decision — Health check / route info.
+ * Used by production smoke test to verify the route exists.
+ */
+export async function GET() {
+  return NextResponse.json({
+    ok: true,
+    route: '/api/decision',
+    methods: ['POST'],
+    description: 'Executes the Decision Engine for training recommendations',
+  });
+}
+
+/**
  * POST /api/decision
  *
  * Executes the Decision Engine and returns the training decision.
