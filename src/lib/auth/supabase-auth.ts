@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/db/supabase';
-import { supabaseSync } from '@/lib/sync/supabase-sync';
+import { supabaseSync, applyPulledPayload } from '@/lib/sync/supabase-sync';
 import { logError } from '@/lib/utils/logger';
 
 export interface AuthError {
@@ -20,8 +20,12 @@ export async function signInWithEmail(email: string, password: string) {
     });
     if (error) return { user: null, error: { message: error.message, code: error.code } };
 
-    // Pull data from Supabase in background
-    supabaseSync.pull().catch(logError('auth:pull-on-signin'));
+    // Pull data from Supabase in background — restaura TODO el estado del
+    // usuario (perfil, twin con ex_progress entrenado, workouts, checkins...)
+    supabaseSync
+      .pull()
+      .then(applyPulledPayload)
+      .catch(logError('auth:pull-on-signin'));
 
     return { user: data.user, error: null };
   } catch (e) {
@@ -100,10 +104,14 @@ export async function getSession() {
 export function onAuthStateChange(callback: (event: string, session: any) => void) {
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
     callback(event, session);
-    // Pull data on login / session restore
+    // Pull data on login / session restore — aplica TODO el payload
+    // (perfil, twin con ex_progress, workouts, checkins, idioma...)
     if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
       if (session?.user) {
-        supabaseSync.pull().catch(logError('auth:pull-on-restore'));
+        supabaseSync
+          .pull()
+          .then(applyPulledPayload)
+          .catch(logError('auth:pull-on-restore'));
       }
     }
   });

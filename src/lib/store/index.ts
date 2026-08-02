@@ -24,6 +24,8 @@ interface AppState {
   profile: Profile | null;
   neuro: { type: string; duration: number } | null;
   twin: DigitalTwin | null;
+  /** UI language: Spanish (default) or English */
+  lang: 'es' | 'en';
   prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean };
   /** Sensory preferences set during onboarding */
   sensory: { quiet: boolean; dim: boolean; swap: boolean };
@@ -52,6 +54,7 @@ interface AppState {
   setNeuro: (n: { type: string; duration: number }) => void;
   setTwin: (t: DigitalTwin) => void;
   setPref: (k: string, v: boolean) => void;
+  setLang: (l: 'es' | 'en') => void;
   setSensory: (s: Partial<{ quiet: boolean; dim: boolean; swap: boolean }>) => void;
   setCheckin: (k: string, c: CheckIn) => void;
   addWorkout: (w: Workout) => void;
@@ -73,12 +76,36 @@ interface AppState {
   reset: () => void;
 }
 
-const initialState = {
+const initialState: {
+  onboarded: boolean;
+  user: User | null;
+  profile: Profile | null;
+  neuro: { type: string; duration: number } | null;
+  twin: DigitalTwin | null;
+  lang: 'es' | 'en';
+  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean };
+  sensory: { quiet: boolean; dim: boolean; swap: boolean };
+  checkins: Record<string, CheckIn>;
+  workouts: Workout[];
+  events: AIEvent[];
+  chat: ChatMessage[];
+  plan: (DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult }) | null;
+  view: string;
+  achievements: Record<string, UserAchievement>;
+  achievementQueue: string[];
+  questState: QuestState;
+  leaderboard: LeaderboardEntry[];
+  workoutTemplates: WorkoutTemplate[];
+  quickLogs: QuickLogEntry[];
+  decisionFatigue: number;
+  decisionFatigueDate: string;
+} = {
   onboarded: false,
   user: null,
   profile: null,
   neuro: null,
   twin: null,
+  lang: 'es',
   prefs: { reduceMotion: false, highContrast: false, fontLarge: false },
   sensory: { quiet: false, dim: false, swap: false },
   checkins: {},
@@ -115,6 +142,7 @@ export const useStore = create<AppState>()(
       setTwin: (t: DigitalTwin) => set({ twin: t }),
       setPref: (k: string, v: boolean) =>
         set((s: AppState) => ({ prefs: { ...s.prefs, [k]: v } })),
+      setLang: (l: 'es' | 'en') => set({ lang: l }),
       setSensory: (patch: Partial<{ quiet: boolean; dim: boolean; swap: boolean }>) =>
         set((s: AppState) => ({ sensory: { ...s.sensory, ...patch } })),
       setCheckin: (k: string, c: CheckIn) =>
@@ -194,6 +222,7 @@ export const useStore = create<AppState>()(
         profile: state.profile,
         neuro: state.neuro,
         twin: state.twin,
+        lang: state.lang,
         prefs: state.prefs,
         sensory: state.sensory,
         checkins: state.checkins,

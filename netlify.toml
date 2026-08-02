@@ -7,6 +7,14 @@
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
+# /neurofit → /neurofit-v3.html
+# Las rewrites de next.config.ts no aplican para archivos estáticos con el plugin de Netlify.
+# Redirect con status=200 (rewrite a nivel CDN) sirve el HTML estático sin cambiar la URL.
+[[redirects]]
+  from = "/neurofit"
+  to = "/neurofit-v3.html"
+  status = 200
+
 # Security headers — set here because Netlify CDN strips Next.js headers from next.config.ts
 [[headers]]
   for = "/*"

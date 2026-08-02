@@ -1,6 +1,7 @@
 'use client';
 
 import { supabase } from '@/lib/db/supabase';
+import { useStore } from '@/lib/store';
 import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessage, UserAchievement, QuestState } from '@/types';
 
 /* ─── Types ─── */
@@ -8,6 +9,8 @@ import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessa
 export interface SyncPayload {
   profile?: Profile;
   neuro?: { type: string; duration: number };
+  /** UI language: 'es' | 'en' — vive en el Digital Twin para seguir al usuario entre dispositivos */
+  lang?: 'es' | 'en';
   twin?: DigitalTwin;
   workouts?: Workout[];
   checkins?: Record<string, CheckIn>;
@@ -131,9 +134,23 @@ export class SupabaseSyncService {
             patterns: payload.twin.patterns as unknown as Record<string, unknown>,
             exercise_progress: payload.twin.ex_progress as unknown as Record<string, unknown>,
             confidence: Math.round(payload.twin.patterns.completion_rate * 100),
+            // lang sin default: si el push no lo trae (home/summary/quick-log),
+            // supabase omite la clave → INSERT usa 'es', UPDATE no pisa la preferencia
+            lang: payload.lang,
             updated_at: new Date().toISOString(),
           });
         if (!error) pushed.push('digital_twin');
+      } else if (payload.lang) {
+        // Idioma sin twin completo: upsert mínimo (las columnas restantes
+        // tienen defaults en el schema, así que el INSERT es válido)
+        const { error } = await (supabase as any)
+          .from('digital_twins')
+          .upsert({
+            user_id: uid,
+            lang: payload.lang,
+            updated_at: new Date().toISOString(),
+          });
+        if (!error) pushed.push('lang');
       }
 
       // 4. Workouts (batch upsert - last 30)
@@ -313,13 +330,23 @@ export class SupabaseSyncService {
             abandon_rate: (p?.abandon_rate as number) ?? 0.2,
             best_hours: (twin.best_hours ?? {}) as Record<number, number>,
           },
-          ex_progress: (twin.exercise_progress as Record<string, { easy: number; last_rpe?: number }>) ?? {},
+          // Cast ancho: exercise_progress es JSONB y ya guarda los campos de
+          // inteligencia (hard, last_date, total) — el pull debe conservarlos
+          // para que la afinidad entrenada sobreviva entre sesiones.
+          ex_progress: (twin.exercise_progress as Record<string, { easy: number; last_rpe?: number; hard?: number; last_date?: string; total?: number }>) ?? {},
           motiv_weights: { data: 1, energy: 1, direct: 1, calm: 1 },
         };
         pushed.push('digital_twin');
+        // El idioma vive en el twin: se restaura al volver a entrar
+        if (twin.lang === 'en' || twin.lang === 'es') {
+          payload.lang = twin.lang;
+        }
       }
 
       // 4. Workouts (last 90 days)
+      // Nota: `last_workout` (usado por el DecisionEngine para fatiga/reentrada)
+      // se deriva de este array en la UI (workouts[workouts.length - 1]) —
+      // no necesita columna propia en el twin, ya persiste vía esta tabla.
       const ninetyDaysAgo = new Date();
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
@@ -529,6 +556,11 @@ export class SupabaseSyncService {
   }): SyncPayload {
     const result: SyncPayload = {};
 
+    // Idioma: el remoto gana (sigue al usuario entre dispositivos)
+    if (remote.lang) {
+      result.lang = remote.lang;
+    }
+
     // Profile: gana el más reciente
     result.profile = SupabaseSyncService.mergeProfile(local.profile, remote.profile ?? null) ?? undefined;
 
@@ -574,3 +606,48 @@ export class SupabaseSyncService {
 /* ─── Singleton Export ─── */
 
 export const supabaseSync = new SupabaseSyncService();
+
+/* ─── Apply pulled payload to store ─── */
+
+/**
+ * Aplica un payload remoto (pull) al store local, con las mismas reglas de
+ * merge por timestamp que useSync.pullData. Compartido para que la restauración
+ * de sesión (supabase-auth) restaure TODO el estado del usuario — no solo el
+ * idioma — y el round-trip (guardar → recargar) conserve el twin entrenado.
+ */
+export function applyPulledPayload(result: SyncResult): void {
+  if (!result.success || !result.pulled) return;
+  const store = useStore.getState();
+
+  const mergedData = SupabaseSyncService.mergePayload(result.pulled, {
+    profile: store.profile,
+    twin: store.twin,
+    workouts: store.workouts,
+    checkins: store.checkins,
+  });
+
+  if (mergedData.lang) {
+    store.setLang(mergedData.lang);
+  }
+  if (mergedData.profile) {
+    store.setProfile(mergedData.profile);
+  }
+  if (mergedData.twin) {
+    store.setTwin(mergedData.twin);
+  }
+  if (mergedData.workouts && mergedData.workouts.length > 0) {
+    useStore.setState({ workouts: mergedData.workouts });
+  }
+  if (mergedData.checkins && Object.keys(mergedData.checkins).length > 0) {
+    useStore.setState({ checkins: mergedData.checkins });
+  }
+  if (mergedData.neuro) {
+    store.setNeuro(mergedData.neuro);
+  }
+  if (mergedData.achievements && Object.keys(mergedData.achievements).length > 0) {
+    store.setAchievements(mergedData.achievements);
+  }
+  if (mergedData.questState) {
+    store.setQuestState(mergedData.questState);
+  }
+}

@@ -171,6 +171,8 @@ export interface Database {
           preferred_duration: number;
           confidence: number;
           best_hours: Record<string, number>;
+          /** UI language: 'es' (default) or 'en' — follows the user across devices */
+          lang: 'es' | 'en';
         };
         Insert: {
           user_id: string;
@@ -184,6 +186,7 @@ export interface Database {
           preferred_duration?: number;
           confidence?: number;
           best_hours?: Record<string, number>;
+          lang?: 'es' | 'en';
         };
         Update: {
           training_style?: string;
@@ -196,6 +199,7 @@ export interface Database {
           preferred_duration?: number;
           confidence?: number;
           best_hours?: Record<string, number>;
+          lang?: 'es' | 'en';
           updated_at?: string;
         };
       };

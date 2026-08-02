@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react';
 import { useStore } from '@/lib/store';
-import { supabaseSync, SupabaseSyncService, type SyncResult } from './supabase-sync';
+import { supabaseSync, applyPulledPayload, type SyncResult } from './supabase-sync';
 
 /**
  * Hook that provides sync capabilities to components.
@@ -11,6 +11,7 @@ import { supabaseSync, SupabaseSyncService, type SyncResult } from './supabase-s
  */
 export function useSync() {
   const profile = useStore((s) => s.profile);
+  const lang = useStore((s) => s.lang);
   const twin = useStore((s) => s.twin);
   const neuro = useStore((s) => s.neuro);
   const checkins = useStore((s) => s.checkins);
@@ -25,6 +26,7 @@ export function useSync() {
   const pushData = useCallback(async (): Promise<SyncResult> => {
     return supabaseSync.push({
       profile: profile ?? undefined,
+      lang,
       neuro: neuro ?? undefined,
       twin: twin ?? undefined,
       checkins: checkins ?? undefined,
@@ -32,7 +34,7 @@ export function useSync() {
       achievements: achievements ?? undefined,
       questState: questState ?? undefined,
     });
-  }, [profile, neuro, twin, checkins, workouts, achievements, questState]);
+  }, [profile, lang, neuro, twin, checkins, workouts, achievements, questState]);
 
   /**
    * Pull data from Supabase and merge into local store.
@@ -44,39 +46,7 @@ export function useSync() {
    */
   const pullData = useCallback(async (): Promise<SyncResult> => {
     const result = await supabaseSync.pull();
-    if (result.success && result.pulled) {
-      const store = useStore.getState();
-
-      const mergedData = SupabaseSyncService.mergePayload(result.pulled, {
-        profile: store.profile,
-        twin: store.twin,
-        workouts: store.workouts,
-        checkins: store.checkins,
-      });
-
-      // Apply merged data to store
-      if (mergedData.profile) {
-        store.setProfile(mergedData.profile);
-      }
-      if (mergedData.twin) {
-        store.setTwin(mergedData.twin);
-      }
-      if (mergedData.workouts && mergedData.workouts.length > 0) {
-        useStore.setState({ workouts: mergedData.workouts });
-      }
-      if (mergedData.checkins && Object.keys(mergedData.checkins).length > 0) {
-        useStore.setState({ checkins: mergedData.checkins });
-      }
-      if (mergedData.neuro) {
-        store.setNeuro(mergedData.neuro);
-      }
-      if (mergedData.achievements && Object.keys(mergedData.achievements).length > 0) {
-        store.setAchievements(mergedData.achievements);
-      }
-      if (mergedData.questState) {
-        store.setQuestState(mergedData.questState);
-      }
-    }
+    applyPulledPayload(result);
     return result;
   }, []);
 

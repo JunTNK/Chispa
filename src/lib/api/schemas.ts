@@ -49,6 +49,10 @@ const digitalTwinSchema = z.object({
   ex_progress: z.record(z.string(), z.object({
     easy: z.number().optional().default(0),
     last_rpe: z.number().optional(),
+    // Inteligencia entrenada (persistida vía JSONB en digital_twins.exercise_progress)
+    hard: z.number().optional(),
+    last_date: z.string().optional(),
+    total: z.number().optional(),
   })),
   motiv_weights: z.record(z.string(), z.number()),
 });
@@ -91,6 +95,7 @@ export const decisionRequestSchema = z.object({
   profile: profileSchema,
   twin: digitalTwinSchema,
   workouts_last_30_days: z.number().min(0).int().optional(),
+  workouts_last_7_days: z.number().min(0).int().optional(),
   last_workout: z.any().optional(),
 });
 
@@ -103,6 +108,8 @@ export const workoutRequestSchema = z.object({
   profile: workoutProfileSchema,
   last_focus: focusEnum.optional(),
   client_last_focus: z.string().optional(),
+  goal: z.enum(['fuerza', 'energia', 'grasa']).optional(),
+  recent_exercise_ids: z.array(z.string()).optional(),
 });
 
 /* ═══════════════════════════════════════════

@@ -121,7 +121,7 @@ export interface DigitalTwin {
     abandon_rate: number;
     best_hours: Record<string, number>;
   };
-  ex_progress: Record<string, { easy: number; last_rpe?: number }>;
+  ex_progress: Record<string, { easy: number; last_rpe?: number; hard?: number; last_date?: string; total?: number }>;
   motiv_weights: Record<string, number>;
 }
 
@@ -142,6 +142,8 @@ export interface HabitScore {
   consistency_pct: number;
   sessions_done: number;
   sessions_target: number;
+  /** Inercia reciente (-1 … +1): si las últimas sesiones van por encima o debajo del ritmo objetivo */
+  momentum?: number;
 }
 
 export interface BehaviorMemory {
@@ -234,6 +236,24 @@ export interface SessionResult {
 }
 
 /** 
+ * Snapshot del coach de balance capturado al guardar una plantilla
+ * (spec CHISPA-UX-002 · capa 02). Patrones como string[] para no acoplar
+ * types con selector-engine.
+ */
+export interface TemplateBalance {
+  /** Patrones del enfoque ya cubiertos por la rutina */
+  present: string[];
+  /** Patrones del enfoque que faltaban al guardar */
+  missing: string[];
+  /** Score de dopamina 0–100 */
+  dopa: number;
+  /** Duración total estimada (trabajo + descanso) en minutos */
+  durationMin: number;
+  /** True si cruzaba el umbral de "ya está bien" al guardar */
+  sufficient: boolean;
+}
+
+/** 
  * A saved workout template created by the user.
  * Allows neurodivergent users to reduce decision fatigue
  * by reusing their favorite workout structures.
@@ -245,6 +265,8 @@ export interface WorkoutTemplate {
   exercises: WorkoutExercise[];
   created_at: string;
   last_used?: string;
+  /** Balance de patrones y dopamina al guardar (spec CHISPA-UX-002) */
+  balance?: TemplateBalance;
 }
 
 /**
