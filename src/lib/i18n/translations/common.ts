@@ -86,4 +86,25 @@ export const enCommon: Record<string, string> = {
   'Nivel': 'Level',
   'Nv.{n}': 'Lv.{n}',
   'XP': 'XP',
+  // ── Guardia de foco ──
+  'Guardia de foco': 'Focus guard',
+  'Llevas {n} min. Impresionante — ¿hidratamos y estiramos?':
+    'You are at {n} min. Impressive — how about a 2-min stretch?',
+  'Estirar 2 min': 'Stretch for 2 min',
+  // ── Ancla de rutina (habit stacking) ──
+  'Tu ancla de hoy': 'Today’s anchor',
+  'Después de {anchor}, {n} min de movimiento':
+    'After {anchor}, {n} min of movement',
+  'Lo hago': 'I’ll do it',
+  'Ahora no': 'Not now',
+  'Ancla de rutina': 'Routine anchor',
+  'Ancla un mini-movimiento a un hábito que ya tienes. Un solo nudge por ventana, sin insistencia.':
+    'Hang a mini-movement on a habit you already have. One nudge per window, no nagging.',
+  'Después de {anchor} → {n} min': 'After {anchor} → {n} min',
+  'Quitar ancla': 'Remove anchor',
+  'Después de…': 'After…',
+  'Ventana': 'Window',
+  'Guardar ancla': 'Save anchor',
+  'Hoy: suave · {n} min': 'Today: gentle · {n} min',
+  'Sesión de {n} min sugerida': '{n}-min session suggested',
 };

@@ -20,6 +20,14 @@ import {
   type UnitSystem,
 } from '@/lib/utils/units';
 import type { Profile } from '@/types';
+import type { AnchorWindow } from '@/types';
+import {
+  ANCHOR_OPTIONS,
+  ANCHOR_WINDOWS,
+  ANCHOR_MINUTES,
+  anchorLabel,
+  anchorWindowLabel,
+} from '@/lib/utils/anchor-utils';
 import { LanguageSwitcher } from '@/components/settings/language-switcher';
 import {
   SilverMedalIcon,
@@ -49,7 +57,14 @@ export function ProfileScreen() {
 
   const setView = useStore((s) => s.setView);
   const leaderboard = useStore((s) => s.leaderboard);
+  const anchorRoutine = useStore((s) => s.anchorRoutine);
+  const setAnchorRoutine = useStore((s) => s.setAnchorRoutine);
   const [showConfirm, setShowConfirm] = React.useState(false);
+
+  // ─── Ancla de rutina (habit stacking): selección local → guardado explícito ───
+  const [anchorSel, setAnchorSel] = React.useState('');
+  const [windowSel, setWindowSel] = React.useState<AnchorWindow>('morning');
+  const [minutesSel, setMinutesSel] = React.useState(1);
 
   // ─── Datos corporales (draft local → guardado explícito) ───
   const initialUnits: UnitSystem = profile?.units ?? 'imperial';
@@ -555,6 +570,106 @@ export function ProfileScreen() {
             </div>
           ))}
         </div>
+      </Card>
+
+      {/* Ancla de rutina (habit stacking) — un solo nudge por ventana/día */}
+      <Card>
+        <h2 className="font-bold text-sm mb-1 block">{t('Ancla de rutina')}</h2>
+        <p className="text-xs text-[var(--muted)] mb-4 leading-relaxed">
+          {t('Ancla un mini-movimiento a un hábito que ya tienes. Un solo nudge por ventana, sin insistencia.')}
+        </p>
+
+        {anchorRoutine ? (
+          <div className="rounded-xl bg-[var(--card2)] border border-[var(--line)] p-3">
+            <p className="text-sm font-semibold">
+              {t('Después de {anchor} → {n} min', {
+                anchor: anchorLabel(anchorRoutine.anchorId, lang),
+                n: anchorRoutine.minutes,
+              })}
+            </p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">{anchorWindowLabel(anchorRoutine.window, lang)}</p>
+            <button
+              onClick={() => setAnchorRoutine(null)}
+              className="mt-2 text-xs text-[var(--muted)] underline underline-offset-2 hover:text-[var(--text)]"
+            >
+              {t('Quitar ancla')}
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)] mb-1.5">
+              {t('Después de…')}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {ANCHOR_OPTIONS.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => setAnchorSel(a.id)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                    anchorSel === a.id
+                      ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.12)] text-[var(--text)]'
+                      : 'border-[var(--line)] text-[var(--muted)] hover:bg-[var(--card2)]',
+                  )}
+                >
+                  {lang === 'en' ? a.en : a.es}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)] mb-1.5">
+              {t('Ventana')}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {ANCHOR_WINDOWS.map((w) => (
+                <button
+                  key={w.id}
+                  onClick={() => setWindowSel(w.id)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                    windowSel === w.id
+                      ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.12)] text-[var(--text)]'
+                      : 'border-[var(--line)] text-[var(--muted)] hover:bg-[var(--card2)]',
+                  )}
+                >
+                  {lang === 'en' ? w.en : w.es}
+                </button>
+              ))}
+            </div>
+
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[var(--muted)] mb-1.5">
+              {t('Duración')}
+            </p>
+            <div className="flex flex-wrap gap-1.5 mb-4">
+              {ANCHOR_MINUTES.map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setMinutesSel(m)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-full text-xs font-semibold border transition-all',
+                    minutesSel === m
+                      ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.12)] text-[var(--text)]'
+                      : 'border-[var(--line)] text-[var(--muted)] hover:bg-[var(--card2)]',
+                  )}
+                >
+                  {m} min
+                </button>
+              ))}
+            </div>
+
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full"
+              disabled={!anchorSel}
+              onClick={() =>
+                setAnchorRoutine({ anchorId: anchorSel, window: windowSel, minutes: minutesSel })
+              }
+            >
+              {t('Guardar ancla')}
+            </Button>
+          </>
+        )}
       </Card>
 
       {/* Social / Cooperativo (local-first MVP, zero-blame) */}

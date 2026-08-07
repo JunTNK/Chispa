@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
 import { useT, useLocale } from '@/lib/i18n/use-t';
@@ -12,6 +12,12 @@ import {
   calculateConsistency,
 } from '@/lib/agents/decision-engine';
 import { todayKey, recWord } from '@/lib/utils/helpers';
+import { energyBudget } from '@/lib/utils/energy-budget';
+import {
+  anchorLabel,
+  currentAnchorWindow,
+  anchorNudgeKey,
+} from '@/lib/utils/anchor-utils';
 import type { WorkoutExercise } from '@/types';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -555,8 +561,13 @@ function GreetingHeader() {
   );
 }
 
-function RecoveryMiniCard({ score, isNew }: { score: number; isNew?: boolean }) {
+function RecoveryMiniCard({ score, preferredDuration = 20, consistencyPct = 0, isNew }: { score: number; preferredDuration?: number; consistencyPct?: number; isNew?: boolean }) {
   const t = useT();
+  const budget = energyBudget(score, preferredDuration, consistencyPct);
+  const budgetLine =
+    budget.kind === 'restore'
+      ? t('Hoy: suave · {n} min', { n: budget.duration })
+      : t('Sesión de {n} min sugerida', { n: budget.duration });
   return (
     <motion.div
       initial={isNew ? { opacity: 0, y: 10 } : false}
@@ -570,6 +581,7 @@ function RecoveryMiniCard({ score, isNew }: { score: number; isNew?: boolean }) 
         <div>
           <div className="text-sm font-bold">{t('Recuperación')}</div>
           <div className="text-xs text-[var(--muted)]">{t(recWord(score))}</div>
+          <div className="text-xs font-semibold text-[var(--accent)]">{budgetLine}</div>
         </div>
       </Card>
     </motion.div>
@@ -704,6 +716,17 @@ export function HomeScreen() {
   const today = todayKey();
   const hasCheckin = !!checkins[today];
   const hasPlan = plan && plan.date === today;
+
+  // Ancla de rutina (habit stacking): un solo nudge por ventana/día
+  const anchorRoutine = useStore((s) => s.anchorRoutine);
+  const anchorNudgeShown = useStore((s) => s.anchorNudgeShown);
+  const markAnchorNudgeShown = useStore((s) => s.markAnchorNudgeShown);
+  const anchorWin = useMemo(() => (anchorRoutine ? currentAnchorWindow() : null), [anchorRoutine]);
+  const anchorVisible = Boolean(
+    anchorRoutine &&
+      anchorWin === anchorRoutine.window &&
+      anchorNudgeShown !== anchorNudgeKey(today, anchorRoutine.window),
+  );
 
   // Auto-generate plan when check-in exists but no plan yet
   React.useEffect(() => {
@@ -844,6 +867,46 @@ export function HomeScreen() {
         />
       </motion.div>
 
+      {/* ─── Ancla de rutina: un solo nudge por ventana, nunca repetido ─── */}
+      {anchorRoutine && anchorVisible && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.06)] p-4 flex items-start gap-3"
+        >
+          <span className="text-xl text-[#34d399] shrink-0">⏰</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-[var(--text)] leading-tight">{t('Tu ancla de hoy')}</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5 leading-tight">
+              {t('Después de {anchor}, {n} min de movimiento', {
+                anchor: anchorLabel(anchorRoutine.anchorId, lang),
+                n: anchorRoutine.minutes,
+              })}
+            </p>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => {
+                  markAnchorNudgeShown(anchorNudgeKey(today, anchorRoutine.window));
+                  logEvent('anchor_done', { minutes: anchorRoutine.minutes });
+                }}
+                className="text-xs font-semibold text-[#34d399] underline-offset-2 hover:underline"
+              >
+                {t('Lo hago')}
+              </button>
+              <button
+                onClick={() => {
+                  markAnchorNudgeShown(anchorNudgeKey(today, anchorRoutine.window));
+                  logEvent('anchor_later', {});
+                }}
+                className="text-xs text-[var(--muted)] underline-offset-2 hover:underline"
+              >
+                {t('Ahora no')}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* ─── Mis rutinas: plantillas guardadas con balance y dopamina ─── */}
       <MyRoutines />
 
@@ -851,7 +914,12 @@ export function HomeScreen() {
 
       {hasCheckin && (
         <div className="grid grid-cols-2 gap-3">
-          <RecoveryMiniCard score={recoveryScore} isNew />
+          <RecoveryMiniCard
+            score={recoveryScore}
+            preferredDuration={profile?.preferred_duration ?? 20}
+            consistencyPct={cons.consistency_pct}
+            isNew
+          />
           <ConsistencyMiniCard cons={cons} isNew />
         </div>
       )}

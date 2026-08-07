@@ -13,7 +13,7 @@ import { RecRing } from '@/components/ui/ring';
 import { useExercises } from '@/lib/utils/use-exercises';
 import { ExerciseImage, ExerciseMedia, getExerciseVisual, getExerciseMediaUrls } from '@/lib/utils/exercise-visuals';
 import type { Exercise, WorkoutExercise } from '@/types';
-import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen } from 'lucide-react';
+import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen, Droplets } from 'lucide-react';
 import { ExerciseExplainer } from './exercise-explainer';
 
 // Lazy-load FormCheck (heavy: imports pose engine + onnxruntime)
@@ -73,6 +73,7 @@ export function SessionScreen() {
   const [setNum, setSetNum] = React.useState(1);
   const [repsCur, setRepsCur] = React.useState(0);
   const [elapsed, setElapsed] = React.useState(0);
+  const [hyperfocusDismissed, setHyperfocusDismissed] = React.useState(false);
   const [restLeft, setRestLeft] = React.useState(0);
   const [restTotal, setRestTotal] = React.useState(0);
   const [paused, setPaused] = React.useState(false);
@@ -688,6 +689,40 @@ export function SessionScreen() {
           />
         ))}
       </motion.div>
+
+      {/* Guardia de hiperfoco — cue suave a los 40 min, un aviso, sin insistir */}
+      {!hyperfocusDismissed && Math.floor(elapsed / 60) >= 40 && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mx-4 mb-3 rounded-2xl border border-[rgba(251,191,36,0.25)] bg-[rgba(251,191,36,0.07)] p-3 flex items-start gap-3"
+        >
+          <Droplets className="w-5 h-5 text-[#fbbf24] shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-[var(--text)] leading-tight">{t('Guardia de foco')}</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5 leading-tight">
+              {t('Llevas {n} min. Impresionante — ¿hidratamos y estiramos?', { n: 40 })}
+            </p>
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => {
+                  setHyperfocusDismissed(true);
+                  logEvent('hyperfocus_guard', { minutes: 40 });
+                }}
+                className="text-xs font-semibold text-[#fbbf24] underline-offset-2 hover:underline"
+              >
+                {t('Estirar 2 min')}
+              </button>
+              <button
+                onClick={() => setHyperfocusDismissed(true)}
+                className="text-xs text-[var(--muted)] underline-offset-2 hover:underline"
+              >
+                {t('Ahora no')}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       <div className="flex-1 px-4 pb-4">
         <Card className="min-h-[340px]">

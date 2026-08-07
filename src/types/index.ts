@@ -375,3 +375,12 @@ export interface QuestState {
   bossDefeatedCount: number;
   lastBossDefeatDate: string | null;
 }
+/** Ventana horaria del ancla de rutina (habit stacking). */
+export type AnchorWindow = 'morning' | 'afternoon' | 'evening';
+
+/** Ancla de rutina configurada: "después de {anchor}, en {ventana}, {minutes} min de movimiento". */
+export interface AnchorRoutine {
+  anchorId: string;
+  window: AnchorWindow;
+  minutes: number;
+}

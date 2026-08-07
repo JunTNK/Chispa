@@ -20,6 +20,7 @@ import type {
    WeightEntry,
    UserSubscription,
    SubscriptionTier,
+   AnchorRoutine,
 } from '@/types';
 import type { LeaderboardEntry } from '@/lib/sync/leaderboard';
 import { applyQuestResult, EMPTY_PLAYER } from '@/lib/system/quest-engine';
@@ -49,6 +50,10 @@ prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideS
   workoutTemplates: WorkoutTemplate[];
   /** Id de la plantilla en edición desde Mis rutinas (null = creación nueva) */
   editingTemplateId: string | null;
+  /** Habit stacking: ancla configurada por el usuario (o null si no usa anclas) */
+  anchorRoutine: AnchorRoutine | null;
+  /** Último nudge mostrado (`fecha:ventana`) — un solo nudge por ventana */
+  anchorNudgeShown: string;
   quickLogs: QuickLogEntry[];
   /** Historial de peso con fecha (orden cronológico asc) — canónico en kg */
   weightHistory: WeightEntry[];
@@ -107,6 +112,10 @@ prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideS
   touchTemplate: (id: string) => void;
   /** Abre/cierra el modo edición de una plantilla en el creador */
   setEditingTemplate: (id: string | null) => void;
+  /** Guarda/limpia el ancla de rutina (habit stacking) y resetea el nudge */
+  setAnchorRoutine: (r: AnchorRoutine | null) => void;
+  /** Marca un nudge del ancla como mostrado (clave `fecha:ventana`) */
+  markAnchorNudgeShown: (key: string) => void;
   addQuickLog: (entry: QuickLogEntry) => void;
   /** Registra/actualiza la entrada de peso de un día (una por fecha) */
   logWeight: (date: string, weightKg: number) => void;
@@ -153,6 +162,8 @@ prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideS
   leaderboard: LeaderboardEntry[];
   workoutTemplates: WorkoutTemplate[];
   editingTemplateId: string | null;
+  anchorRoutine: AnchorRoutine | null;
+  anchorNudgeShown: string;
   quickLogs: QuickLogEntry[];
   weightHistory: WeightEntry[];
   decisionFatigue: number;
@@ -185,6 +196,8 @@ prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideS
   leaderboard: [],
   workoutTemplates: [],
   editingTemplateId: null,
+  anchorRoutine: null,
+  anchorNudgeShown: '',
   quickLogs: [],
   weightHistory: [],
   questState: {
@@ -248,6 +261,9 @@ export const useStore = create<AppState>()(
           ),
         })),
       setEditingTemplate: (id: string | null) => set({ editingTemplateId: id }),
+      setAnchorRoutine: (r: AnchorRoutine | null) =>
+        set({ anchorRoutine: r, anchorNudgeShown: '' }),
+      markAnchorNudgeShown: (key: string) => set({ anchorNudgeShown: key }),
       touchTemplate: (id: string) =>
         set((s: AppState) => ({
           workoutTemplates: s.workoutTemplates.map((t: WorkoutTemplate) =>
