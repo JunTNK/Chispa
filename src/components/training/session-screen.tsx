@@ -13,7 +13,15 @@ import { RecRing } from '@/components/ui/ring';
 import { useExercises } from '@/lib/utils/use-exercises';
 import { ExerciseImage, ExerciseMedia, getExerciseVisual, getExerciseMediaUrls } from '@/lib/utils/exercise-visuals';
 import type { Exercise, WorkoutExercise } from '@/types';
-import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen, Droplets } from 'lucide-react';
+import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen, Droplets, Volume2, VolumeX } from 'lucide-react';
+import { speak, stopSpeak } from '@/lib/utils/speech';
+import {
+  exerciseIntro,
+  restIntro,
+  nextSetIntro,
+  sessionEndIntro,
+  lineFor,
+} from '@/lib/utils/voice-lines';
 import { ExerciseExplainer } from './exercise-explainer';
 
 // Lazy-load FormCheck (heavy: imports pose engine + onnxruntime)
@@ -67,6 +75,10 @@ export function SessionScreen() {
   const setPlan = useStore((s) => s.setPlan);
   const setView = useStore((s) => s.setView);
   const logEvent = useStore((s) => s.logEvent);
+  const lang = useStore((s) => s.lang);
+  const prefs = useStore((s) => s.prefs);
+  const setPref = useStore((s) => s.setPref);
+  const audioGuide = Boolean(prefs.audioGuide);
 
   const [exs, setExs] = React.useState<SessionExercise[]>([]);
   const [idx, setIdx] = React.useState(0);
@@ -182,6 +194,60 @@ export function SessionScreen() {
   const restTotalRef = useRef(restTotal);
   restTotalRef.current = restTotal;
 
+  // ─── Modo audio: refs para emitir un solo anuncio por transición ───
+  const announcedExRef = useRef(-1);
+  const announcedRestRef = useRef(0);
+  const announcedSetRef = useRef(0);
+
+  /** Nombre legible del ejercicio actual (para la voz). */
+  const exName = ex?.name ?? '';
+
+  // Voz: inicio de ejercicio (una vez por ejercicio)
+  useEffect(() => {
+    if (!audioGuide || !ex) return;
+    if (announcedExRef.current === idx) return;
+    announcedExRef.current = idx;
+    announcedSetRef.current = 1;
+    const isTime = ex.load_type === 'time';
+    speak(lineFor(exerciseIntro(idx + 1, exs.length, exName, ex.reps, isTime, lang), lang), lang);
+  }, [audioGuide, idx, ex, exName, exs.length, lang]);
+
+  // Voz: descanso entre ejercicios (una vez al empezar el descanso)
+  useEffect(() => {
+    if (!audioGuide) return;
+    if (restLeft > 0 && restTotal > 0 && announcedRestRef.current !== restTotal) {
+      announcedRestRef.current = restTotal;
+      speak(lineFor(restIntro(restTotal), lang), lang);
+    } else if (restLeft === 0) {
+      announcedRestRef.current = 0;
+    }
+  }, [audioGuide, restLeft, restTotal, lang]);
+
+  // Voz: siguiente serie del mismo ejercicio (cuando no hay descanso)
+  useEffect(() => {
+    if (!audioGuide || !ex) return;
+    if (setNum > 1 && setNum > announcedSetRef.current && restLeft === 0) {
+      announcedSetRef.current = setNum;
+      const isTime = ex.load_type === 'time';
+      speak(lineFor(nextSetIntro(setNum, exName, ex.reps, isTime, lang), lang), lang);
+    }
+  }, [audioGuide, setNum, ex, exName, restLeft, lang]);
+
+  // Cortar voz al pausar, al cambiar el toggle o al desmontar
+  useEffect(() => {
+    if (!audioGuide) {
+      stopSpeak();
+      announcedExRef.current = -1;
+      announcedRestRef.current = 0;
+      announcedSetRef.current = 0;
+    }
+    if (paused) {
+      stopSpeak();
+    }
+  }, [audioGuide, paused]);
+
+  useEffect(() => () => stopSpeak(), []);
+
   // ─── Unified advance() — used by both timer expiry and skip button ───
   // Advances set-by-set within an exercise, then to the next exercise,
   // then finishes the session. This ensures skip-rest and timer-end
@@ -294,7 +360,7 @@ export function SessionScreen() {
     const totalEx = currentExs.length;
     const currentPlan = useStore.getState().plan;
     if (!currentPlan) return;
-    setPlan({
+setPlan({
       ...currentPlan,
       result: {
         minutes: Math.round(currentElapsed / 60),
@@ -305,6 +371,10 @@ export function SessionScreen() {
         adapted: adaptedRef.current,
       },
     });
+    if (useStore.getState().prefs.audioGuide) {
+      const stateLang = useStore.getState().lang as 'es' | 'en';
+      speak(lineFor(sessionEndIntro(), stateLang), stateLang);
+    }
      setView('summary');
      useStore.getState().resetSkipStreak();
    }, [finished, setView, setPlan]);
@@ -657,6 +727,22 @@ export function SessionScreen() {
           onClick={() => setPaused(true)}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 5l-7 7 7 7"/></svg>
+        </motion.button>
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          aria-label={t('Sonido guía')}
+          aria-pressed={audioGuide}
+          className={`w-11 h-11 rounded-2xl border transition-colors flex items-center justify-center ${
+            audioGuide
+              ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.12)] text-[#34d399]'
+              : 'border-white/[.07] bg-[#151b2a] text-white/[.7] hover:bg-white/[.08]'
+          }`}
+          onClick={() => {
+            setPref('audioGuide', !audioGuide);
+            logEvent('audio_guide', { on: !audioGuide });
+          }}
+        >
+          {audioGuide ? <Volume2 size={19} /> : <VolumeX size={19} />}
         </motion.button>
         <div className="text-center">
           <span className="text-lg font-bold tabular-nums">{fmtTime(elapsed)}</span>

@@ -107,4 +107,8 @@ export const enCommon: Record<string, string> = {
   'Guardar ancla': 'Save anchor',
   'Hoy: suave · {n} min': 'Today: gentle · {n} min',
   'Sesión de {n} min sugerida': '{n}-min session suggested',
+  // ── Modo audio ──
+  'Sonido guía': 'Audio guide',
+  'Voz que anuncia ejercicios y descansos en el modo audio. Se apaga en un toque.':
+    'Voice that announces exercises and rests in audio mode. One tap to mute.',
 };

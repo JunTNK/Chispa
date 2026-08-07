@@ -544,6 +544,7 @@ export function ProfileScreen() {
             { key: 'showFAQs', label: t('Mostrar FAQs'), desc: t('FAQs al final de la landing') },
             { key: 'light', label: t('Tema claro'), desc: t('Intercambia el dark mode por claro') },
             { key: 'systemMode', label: t('Modo Sistema'), desc: t('Quests diarios, rangos y títulos. Sin castigos: el Sistema adapta, no obliga. Apágalo cuando quieras.') },
+            { key: 'audioGuide', label: t('Sonido guía'), desc: t('Voz que anuncia ejercicios y descansos en el modo audio. Se apaga en un toque.') },
           ].map(({ key, label, desc }) => (
             <div key={key} className="flex items-center justify-between">
               <div>
