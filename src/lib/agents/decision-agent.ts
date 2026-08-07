@@ -3,6 +3,7 @@ import {
   DecisionEngineOutput,
 } from '@/types';
 import { clamp, daysBetween } from '@/lib/utils/helpers';
+import { RECOVERY_THRESHOLDS } from '@/lib/utils/constants';
 import { calculateRecoveryScore, recoveryInsights } from './recovery-engine';
 
 /**
@@ -29,14 +30,14 @@ export class DecisionEngine {
 
     if (recScore === null) {
       reasons.push('Sin check-in hoy: asumimos estado neutro');
-    } else if (recScore < 35) {
+    } else if (recScore < RECOVERY_THRESHOLDS.low) {
       intensity = 'minimal';
       action = 'restore';
       reasons.push(`Recuperación ${recScore}/100: el cuerpo pide suavidad`);
-    } else if (recScore < 55) {
+    } else if (recScore < RECOVERY_THRESHOLDS.mid) {
       intensity = 'light';
       reasons.push(`Recuperación ${recScore}/100: sesión ligera`);
-    } else if (recScore >= 75 && consistency.consistency_pct >= 60) {
+    } else if (recScore >= RECOVERY_THRESHOLDS.high && consistency.consistency_pct >= 60) {
       intensity = 'push';
       reasons.push(`Recuperación ${recScore}/100 + consistencia ${consistency.consistency_pct}%: día para progresar`);
     } else {

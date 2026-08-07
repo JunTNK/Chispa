@@ -49,6 +49,20 @@ export const INTENSITY_COLORS: Record<string, string> = {
   push: 'bg-[#f87171]/20 text-[#f87171]',
 };
 
+/**
+ * Umbrales canónicos de recuperación (0-100) usados por DecisionEngine y por
+ * el presupuesto de energía del Home. Una sola fuente: si alguien los ajusta,
+ * Home y motor se actualizan juntos por construcción.
+ */
+export const RECOVERY_THRESHOLDS = {
+  /** Rec < 35 → el cuerpo pide suavidad (restore/minimal) */
+  low: 35,
+  /** Rec < 55 → sesión ligera */
+  mid: 55,
+  /** Rec ≥ 75 y consistencia ≥ 60 → día para progresar (push) */
+  high: 75,
+} as const;
+
 export const FOCUS_LABELS: Record<string, string> = {
   full: 'Cuerpo completo',
   upper: 'Tren superior',
