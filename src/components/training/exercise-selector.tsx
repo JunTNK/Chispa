@@ -100,7 +100,13 @@ function ExercisePhoto({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
           className="w-full h-full object-cover"
-          onError={() => setBroken(true)}
+          onError={() => {
+            // El segundo ángulo (1.jpg) puede no existir en los assets locales:
+            // reverte a la primera, no matamos la foto entera (solo si 0.jpg
+            // también falla mostramos la marca por músculo).
+            if (angle > 0) setAngle(0);
+            else setBroken(true);
+          }}
         />
       </AnimatePresence>
       {urls.length > 1 && (

@@ -90,7 +90,9 @@ describe('ExerciseCatalogScreen — visuals', () => {
     // Should show "1 ejercicios" in header
     expect(screen.getByText('1 ejercicios')).toBeInTheDocument();
     // Should render an <img> tag for the exercise image
-    const img = document.querySelector('img[src*="Barbell_Squat/animation.gif"]');
+    // (explicación: los assets locales no incluyen animation.gif — el componente
+    // usa el JPG estático 0.jpg)
+    const img = document.querySelector('img[src*="Barbell_Squat/0.jpg"]');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('loading', 'lazy');
     expect(img).toHaveAttribute('alt', expect.stringContaining('Sentadilla'));
@@ -226,7 +228,7 @@ describe('ExerciseCatalogScreen — visuals', () => {
     // One exercise should have an img, the other should not
     const imgs = document.querySelectorAll('img');
     expect(imgs.length).toBe(1);
-    expect(imgs[0]).toHaveAttribute('src', expect.stringContaining('Squat/animation.gif'));
+    expect(imgs[0]).toHaveAttribute('src', expect.stringContaining('Squat/0.jpg'));
 
     // Both should be visible
     expect(screen.getByText('Sentadilla')).toBeInTheDocument();

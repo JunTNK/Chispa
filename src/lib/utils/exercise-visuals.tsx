@@ -24,7 +24,6 @@ import {
   Move,
 } from 'lucide-react';
 import { FitnessIcon } from '@/components/ui/fitness-icon';
-import { useStore } from '@/lib/store';
 import { MUSCLE_ALIASES, type MuscleKey } from '@/lib/utils/muscles';
 import type { Exercise } from '@/types';
 
@@ -295,11 +294,13 @@ export const ExerciseImage = React.memo(function ExerciseImage({
 });
 
 /**
- * ExerciseMedia — renders GIF or static JPG based on reduceMotion preference.
+ * ExerciseMedia — static preview (0.jpg) with icon fallback.
  *
- * Uses the same error/fallback pattern as ExerciseImage but respects the
- * user's accessibility setting (`prefs.reduceMotion`). When reduceMotion is
- * true, it shows the static JPG (first frame) instead of the animated GIF.
+ * The vendored free-exercise-db assets only contain static JPG previews
+ * (no `animation.gif`, see scripts/download-exercises.sh). We always render
+ * the static image, which also satisfies reduceMotion users — no motion, no
+ * broken-image flash. On an actual network/404 error we fall back to a
+ * generic Dumbbell icon.
  *
  * @example
  * <div className="w-16 h-16 rounded-xl overflow-hidden">
@@ -311,7 +312,6 @@ export const ExerciseImage = React.memo(function ExerciseImage({
  * </div>
  */
 export const ExerciseMedia = React.memo(function ExerciseMedia({
-  gifUrl,
   staticUrl,
   alt,
   className = '',
@@ -324,15 +324,11 @@ export const ExerciseMedia = React.memo(function ExerciseMedia({
   priority?: boolean;
 }) {
   const [error, setError] = React.useState(false);
-  const reduceMotion = useStore((s) => s.prefs.reduceMotion);
 
-  const src = reduceMotion ? staticUrl : gifUrl;
-  const altText = reduceMotion ? alt : `${alt} en movimiento`;
-
-  // Reset error state when src changes (e.g. reduceMotion toggled)
+  // Reset error state when the image URL changes
   React.useEffect(() => {
     setError(false);
-  }, [src]);
+  }, [staticUrl]);
 
   if (error) {
     return (
@@ -345,8 +341,8 @@ export const ExerciseMedia = React.memo(function ExerciseMedia({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={src}
-      alt={altText}
+      src={staticUrl}
+      alt={alt}
       loading={priority ? 'eager' : 'lazy'}
       className={`w-full h-full object-cover ${className}`}
       onError={() => setError(true)}
