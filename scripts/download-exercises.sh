@@ -1,6 +1,12 @@
 #!/bin/bash
 # Download exercises from free-exercise-db (MIT license) → public/exercises/
-# Compresses JPGs to ~20MB total (from ~100MB) to stay under GitHub limit
+#
+# NOTA SOBRE GIFs: El repo original de free-exercise-db no incluye animation.gif
+# en su branch main. ExerciseMedia espera `animation.gif` pero cae al JPG estático
+# (0.jpg) cuando el GIF no existe. Si en el futuro se añaden GIFs, basta con
+# clonar con `git lfs` o descargarlos manualmente.
+#
+# Compresión: elimina frames extras + comprime 0.jpg a calidad 75 + resize 400px
 set -e
 
 echo "📥 Clonando free-exercise-db (depth 1)..."
