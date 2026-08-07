@@ -105,6 +105,18 @@ describe('AchievementToast', () => {
       expect(sparkleSvg).toBeInTheDocument();
     });
 
+    it('shows the special mini-victory toast with the reinforced message', () => {
+      setStoreState({ achievementQueue: ['mini_victoria'] });
+      render(<AchievementToast />);
+
+      // Variante especial: badge + mensaje de refuerzo
+      expect(screen.getByText('Mini victoria')).toBeInTheDocument();
+      expect(screen.getByText('Un minuto ya es ganar.')).toBeInTheDocument();
+      expect(screen.getByText('Hoy te moviste un minuto. Mañana pueden ser dos. Hacer algo vence a hacerlo perfecto.')).toBeInTheDocument();
+      // La descripción genérica del catálogo no aparece en la variante especial
+      expect(screen.queryByText('Completa una sesión de 1 minuto. Un minuto cuenta.')).not.toBeInTheDocument();
+    });
+
     it('removes the achievement from the queue after showing', () => {
       setStoreState({ achievementQueue: ['first_workout'] });
       render(<AchievementToast />);

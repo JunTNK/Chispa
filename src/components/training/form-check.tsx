@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { usePose } from '@/lib/pose/use-pose';
@@ -211,6 +212,7 @@ function anglesToCues(angles: JointAngles): FormCue[] {
 type CameraStatus = 'loading' | 'real' | 'error';
 
 export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps) {
+  const t = useT();
   const {
     status: poseStatus,
     videoRef,
@@ -219,7 +221,6 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
     error: poseError,
     startCamera,
     stopCamera,
-    isRealDetection,
   } = usePose();
 
   const [cameraStatus, setCameraStatus] = useState<CameraStatus>('loading');
@@ -267,7 +268,7 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
               clearInterval(interval);
               if (!cancelled) {
                 setCameraStatus('error');
-                setErrorMessage(engine.error || 'No se pudo iniciar el análisis de postura. Verifica los permisos de la cámara.');
+                setErrorMessage(engine.error || t('No se pudo iniciar el análisis de postura. Verifica los permisos de la cámara.'));
               }
               resolve();
               return;
@@ -277,7 +278,7 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
       } catch (err: any) {
         if (!cancelled) {
           setCameraStatus('error');
-          setErrorMessage(err?.message ?? 'No se pudo acceder a la cámara. Verifica los permisos en tu navegador.');
+          setErrorMessage(err?.message ?? t('No se pudo acceder a la cámara. Verifica los permisos en tu navegador.'));
         }
       }
     };
@@ -319,7 +320,7 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
               if (engine.status === 'error' || engine.status === 'unavailable') {
                 clearInterval(interval);
                 setCameraStatus('error');
-                setErrorMessage(engine.error || 'No se pudo iniciar el análisis de postura.');
+                setErrorMessage(engine.error || t('No se pudo iniciar el análisis de postura.'));
                 resolve();
                 return;
               }
@@ -327,7 +328,7 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
           });
         } catch (err: any) {
           setCameraStatus('error');
-          setErrorMessage(err?.message ?? 'Error al acceder a la cámara.');
+          setErrorMessage(err?.message ?? t('Error al acceder a la cámara.'));
         }
       };
       start();
@@ -354,7 +355,7 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
   const score = totalCues > 0 ? Math.round((okCount / totalCues) * 100) : 0;
 
   const isLoading = cameraStatus === 'loading';
-  const isCameraLive = cameraStatus === 'real' && isRealDetection;
+  const isCameraLive = cameraStatus === 'real';
   const hasAngles = realAngles !== null;
   const isError = cameraStatus === 'error';
 
@@ -419,39 +420,19 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                 <span className={`text-[10px] font-mono uppercase tracking-wider ${
                   isCameraLive ? 'text-[#34d399]' : isError ? 'text-[#f87171]' : 'text-[#4CC9F0]'
                 }`}>
-                  Form Check · {isCameraLive ? 'cámara real' : isError ? 'error' : 'iniciando…'}
+                  Form Check · {isCameraLive ? t('cámara real') : isError ? t('error') : t('iniciando…')}
                 </span>
               </div>
-              <h3 className="text-lg font-black mt-1">Análisis de postura</h3>
+              <h3 className="text-lg font-black mt-1">{t('Análisis de postura')}</h3>
             </div>
             <motion.button
               whileTap={{ scale: 0.88 }}
               onClick={onClose}
-              className="w-8 h-8 rounded-full bg-white/[.06] border border-white/[.10] flex items-center justify-center text-[#94a0b8] hover:bg-white/[.12]"
+              className="w-8 h-8 rounded-full bg-white/[.06] border border-white/[.10] flex items-center justify-center text-[var(--muted)] hover:bg-white/[.12]"
             >
               <X size={14} />
             </motion.button>
           </div>
-
-          {/* ── Loading state ── */}
-          {isLoading && (
-            <div className="mx-4 mt-3 rounded-xl bg-[#0a0d13] border border-white/[.06] overflow-hidden">
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
-                >
-                  <Activity size={28} className="text-[#4CC9F0]" />
-                </motion.div>
-                <p className="text-xs text-[#94a0b8] font-mono">
-                  {poseStatus === 'loading-model' ? 'Cargando modelo de IA...' : 'Iniciando cámara...'}
-                </p>
-                <p className="text-[9px] text-[#5C6577] font-mono text-center max-w-[220px]">
-                  Se necesita acceso a la cámara para analizar tu postura en tiempo real.
-                </p>
-              </div>
-            </div>
-          )}
 
           {/* ── Error state ── */}
           {isError && (
@@ -461,9 +442,9 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                   <CameraOff size={22} className="text-[#f87171]" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-[#f87171]">Cámara no disponible</p>
-                  <p className="text-xs text-[#94a0b8] mt-1 leading-relaxed">
-                    {errorMessage || poseError || 'Permite el acceso a la cámara en tu navegador para usar el análisis de postura.'}
+                  <p className="text-sm font-bold text-[#f87171]">{t('Cámara no disponible')}</p>
+                  <p className="text-xs text-[var(--muted)] mt-1 leading-relaxed">
+                    {errorMessage || poseError || t('Permite el acceso a la cámara en tu navegador para usar el análisis de postura.')}
                   </p>
                 </div>
                 <div className="flex gap-2 mt-1">
@@ -472,33 +453,39 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                     size="sm"
                     onClick={() => handleRetry.current()}
                   >
-                    <RefreshCw size={13} /> Reintentar
+                    <RefreshCw size={13} /> {t('Reintentar')}
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onClose}
                   >
-                    Cerrar
+                    {t('Cerrar')}
                   </Button>
                 </div>
                 <details className="w-full mt-2">
-                  <summary className="text-[9px] text-[#5C6577] font-mono cursor-pointer hover:text-[#94a0b8]">
-                    Solución de problemas
+                  <summary className="text-[9px] text-[#5C6577] font-mono cursor-pointer hover:text-[var(--muted)]">
+                    {t('Solución de problemas')}
                   </summary>
                   <div className="text-[9px] text-[#5C6577] font-mono mt-2 space-y-1 text-left">
-                    <p>1. Asegúrate de que ningún otro programa usa la cámara</p>
-                    <p>2. Revisa los permisos en la barra de direcciones del navegador</p>
-                    <p>3. Si usas Chrome/Edge, permite el acceso explícitamente</p>
-                    <p>4. Conecta una cámara externa si estás en escritorio</p>
+                    <p>{t('1. Asegúrate de que ningún otro programa usa la cámara')}</p>
+                    <p>{t('2. Revisa los permisos en la barra de direcciones del navegador')}</p>
+                    <p>{t('3. Si usas Chrome/Edge, permite el acceso explícitamente')}</p>
+                    <p>{t('4. Conecta una cámara externa si estás en escritorio')}</p>
+                    <p>{t('5. En el móvil, la cámara solo funciona con HTTPS o localhost')}</p>
                   </div>
                 </details>
               </div>
             </div>
           )}
 
-          {/* ── Camera feed (always shows when live, even without detection) ── */}
-          {isCameraLive && (
+          {/* ── Camera feed ──
+           * Mounted during BOTH loading and live states. The <video> element
+           * must exist in the DOM before startCamera() runs (mount effect),
+           * otherwise usePose aborts early (videoRef.current is null) and the
+           * camera never starts — the bug that left the feed black forever.
+           */}
+          {(isLoading || isCameraLive) && (
             <>
               {/* Score ring — only when real angles exist */}
               {hasAngles && (
@@ -524,13 +511,13 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold">{exerciseName}</p>
-                    <p className="text-xs text-[#94a0b8] font-mono mt-0.5">
-                      {`${okCount}/${totalCues} en rango`}
-                      {score >= 80 ? ' · buena forma ✓' : score >= 60 ? ' · ajusta lo marcado' : ' · revisa correcciones'}
+                    <p className="text-xs text-[var(--muted)] font-mono mt-0.5">
+                      {t('{a}/{b} en rango', { a: okCount, b: totalCues })}
+                      {score >= 80 ? t(' · buena forma ✓') : score >= 60 ? t(' · ajusta lo marcado') : t(' · revisa correcciones')}
                     </p>
                     <span className="inline-flex items-center gap-1 text-[9px] text-[#34d399] font-mono mt-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" />
-                      Cámara en vivo
+                      {t('Cámara en vivo')}
                     </span>
                   </div>
                 </div>
@@ -550,10 +537,12 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                     ref={canvasRef}
                     className="absolute inset-0 w-full h-full scale-x-[-1]"
                   />
-                  <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[rgba(0,0,0,0.6)] backdrop-blur-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" />
-                    <span className="text-[9px] text-white font-mono">LIVE</span>
-                  </div>
+                  {isCameraLive && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[rgba(0,0,0,0.6)] backdrop-blur-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#34d399] animate-pulse" />
+                      <span className="text-[9px] text-white font-mono">LIVE</span>
+                    </div>
+                  )}
                   {hasAngles && (
                     <div className="absolute bottom-2 right-2 flex gap-1.5">
                       {(['knee', 'hip', 'shoulder'] as const).map(part => (
@@ -569,46 +558,66 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                     </div>
                   )}
                   {/* Overlay message when camera is live but no person detected */}
-                  {!hasAngles && (
+                  {isCameraLive && !hasAngles && (
                     <div className="absolute inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.5)]">
                       <div className="text-center px-6">
                         {noPersonTimeout ? (
                           <>
                             <UserX size={28} className="mx-auto text-[#fbbf24] mb-2" />
                             <p className="text-xs font-bold text-[#fbbf24] font-mono">
-                              No se detecta a nadie
+                              {t('No se detecta a nadie')}
                             </p>
                             <p className="text-[10px] text-[#b8932a] mt-1.5 leading-relaxed">
-                              ¿Estás frente a la cámara?
+                              {t('¿Estás frente a la cámara?')}
                             </p>
                             <p className="text-[9px] text-[#5C6577] font-mono mt-2 leading-relaxed">
-                              Colócate de lado, a ~1.5m.<br />
-                              Buena iluminación y fondo limpio ayudan.<br />
-                              Si el problema persiste, prueba reiniciar la cámara.
+                              {t('Colócate de lado, a ~1.5m.')}<br />
+                              {t('Buena iluminación y fondo limpio ayudan.')}<br />
+                              {t('Si el problema persiste, prueba reiniciar la cámara.')}
                             </p>
                           </>
                         ) : (
                           <>
-                            <p className="text-xs text-[#94a0b8] font-mono">
-                              Buscando persona...
+                            <p className="text-xs text-[var(--muted)] font-mono">
+                              {t('Buscando persona...')}
                             </p>
                             <p className="text-[9px] text-[#5C6577] font-mono mt-2 leading-relaxed">
-                              Colócate frente a la cámara,<br />
-                              de lado, a ~1.5m de distancia.<br />
-                              Buena iluminación ayuda a la detección.
+                              {t('Colócate frente a la cámara,')}<br />
+                              {t('de lado, a ~1.5m de distancia.')}<br />
+                              {t('Buena iluminación ayuda a la detección.')}
                             </p>
                           </>
                         )}
                       </div>
                     </div>
                   )}
+                  {/* Loading overlay on top of the (black) camera feed — the
+                      <video> is already mounted so the stream can start */}
+                  {isLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-[rgba(5,8,14,0.72)] backdrop-blur-[2px]">
+                      <div className="flex flex-col items-center justify-center gap-3 py-12 px-6 text-center">
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1.5, ease: 'linear' }}
+                        >
+                          <Activity size={26} className="text-[#4CC9F0]" />
+                        </motion.div>
+                        <p className="text-xs text-[var(--muted)] font-mono">
+                          {poseStatus === 'loading-model' ? t('Cargando modelo de IA...') : t('Iniciando cámara...')}
+                        </p>
+                        <p className="text-[9px] text-[#5C6577] font-mono max-w-[220px]">
+                          {t('Se necesita acceso a la cámara para analizar tu postura en tiempo real.')}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* ── Cue list ── */}
-              {hasAngles && matchedCues.length > 0 && (
+              {/* ── Cue list — only when live & detecting ── */}
+              {isCameraLive && hasAngles && matchedCues.length > 0 && (
                 <div className="px-4 py-3 space-y-1.5">
-                  <h4 className="text-xs font-bold text-[#94a0b8] uppercase tracking-wider mb-2">Puntos de forma</h4>
+                  <h4 className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2">{t('Puntos de forma')}</h4>
                   {matchedCues.map((cue, i) => (
                     <motion.div
                       key={i}
@@ -630,37 +639,39 @@ export function FormCheck({ exerciseName, muscleGroup, onClose }: FormCheckProps
                         <span className={`font-semibold ${cue.ok ? 'text-[#34d399]' : 'text-[#f87171]'}`}>
                           {cue.label}
                         </span>
-                        <span className="text-[#94a0b8] block leading-relaxed">{cue.detail}</span>
+                        <span className="text-[var(--muted)] block leading-relaxed">{cue.detail}</span>
                       </div>
                     </motion.div>
                   ))}
                 </div>
               )}
 
-              {/* ── Actions ── */}
-              <div className="flex gap-2.5 px-4 pb-4">
-                <Button
-                  variant="ghost"
-                  className="flex-1"
-                  onClick={() => handleRetry.current()}
-                >
-                  <RefreshCw size={15} /> Reiniciar cámara
-                </Button>
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  onClick={onClose}
-                >
-                  <CheckCircle size={15} /> Listo
-                </Button>
-              </div>
-
-              {/* ── Footer ── */}
-              <div className="px-4 pb-3">
-                <p className="text-[9px] font-mono text-center text-[#5C6577]">
-                  MediaPipe Pose · 33 landmarks · ángulos en tiempo real
-                </p>
-              </div>
+              {/* ── Actions + footer — only when live ── */}
+              {isCameraLive && (
+                <>
+                  <div className="flex gap-2.5 px-4 pb-4">
+                    <Button
+                      variant="ghost"
+                      className="flex-1"
+                      onClick={() => handleRetry.current()}
+                    >
+                      <RefreshCw size={15} /> {t('Reiniciar cámara')}
+                    </Button>
+                    <Button
+                      variant="primary"
+                      className="flex-1"
+                      onClick={onClose}
+                    >
+                      <CheckCircle size={15} /> {t('Listo')}
+                    </Button>
+                  </div>
+                  <div className="px-4 pb-3">
+                    <p className="text-[9px] font-mono text-center text-[#5C6577]">
+                      MediaPipe Pose · 33 landmarks · ángulos en tiempo real
+                    </p>
+                  </div>
+                </>
+              )}
             </>
           )}
         </Card>

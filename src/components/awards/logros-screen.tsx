@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT, useLocale } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,7 +15,7 @@ import {
   Footprints, Flame, Zap, Trophy, Sword, Crown,
   Target, Dumbbell, CheckCircle, Award, Activity,
   TrendingUp, Sun, Moon, Wrench, Smile, Sparkles,
-  Lock, Medal, Star,
+  Lock, Medal, Star, Compass,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -22,7 +23,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Footprints, Flame, Zap, Trophy, Sword, Crown,
   Target, Dumbbell, CheckCircle, Award, Activity,
   TrendingUp, Sun, Moon, Wrench, Smile, Sparkles,
-  Lock, Medal, Star,
+  Lock, Medal, Star, Compass,
 };
 
 function AvoIcon({ icon, size = 18 }: { icon: string; size?: number }) {
@@ -30,7 +31,7 @@ function AvoIcon({ icon, size = 18 }: { icon: string; size?: number }) {
   return <Icon size={size} />;
 }
 
-const CATEGORIES = ['workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden'] as const;
+const CATEGORIES = ['workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden', 'movimiento'] as const;
 
 const TIER_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 
@@ -49,6 +50,8 @@ function AchievementCard({
   unlockedAt: string | null;
   index: number;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const tierCfg = TIER_CONFIG[achievement.tier];
 
   return (
@@ -74,23 +77,23 @@ function AchievementCard({
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-[#94a0b8]'}`}>
-              {achievement.name}
+            <span className={`text-sm font-bold ${unlocked ? 'text-white' : 'text-[var(--muted)]'}`}>
+              {t(achievement.name)}
             </span>
             <span className={`text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
               unlocked
                 ? `${tierCfg.text} ${tierCfg.bg}`
                 : 'text-[#5C6577] bg-white/[.04]'
             }`}>
-              {tierCfg.label}
+              {t(tierCfg.label)}
             </span>
           </div>
-          <p className="text-[11px] text-[#94a0b8] leading-tight mt-0.5">
-            {achievement.description}
+          <p className="text-[11px] text-[var(--muted)] leading-tight mt-0.5">
+            {t(achievement.description)}
           </p>
           {unlockedAt && (
             <p className="text-[9px] text-[#5C6577] font-mono mt-1">
-              Desbloqueado {new Date(unlockedAt).toLocaleDateString()}
+              {t('Desbloqueado {fecha}', { fecha: new Date(unlockedAt).toLocaleDateString(locale) })}
             </p>
           )}
           {!unlocked && (
@@ -126,11 +129,17 @@ function AchievementCard({
 }
 
 export function LogrosScreen() {
+  const t = useT();
   const workouts = useStore((s) => s.workouts);
   const userAchievements = useStore((s) => s.achievements);
   const [selectedCat, setSelectedCat] = React.useState<string | null>(null);
 
   const ctx = useMemo(() => computeAchievementContext(workouts), [workouts]);
+  const prefs = useStore((s) => s.prefs);
+
+  const visibleCategories = prefs.hideStreaks
+    ? CATEGORIES.filter((c) => c !== 'streak')
+    : CATEGORIES;
 
   // Compute display-ready progress (read-only — summary-screen handles persistence)
   const allProgress = useMemo(() => {
@@ -171,8 +180,8 @@ export function LogrosScreen() {
             <Medal size={16} />
           </span>
           <div>
-            <h1 className="text-lg font-black tracking-tight">LOGROS</h1>
-            <p className="text-[10px] text-[#94a0b8] uppercase tracking-wider">{totalUnlocked}/{ACHIEVEMENTS.length} desbloqueados</p>
+            <h1 className="text-lg font-black tracking-tight">{t('LOGROS')}</h1>
+            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider">{t('{a}/{b} desbloqueados', { a: totalUnlocked, b: ACHIEVEMENTS.length })}</p>
           </div>
         </div>
         <Badge variant="epic" className="gap-1">
@@ -184,16 +193,18 @@ export function LogrosScreen() {
       <div className="grid grid-cols-3 gap-2">
         <Card className="text-center py-3 px-2">
           <div className="text-xl font-black">{totalUnlocked}</div>
-          <div className="text-[9px] text-[#94a0b8] uppercase tracking-wider">desbloqueados</div>
+          <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{t('desbloqueados')}</div>
         </Card>
         <Card className="text-center py-3 px-2">
           <div className="text-xl font-black">{ctx.totalWorkouts}</div>
-          <div className="text-[9px] text-[#94a0b8] uppercase tracking-wider">workouts</div>
+          <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">workouts</div>
         </Card>
+        {!prefs.hideStreaks && (
         <Card className="text-center py-3 px-2">
           <div className="text-xl font-black">{ctx.streak}</div>
-          <div className="text-[9px] text-[#94a0b8] uppercase tracking-wider">racha</div>
+          <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{t('racha')}</div>
         </Card>
+        )}
       </div>
 
       {/* Category filter */}
@@ -204,12 +215,12 @@ export function LogrosScreen() {
           className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-all ${
             !selectedCat
               ? 'bg-white text-[#0a0d14] border-white'
-              : 'bg-white/[.04] text-[#94a0b8] border-white/[.07]'
+              : 'bg-white/[.04] text-[var(--muted)] border-white/[.07]'
           }`}
         >
-          Todos
+          {t('Todos')}
         </motion.button>
-        {CATEGORIES.map((cat) => {
+        {visibleCategories.map((cat) => {
           const cfg = CATEGORY_CONFIG[cat];
           return (
             <motion.button
@@ -219,11 +230,11 @@ export function LogrosScreen() {
               className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-semibold border transition-all flex items-center gap-1.5 ${
                 selectedCat === cat
                   ? 'bg-white text-[#0a0d14] border-white'
-                  : 'bg-white/[.04] text-[#94a0b8] border-white/[.07]'
+                  : 'bg-white/[.04] text-[var(--muted)] border-white/[.07]'
               }`}
             >
               <AvoIcon icon={cfg.icon} size={12} />
-              {cfg.label}
+              {t(cfg.label)}
             </motion.button>
           );
         })}

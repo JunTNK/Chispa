@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Smile, Wind, Flame } from 'lucide-react';
 
@@ -25,10 +26,11 @@ interface RpeSelectorProps {
 }
 
 export function RpeSelector({ value, onChange }: RpeSelectorProps) {
+  const t = useT();
   return (
     <Card>
       <span className="font-bold text-sm flex items-center gap-2 mb-3">
-        ¿Cómo de exigente fue?
+        {t('¿Cómo de exigente fue?')}
       </span>
       <div className="grid grid-cols-3 gap-2.5">
         {RPE_OPTIONS.map((o) => {
@@ -46,9 +48,9 @@ export function RpeSelector({ value, onChange }: RpeSelectorProps) {
             >
               <span className="font-semibold text-sm flex items-center gap-1.5">
                 <Icon size={16} className="text-[#ffb454]" />
-                {o.label}
+                {t(o.label)}
               </span>
-              <span className="text-[11px] text-[#94a0b8]">{o.desc}</span>
+              <span className="text-[11px] text-[var(--muted)]">{t(o.desc)}</span>
             </button>
           );
         })}

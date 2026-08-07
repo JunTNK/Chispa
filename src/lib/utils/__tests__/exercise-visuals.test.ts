@@ -10,6 +10,7 @@ import {
   getExerciseImageUrls,
   getExerciseFallbackIcon,
   getExerciseVisual,
+  getExerciseMediaUrls,
 } from '../exercise-visuals';
 import { Dumbbell, Heart, Sprout, Zap, Repeat, PersonStanding } from 'lucide-react';
 import {
@@ -190,5 +191,45 @@ describe('getExerciseVisual', () => {
     const visual = getExerciseVisual(ex);
     expect(visual.src).toBeNull();
     expect(visual.fallbackIcon).toBe(ChestFallback);
+  });
+});
+
+describe('getExerciseMediaUrls', () => {
+  it('returns gif + static URLs for first image path', () => {
+    const ex = makeEx({ images: ['Barbell_Squat/0.jpg', 'Barbell_Squat/1.jpg'] });
+    const urls = getExerciseMediaUrls(ex);
+    expect(urls).not.toBeNull();
+    expect(urls!.gifUrl).toBe('/exercises/Barbell_Squat/animation.gif');
+    expect(urls!.staticUrl).toBe('/exercises/Barbell_Squat/0.jpg');
+  });
+
+  it('handles nested folder paths correctly', () => {
+    const ex = makeEx({ images: ['Bench_Press_-_Medium_Grip/0.jpg'] });
+    const urls = getExerciseMediaUrls(ex);
+    expect(urls).not.toBeNull();
+    expect(urls!.gifUrl).toBe('/exercises/Bench_Press_-_Medium_Grip/animation.gif');
+    expect(urls!.staticUrl).toBe('/exercises/Bench_Press_-_Medium_Grip/0.jpg');
+  });
+
+  it('returns null when exercise has no images', () => {
+    const ex = makeEx({ images: undefined });
+    const urls = getExerciseMediaUrls(ex);
+    expect(urls).toBeNull();
+  });
+
+  it('handles flat path without folder (no slash)', () => {
+    const ex = makeEx({ images: ['0.jpg'] });
+    const urls = getExerciseMediaUrls(ex);
+    expect(urls).not.toBeNull();
+    expect(urls!.staticUrl).toBe('/exercises/0.jpg');
+    expect(urls!.gifUrl).toBe('/exercises/animation.gif');
+  });
+
+  it('strips trailing frame number but keeps folder name intact', () => {
+    const ex = makeEx({ images: ['3_4_Sit-Up/0.jpg'] });
+    const urls = getExerciseMediaUrls(ex);
+    expect(urls).not.toBeNull();
+    expect(urls!.staticUrl).toBe('/exercises/3_4_Sit-Up/0.jpg');
+    expect(urls!.gifUrl).toBe('/exercises/3_4_Sit-Up/animation.gif');
   });
 });

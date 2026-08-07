@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT, useLocale } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { RecRing } from '@/components/ui/ring';
 import { calculateConsistency } from '@/lib/agents/decision-engine';
@@ -53,6 +54,8 @@ const eventVariants = {
 };
 
 export function ProgressScreen() {
+  const t = useT();
+  const locale = useLocale();
   const workouts = useStore((s) => s.workouts);
   const events = useStore((s) => s.events);
   const profile = useStore((s) => s.profile);
@@ -104,18 +107,18 @@ export function ProgressScreen() {
   const insights = React.useMemo(() => {
     if (!twin) return [];
     const items: string[] = [];
-    items.push(`Prefieres sesiones de ~${Math.round(twin.patterns.avg_duration)} min`);
+    items.push(t('Prefieres sesiones de ~{n} min', { n: Math.round(twin.patterns.avg_duration) }));
     const hours = Object.entries(twin.patterns.best_hours).sort((a, b) => b[1] - a[1]);
     if (hours.length) {
-      items.push(`Tu mejor franja: sobre las ${hours[0][0]}:00`);
+      items.push(t('Tu mejor franja: sobre las {n}:00', { n: hours[0][0] }));
     }
-    items.push(`Completas el ${Math.round(twin.patterns.completion_rate * 100)}% de tus sesiones`);
+    items.push(t('Completas el {n}% de tus sesiones', { n: Math.round(twin.patterns.completion_rate * 100) }));
     if (twin.patterns.abandon_rate > 0.3) {
-      items.push('El motor acorta tus sesiones automáticamente');
+      items.push(t('El motor acorta tus sesiones automáticamente'));
     }
-    items.push(`Respondes mejor a mensajes tipo: ${STYLE_LABELS[twin.motivation_style]}`);
+    items.push(t('Respondes mejor a mensajes tipo: {estilo}', { estilo: t(STYLE_LABELS[twin.motivation_style]) }));
     return items;
-  }, [twin]);
+  }, [twin, t]);
 
   const recentEvents = events.slice(0, 5);
 
@@ -138,19 +141,19 @@ export function ProgressScreen() {
               <span className="text-4xl font-black">{cons.consistency_pct}%</span>
             </RecRing>
           </motion.div>
-          <p className="font-bold mt-4">Consistencia · últimos 30 días</p>
-          <p className="text-sm text-[#94a0b8]">{cons.sessions_done} de {cons.sessions_target} sesiones objetivo</p>
-          <p className="text-xs text-[#ffb454] italic mt-2">Sin rachas. Sin culpa. Solo datos.</p>
+          <p className="font-bold mt-4">{t('Consistencia · últimos 30 días')}</p>
+          <p className="text-sm text-[var(--muted)]">{t('{a} de {b} sesiones objetivo', { a: cons.sessions_done, b: cons.sessions_target })}</p>
+          <p className="text-xs text-[#ffb454] italic mt-2">{t('Sin rachas. Sin culpa. Solo datos.')}</p>
         </Card>
       </motion.div>
 
       {/* Calendar Card */}
       <motion.div variants={cardVariants}>
         <Card>
-          <span className="font-bold text-sm mb-3 block">Últimas 4 semanas</span>
+          <span className="font-bold text-sm mb-3 block">{t('Últimas 4 semanas')}</span>
           <div className="grid grid-cols-7 gap-1.5 mb-1">
             {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((d) => (
-              <span key={d} className="text-center text-[10px] font-semibold text-[#94a0b8]">{d}</span>
+              <span key={d} className="text-center text-[10px] font-semibold text-[var(--muted)]">{d}</span>
             ))}
           </div>
           <motion.div
@@ -174,7 +177,7 @@ export function ProgressScreen() {
                   className={`aspect-square rounded-lg flex items-center justify-center text-xs transition-all cursor-default
                     ${c.trained
                       ? 'bg-gradient-to-br from-[#ffb454] to-[#ff7a3d] text-[#241309] font-bold shadow-[0_2px_8px_rgba(255,122,61,0.25)]'
-                      : 'bg-white/[.05] text-[#94a0b8] hover:bg-white/[.08]'
+                      : 'bg-white/[.05] text-[var(--muted)] hover:bg-white/[.08]'
                     }
                     ${c.today ? 'ring-2 ring-[#ffb454] ring-offset-1 ring-offset-[#0a0d14]' : ''}
                   `}
@@ -190,7 +193,7 @@ export function ProgressScreen() {
       {/* Weekly Bars Card */}
       <motion.div variants={cardVariants}>
         <Card>
-          <span className="font-bold text-sm mb-4 block">Sesiones por semana</span>
+          <span className="font-bold text-sm mb-4 block">{t('Sesiones por semana')}</span>
           <div className="flex items-end gap-3 h-28 pt-3">
             {wkCounts.map((c, i) => {
               const h = Math.max(6, (c / maxWk) * 100);
@@ -207,13 +210,13 @@ export function ProgressScreen() {
                       initial={{ opacity: 0, y: 5 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.5 + i * 0.1 }}
-                      className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-[#94a0b8]"
+                      className="absolute -top-5 left-1/2 -translate-x-1/2 text-xs font-bold text-[var(--muted)]"
                     >
                       {c}
                     </motion.span>
                   </motion.div>
-                  <span className="text-[10px] text-[#94a0b8] text-center">
-                    {i === 3 ? 'Esta' : `Hace ${3 - i} sem`}
+                  <span className="text-[10px] text-[var(--muted)] text-center">
+                    {i === 3 ? t('Esta') : t('Hace {n} sem', { n: 3 - i })}
                   </span>
                 </div>
               );
@@ -226,7 +229,7 @@ export function ProgressScreen() {
       {insights.length > 0 && (
         <motion.div variants={cardVariants}>
           <Card>
-            <span className="font-bold text-sm mb-3 block">Lo que sabe tu Digital Twin</span>
+            <span className="font-bold text-sm mb-3 block">{t('Lo que sabe tu Digital Twin')}</span>
             <motion.ul
               initial="initial"
               animate="animate"
@@ -259,7 +262,7 @@ export function ProgressScreen() {
       {recentEvents.length > 0 && (
         <motion.div variants={cardVariants}>
           <Card>
-            <span className="font-bold text-sm mb-3 block">Transparencia del motor</span>
+            <span className="font-bold text-sm mb-3 block">{t('Transparencia del motor')}</span>
             <motion.div
               initial="initial"
               animate="animate"
@@ -267,12 +270,12 @@ export function ProgressScreen() {
             >
               {recentEvents.map((ev, i) => {
                 const d = new Date(ev.timestamp);
-                const time = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) +
-                  ' ' + d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                const time = d.toLocaleDateString(locale, { day: 'numeric', month: 'short' }) +
+                  ' ' + d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
                 let txt = ev.event;
                 const dec = ev.decision as Record<string, unknown>;
-                if (ev.event === 'decision') txt = `Motor: sesión ${String(dec?.intensity ?? '')}`;
-                if (ev.event === 'workout_completed') txt = `Entrenamiento completado (${Math.round((Number(dec?.rate) || 0) * 100)}%)`;
+                if (ev.event === 'decision') txt = t('Motor: sesión {tipo}', { tipo: String(dec?.intensity ?? '') });
+                if (ev.event === 'workout_completed') txt = t('Entrenamiento completado ({pct}%)', { pct: Math.round((Number(dec?.rate) || 0) * 100) });
                 return (
                   <motion.div
                     key={i}
@@ -280,7 +283,7 @@ export function ProgressScreen() {
                     transition={{ delay: i * 0.06 }}
                     className="border-b border-white/[.07] last:border-0 pb-2 last:pb-0"
                   >
-                    <span className="text-[10px] text-[#94a0b8]">{time}</span>
+                    <span className="text-[10px] text-[var(--muted)]">{time}</span>
                     <p className="text-xs mt-0.5">{txt}</p>
                   </motion.div>
                 );

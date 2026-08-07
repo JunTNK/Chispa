@@ -16,10 +16,10 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       light: 'bg-[rgba(52,211,153,0.16)] text-[#34d399]',
       standard: 'bg-[rgba(255,180,84,0.16)] text-[#ffb454]',
       push: 'bg-[rgba(248,113,113,0.16)] text-[#f87171]',
-      ghost: 'bg-white/[.07] text-[#94a0b8]',
+      ghost: 'bg-[var(--card2)] text-[var(--muted)]',
       accent: 'bg-[rgba(255,180,84,0.14)] text-[#ffb454]',
       /* RPG Tier Colors */
-      common: 'bg-[rgba(148,160,184,0.16)] text-[#94a0b8]',
+      common: 'bg-[rgba(148,160,184,0.16)] text-[var(--muted)]',
       uncommon: 'bg-[rgba(52,211,153,0.16)] text-[#34d399]',
       rare: 'bg-[rgba(96,165,250,0.16)] text-[#60a5fa]',
       epic: 'bg-[rgba(167,139,250,0.16)] text-[#a78bfa]',

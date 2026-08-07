@@ -91,7 +91,7 @@ function setStore(overrides: Record<string, unknown> = {}) {
     onboarded: true,
     profile: mockProfile,
     twin: mockTwin,
-    prefs: { reduceMotion: false, highContrast: false, fontLarge: false },
+    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false },
     chat: [],
     checkins: {},
     workouts: [],
@@ -122,7 +122,7 @@ describe('HomeScreen — a11y', () => {
     // Wait for skeleton loading to finish
     const createBtn = await screen.findByText('Crear rutina');
     expect(createBtn).toBeInTheDocument();
-    expect(screen.getByText('Registro rápido')).toBeInTheDocument();
+    expect(screen.getByText('Bitácora')).toBeInTheDocument();
   });
 
   it('heading structure is correct', async () => {
@@ -260,7 +260,7 @@ describe('ProfileScreen — a11y', () => {
   it('contains profile information labels', async () => {
     render(<ProfileScreen />);
     // Wait for at least some profile content
-    await screen.findByText(/ana|adh-c|energia|nivel/i);
+    await screen.findByText(/^Ana$/i);
   });
 });
 

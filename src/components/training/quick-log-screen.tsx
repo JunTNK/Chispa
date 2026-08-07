@@ -3,10 +3,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useExercises } from '@/lib/utils/use-exercises';
+import { ExerciseImage, getExerciseVisual } from '@/lib/utils/exercise-visuals';
 import { uid, todayKey, matchesEquipment } from '@/lib/utils/helpers';
 import { supabaseSync } from '@/lib/sync/supabase-sync';
 import { pushLeaderboard } from '@/lib/sync/leaderboard';
@@ -23,6 +25,7 @@ import {
   Dumbbell,
 } from 'lucide-react';
 import { FitnessIcon } from '@/components/ui/fitness-icon';
+import { MUSCLES, type MuscleKey } from '@/lib/utils/muscles';
 import {
   CalmFaceIcon,
   HappyFaceIcon,
@@ -36,7 +39,14 @@ import {
   TimerIcon as RpgTimer,
 } from '@/components/ui/icons-rpg';
 
-const QUICK_DURATIONS = [10, 15, 20, 30, 45, 60];
+// Incluye '1 min' para la 'mini victoria': cualquier movimiento cuenta.
+const QUICK_DURATIONS = [1, 5, 10, 15, 20, 30, 45, 60];
+
+const STEP_UI: [string, React.ReactNode][] = [
+  ['Duración', <RpgTimer key="timer" size={18} />],
+  ['Ejercicios', <Dumbbell key="dumbbell" size={18} />],
+  ['Intensidad', <RpgFlame key="flame" size={18} />],
+];
 
 const RPE_OPTIONS = [
   { value: 'suave' as const, label: 'Suave', icon: <RpgSmile size={28} />, desc: 'Fue fácil' },
@@ -53,18 +63,17 @@ const MOOD_OPTIONS = [
   { icon: <SleepyFaceIcon size={22} />, label: 'Con sueño' },
 ];
 
-const MUSCLE_ICON: Record<string, React.ReactNode> = {
-  piernas: <FitnessIcon name="lower-body" size={20} />,
-  gluteos: <FitnessIcon name="lower-body" size={20} />,
-  pecho:   <FitnessIcon name="bench-press" size={20} />,
-  espalda: <FitnessIcon name="upper-body" size={20} />,
-  hombros: <FitnessIcon name="upper-body" size={20} />,
-  brazos:  <FitnessIcon name="biceps" size={20} />,
-  core:    <FitnessIcon name="core" size={20} />,
-  cardio:  <FitnessIcon name="running" size={20} />,
-};
+// Derivado del registry (muscles.ts) — el icono de cada músculo canónico
+// proviene de MUSCLES[key].fitnessIcon, una sola fuente de verdad.
+const MUSCLE_ICON: Record<string, React.ReactNode> = Object.fromEntries(
+  (Object.keys(MUSCLES) as MuscleKey[]).map((key) => [
+    key,
+    <FitnessIcon key={key} name={MUSCLES[key].fitnessIcon} size={20} />,
+  ]),
+);
 
 export function QuickLogScreen() {
+  const t = useT();
   const setView = useStore((s) => s.setView);
   const addWorkout = useStore((s) => s.addWorkout);
   const addQuickLog = useStore((s) => s.addQuickLog);
@@ -90,6 +99,13 @@ export function QuickLogScreen() {
   const commonExercises = React.useMemo(() => {
     return catalog.filter((e) => matchesEquipment(equipment, e.equipment)).slice(0, 20);
   }, [equipment, catalog]);
+
+  // Name → visual lookup for exercise thumbnails
+  const exerciseVisual = React.useMemo(() => {
+    const m: Record<string, { src: string | null; fallbackIcon: React.ComponentType<{ size?: number; className?: string }> }> = {};
+    catalog.forEach((e) => { m[e.name] = getExerciseVisual(e); });
+    return m;
+  }, [catalog]);
 
   const toggleExercise = (name: string, muscle: string) => {
     setSelectedExercises((prev) => {
@@ -210,15 +226,15 @@ export function QuickLogScreen() {
           <ArrowLeft size={20} />
         </motion.button>
         <div className="text-center">
-          <span className="text-lg font-bold">Registro rápido</span>
-          <p className="text-xs text-[#94a0b8]">Vitacoriza tu movimiento</p>
+          <span className="text-lg font-bold">{t('Registro rápido')}</span>
+          <p className="text-xs text-[var(--muted)]">{t('Registra tu movimiento')}</p>
         </div>
         <div className="w-11" />
       </div>
 
       {/* Steps progress */}
       <div className="flex items-center gap-2 px-4 mb-4">
-        {[['Duración', <RpgTimer key="timer" size={18} />], ['Ejercicios', <Dumbbell key="dumbbell" size={18} />], ['Intensidad', <RpgFlame key="flame" size={18} />]].map(([label, icon], i) => {
+        {STEP_UI.map(([label, icon], i) => {
           const stepNames: (typeof step)[] = ['duration', 'exercises', 'rpe'];
           const currentIdx = stepNames.indexOf(step);
           const doneIdx = step === 'done' ? 3 : currentIdx;
@@ -233,17 +249,17 @@ export function QuickLogScreen() {
                       ? 'bg-[#34d399] text-white'
                       : isCurrent
                         ? 'bg-[#ffb454] text-[#0a0d14]'
-                        : 'bg-white/[.08] text-[#5c6577]'
+                        : 'bg-white/[.08] text-[var(--muted)]'
                   }`}
                 >
                   {isDone ? '✓' : icon}
                 </div>
                 <span
                   className={`text-[10px] font-semibold hidden sm:block ${
-                    isCurrent ? 'text-white' : 'text-[#5c6577]'
+                    isCurrent ? 'text-white' : 'text-[var(--muted)]'
                   }`}
                 >
-                  {label}
+                  {t(label)}
                 </span>
               </div>
               {i < 2 && (
@@ -271,7 +287,7 @@ export function QuickLogScreen() {
               <Card className="text-center">
                 <div className="flex items-center justify-center gap-2 mb-3">
                   <Clock size={20} className="text-[#ffb454]" />
-                  <span className="text-lg font-bold">¿Cuánto duró?</span>
+                  <span className="text-lg font-bold">{t('¿Cuánto duró?')}</span>
                 </div>
                 <div className="flex justify-center gap-2 flex-wrap">
                   {QUICK_DURATIONS.map((d) => (
@@ -282,45 +298,45 @@ export function QuickLogScreen() {
                       className={`w-16 h-16 rounded-2xl font-bold text-lg transition-all flex flex-col items-center justify-center ${
                         duration === d
                           ? 'bg-[#ffb454] text-[#0a0d14]'
-                          : 'bg-white/[.06] text-[#94a0b8] border border-white/[.07] hover:bg-white/[.10]'
+                          : 'bg-white/[.06] text-[var(--muted)] border border-white/[.07] hover:bg-white/[.10]'
                       }`}
                     >
                       {d}
-                      <span className="text-[9px] font-normal">min</span>
+                      <span className="text-[9px] font-normal">{t('min')}</span>
                     </motion.button>
                   ))}
                 </div>
                 {/* Custom duration slider */}
                 <div className="mt-4">
-                  <label className="sr-only" htmlFor="quicklog-duration">Duración en minutos</label>
+                  <label className="sr-only" htmlFor="quicklog-duration">{t('Duración en minutos')}</label>
                   <input
                     id="quicklog-duration"
                     type="range"
-                    min={5}
+                    min={1}
                     max={90}
                     step={5}
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
                     className="w-full accent-[#ffb454]"
                   />
-                  <div className="flex justify-between text-xs text-[#5c6577] mt-1">
-                    <span>5 min</span>
-                    <span className="font-bold text-[#ffb454]">{duration} min</span>
-                    <span>90 min</span>
+                  <div className="flex justify-between text-xs text-[var(--muted)] mt-1">
+                    <span>{t('{n} min', { n: 1 })}</span>
+                    <span className="font-bold text-[#ffb454]">{t('{n} min', { n: duration })}</span>
+                    <span>{t('{n} min', { n: 90 })}</span>
                   </div>
                 </div>
               </Card>
 
               <div className="grid grid-cols-2 gap-3">
                 <Button variant="ghost" size="large" onClick={() => setView('home')}>
-                  Cancelar
+                  {t('Cancelar')}
                 </Button>
                 <Button
                   variant="primary"
                   size="large"
                   onClick={() => setStep('exercises')}
                 >
-                  Siguiente <ArrowLeft size={16} className="rotate-180" />
+                  {t('Siguiente')} <ArrowLeft size={16} className="rotate-180" />
                 </Button>
               </div>
             </motion.div>
@@ -336,8 +352,8 @@ export function QuickLogScreen() {
             >
               <Card>
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-bold">¿Qué hiciste?</span>
-                  <Badge variant="light">{selectedExercises.length} ejercicios</Badge>
+                  <span className="text-sm font-bold">{t('¿Qué hiciste?')}</span>
+                  <Badge variant="light">{t('{n} ejercicios', { n: selectedExercises.length })}</Badge>
                 </div>
 
                 {/* Common exercises grid */}
@@ -364,7 +380,9 @@ export function QuickLogScreen() {
                               : 'border-white/[.07] bg-[#151b2a] hover:border-white/[.15]'
                           }`}
                         >
-                          <span className="text-[#94a0b8]">{MUSCLE_ICON[ex.muscle] || <Dumbbell size={18} />}</span>
+                          <span className="w-9 h-9 rounded-lg overflow-hidden bg-[#0f1420] border border-white/[.06]">
+                            <ExerciseImage {...(exerciseVisual[ex.name] ?? { src: null, fallbackIcon: Dumbbell })} size={15} />
+                          </span>
                           <span className="text-[9px] font-semibold text-center leading-tight">
                             {ex.name.split(' ').slice(0, 2).join(' ')}
                           </span>
@@ -376,7 +394,7 @@ export function QuickLogScreen() {
 
                 {/* Custom exercise input */}
                 <div className="flex gap-2">
-                  <label className="sr-only" htmlFor="quicklog-custom-ex">Agregar otro ejercicio</label>
+                  <label className="sr-only" htmlFor="quicklog-custom-ex">{t('Agregar otro ejercicio')}</label>
                   <input
                     id="quicklog-custom-ex"
                     type="text"
@@ -385,7 +403,7 @@ export function QuickLogScreen() {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') addCustomExercise();
                     }}
-                    placeholder="Otro ejercicio..."
+                    placeholder={t('Otro ejercicio...')}
                     className="flex-1 bg-white/[.06] border border-white/[.10] rounded-xl px-3 py-2.5 text-sm text-white placeholder-[#5c6577] outline-none focus:border-[#ffb454] transition-colors"
                   />
                   <motion.button
@@ -401,7 +419,7 @@ export function QuickLogScreen() {
               {/* Selected exercises */}
               {selectedExercises.length > 0 && (
                 <Card>
-                  <span className="text-sm font-bold mb-2 block">Seleccionados</span>
+                  <span className="text-sm font-bold mb-2 block">{t('Seleccionados')}</span>
                   <div className="flex flex-wrap gap-1.5">
                     {selectedExercises.map((ex, i) => (
                       <motion.span
@@ -426,8 +444,8 @@ export function QuickLogScreen() {
 
               {/* No exercise selected — skip button */}
               {selectedExercises.length === 0 && (
-                <p className="text-xs text-[#94a0b8] text-center">
-                  No pasa nada si no recuerdas. Puedes continuar sin detalles.
+                <p className="text-xs text-[var(--muted)] text-center">
+                  {t('No pasa nada si no recuerdas. Puedes continuar sin detalles.')}
                 </p>
               )}
 
@@ -438,8 +456,8 @@ export function QuickLogScreen() {
                 onClick={() => setStep('rpe')}
               >
                 {selectedExercises.length > 0
-                  ? `Siguiente (${selectedExercises.length} ej.)`
-                  : 'Continuar sin detalles'}{' '}
+                  ? t('Siguiente ({n} ej.)', { n: selectedExercises.length })
+                  : t('Continuar sin detalles')}{' '}
                 <ArrowLeft size={16} className="rotate-180" />
               </Button>
             </motion.div>
@@ -456,7 +474,7 @@ export function QuickLogScreen() {
               {/* RPE */}
               <Card>
                 <span className="text-sm font-bold mb-3 block text-center">
-                  ¿Qué tal el esfuerzo?
+                  {t('¿Qué tal el esfuerzo?')}
                 </span>
                 <div className="grid grid-cols-3 gap-3">
                   {RPE_OPTIONS.map((opt) => (
@@ -472,14 +490,14 @@ export function QuickLogScreen() {
                       }`}
                     >
                       <span className="text-[#ffb454]">{opt.icon}</span>
-                      <span className="text-sm font-bold">{opt.label}</span>
-                      <span className="text-[10px] text-[#94a0b8]">{opt.desc}</span>
+                      <span className="text-sm font-bold">{t(opt.label)}</span>
+                      <span className="text-[10px] text-[var(--muted)]">{t(opt.desc)}</span>
                     </motion.button>
                   ))}
                 </div>
                 {!rpe && (
-                  <p className="text-xs text-[#5c6577] text-center mt-3">
-                    Toca uno para continuar (o elige abajo)
+                  <p className="text-xs text-[var(--muted)] text-center mt-3">
+                    {t('Toca uno para continuar (o elige abajo)')}
                   </p>
                 )}
               </Card>
@@ -487,7 +505,7 @@ export function QuickLogScreen() {
               {/* Mood */}
               <Card>
                 <span className="text-sm font-bold mb-3 block text-center">
-                  ¿Cómo te sientes ahora?
+                  {t('¿Cómo te sientes ahora?')}
                 </span>
                 <div className="flex flex-wrap justify-center gap-2">
                   {MOOD_OPTIONS.map((opt) => (
@@ -501,9 +519,9 @@ export function QuickLogScreen() {
                           : 'border-white/[.07] bg-[#151b2a]'
                       }`}
                     >
-                      <span className="text-[#94a0b8]">{opt.icon}</span>
-                      <span className="text-[10px] font-semibold text-[#94a0b8]">
-                        {opt.label}
+                      <span className="text-[var(--muted)]">{opt.icon}</span>
+                      <span className="text-[10px] font-semibold text-[var(--muted)]">
+                        {t(opt.label)}
                       </span>
                     </motion.button>
                   ))}
@@ -513,12 +531,12 @@ export function QuickLogScreen() {
               {/* Notes */}
               <Card>
                 <label className="text-sm font-bold mb-2 flex items-center gap-2">
-                  <StickyNote size={16} /> Notas <span className="text-[#5c6577] font-normal">(opcional)</span>
+                  <StickyNote size={16} /> {t('Notas')} <span className="text-[var(--muted)] font-normal">({t('opcional')})</span>
                 </label>
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="¿Algo que quieras recordar? Cómo te fue, qué aprendiste..."
+                  placeholder={t('¿Algo que quieras recordar? Cómo te fue, qué aprendiste...')}
                   rows={2}
                   className="w-full bg-white/[.06] border border-white/[.10] rounded-xl px-4 py-3 text-sm text-white placeholder-[#5c6577] outline-none focus:border-[#ffb454] transition-colors resize-none"
                 />
@@ -528,10 +546,10 @@ export function QuickLogScreen() {
               <Card className="bg-[rgba(52,211,153,0.06)] border-[rgba(52,211,153,0.2)]">
                 <div className="flex items-center justify-between text-sm">
                   <span className="flex items-center gap-1.5">
-                    <Clock size={14} /> {duration} min
+                    <Clock size={14} /> {t('{n} min', { n: duration })}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <Dumbbell size={14} /> {selectedExercises.length || '—'} ejercicios
+                    <Dumbbell size={14} /> {t('{n} ejercicios', { n: selectedExercises.length || '—' })}
                   </span>
                 <span className="flex items-center gap-1.5">
                   <RpgFlame size={14} /> {computeWorkoutXp(1, duration)} XP
@@ -545,7 +563,7 @@ export function QuickLogScreen() {
                 className="w-full"
                 onClick={handleSave}
               >
-                <Check size={18} /> ¡Listo! Guardar
+                <Check size={18} /> {t('¡Listo! Guardar')}
               </Button>
             </motion.div>
           )}
@@ -571,24 +589,24 @@ export function QuickLogScreen() {
                 transition={{ delay: 0.1 }}
                 className="text-2xl font-black mb-2"
               >
-                ¡Registrado!
+                {t('¡Registrado!')}
               </motion.h2>
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                className="text-sm text-[#94a0b8] mb-1"
+                className="text-sm text-[var(--muted)] mb-1"
               >
-                {duration} min · {selectedExercises.length} ejercicios
+                {t('{a} min · {b} ejercicios', { a: duration, b: selectedExercises.length })}
               </motion.p>
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.3 }}
-                className="text-xs text-[#94a0b8] mb-8"
+                className="text-xs text-[var(--muted)] mb-8"
               >
                 {rpe && RPE_OPTIONS.find((o) => o.value === rpe)?.icon}{' '}
-                {mood && `· Te sientes ${mood.toLowerCase()}`}
+                {mood && t('· Te sientes {mood}', { mood: mood.toLowerCase() })}
               </motion.p>
               {rpe && (
                 <motion.p
@@ -607,7 +625,7 @@ export function QuickLogScreen() {
                 className="flex gap-3 w-full max-w-xs"
               >
                 <Button variant="primary" className="flex-1" onClick={() => setView('home')}>
-                  Ir al inicio
+                  {t('Ir al inicio')}
                 </Button>
                 <Button
                   variant="ghost"
@@ -620,7 +638,7 @@ export function QuickLogScreen() {
                     setNotes('');
                   }}
                 >
-                  Otro registro
+                  {t('Otro registro')}
                 </Button>
               </motion.div>
             </motion.div>

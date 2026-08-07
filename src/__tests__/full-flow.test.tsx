@@ -72,7 +72,7 @@ function setSliderValue(slider: HTMLElement, target: number, current: number, st
   }
 }
 
-/** Complete onboarding through all 9 UI steps. Must be cleaned up after. */
+/** Complete onboarding through all 10 UI steps. Must be cleaned up after. */
 function completeOnboarding() {
   render(<OnboardingScreen />);
 
@@ -106,11 +106,18 @@ function completeOnboarding() {
   fireEvent.click(screen.getByText('No aplica'));
   fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
-  // Step 8: Theme
+  // Step 8: Body — medidas corporales (imperial default, opcional)
+  fireEvent.click(screen.getByRole('button', { name: 'Mujer' }));
+  fireEvent.change(document.getElementById('onboarding-weight')!, { target: { value: '132' } });
+  fireEvent.change(document.getElementById('onboarding-height-ft')!, { target: { value: '5' } });
+  fireEvent.change(document.getElementById('onboarding-height-in')!, { target: { value: '7' } });
+  fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+  // Step 9: Theme
   fireEvent.click(screen.getByText('David'));
   fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
-  // Step 9: Sensory → Create twin
+  // Step 10: Sensory → Create twin
   // Skip toggling (default off) and create directly
   fireEvent.click(screen.getByRole('button', { name: /crear mi digital twin/i }));
 }
@@ -126,7 +133,7 @@ describe('Full Flow Integration', () => {
       cleanup();
     });
 
-    it('completes all 9 steps and sets up store correctly', () => {
+    it('completes all 10 steps and sets up store correctly', () => {
       completeOnboarding();
 
       const s = useStore.getState();
@@ -140,6 +147,11 @@ describe('Full Flow Integration', () => {
       expect(s.profile?.equipment).toBe('ninguno');
       expect(s.profile?.days_per_week).toBe('2-3');
       expect(s.profile?.preferred_duration).toBe(20);
+      // Medidas corporales del paso body (canónico métrico, imperial display)
+      expect(s.profile?.sex).toBe('femenino');
+      expect(s.profile?.weight_kg).toBeCloseTo(59.9, 0);
+      expect(s.profile?.height_cm).toBeCloseTo(170.2, 0);
+      expect(s.profile?.units).toBe('imperial');
       expect(s.questState.selectedTheme).toBe('david');
       expect(s.sensory.quiet).toBe(false);
       expect(s.sensory.dim).toBe(false);
@@ -163,6 +175,24 @@ describe('Full Flow Integration', () => {
       expect(twin.motiv_weights).toEqual({ data: 1, energy: 1, direct: 1, calm: 1 });
       expect(twin.patterns.completion_rate).toBe(0.5);
       expect(twin.patterns.abandon_rate).toBe(0.2);
+    });
+
+    it('sembrar check-in amable al completar el boot → rutina inmediata (ND)', async () => {
+      completeOnboarding();
+      // BootScreen está visible; "Saltar" ejecuta onComplete → onBootComplete
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /saltar/i }));
+      });
+      const s = useStore.getState();
+      const ci = s.checkins[todayKey()];
+      expect(ci).toBeDefined();
+      expect(ci.sleep).toBe(7);
+      expect(ci.energy).toBe(6);
+      expect(ci.stress).toBe(4);
+      expect(ci.recovery_score).toBe(50);
+      expect(s.view).toBe('home');
+      // aislar: no contaminar HomeScreen tests que asumen check-in vacío
+      useStore.setState({ checkins: {} });
     });
   });
 
@@ -381,7 +411,7 @@ describe('Full Flow Integration', () => {
 
       // Finish early
       await act(async () => {
-        fireEvent.click(screen.getByText(/terminar aquí/i));
+        fireEvent.click(screen.getByText(/terminar aquí · guardamos lo hecho/i));
       });
 
       expect(useStore.getState().view).toBe('summary');

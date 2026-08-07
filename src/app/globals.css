@@ -7,7 +7,9 @@
   --card2: #1a2234;
   --line: rgba(255, 255, 255, 0.07);
   --text: #f2f5fc;
-  --muted: #94a0b8;
+  /* muted text: elevated to >=4.5:1 AA over --bg (#0a0d14) */
+  --muted: #a9b3c8;
+  --muted-soft: #8a94a6;
   --accent: #ffb454;
   --accent2: #ff7a3d;
   --good: #34d399;
@@ -45,8 +47,24 @@ body.large {
 body.hc {
   --line: rgba(255, 255, 255, 0.24);
   --muted: #c6d0e4;
+  --muted-soft: #c6d0e4;
   --card: #0f141f;
   --card2: #161d2b;
+}
+
+/* Light theme (opt-in, dark-first app). Override de vars base; los componentes
+migran progresivamente. Por defecto: dark-only. */
+body.light {
+  --bg: #f2f5fc;
+  --bg2: #e9eef7;
+  --card: #ffffff;
+  --card2: #f2f5fc;
+  --line: rgba(15, 20, 36, 0.18);
+  --text: #0f1424;
+  --muted: #5a6373;
+  --muted-soft: #5a6373;
+  --accent: #b96012;
+  --accent2: #b85820;
 }
 
 ::selection {
@@ -524,6 +542,42 @@ input[type="number"] {
 }
 
 /* ════════════════════════════════════════════
+   REDUCED MOTION (neurodivergent-friendly)
+   Respeta la preferencia del sistema: sin shimmer,
+   sin pulsos ni animaciones repetitivas.
+   ════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton {
+    background: rgba(255, 255, 255, 0.06);
+    animation: none !important;
+  }
+
+  .pulse-dot,
+  .dot-glow,
+  .xp-bar-glow,
+  .glow-pulse,
+  .glow-teal,
+  .glow-purple,
+  .float,
+  .float-slow,
+  .sparkle,
+  .sparkle-float,
+  .rainbow,
+  .level-up-text,
+  .boss-shake {
+    animation: none !important;
+  }
+}
+
+/* ════════════════════════════════════════════
    WELCOME AMBIENT ANIMATIONS
    ════════════════════════════════════════════ */
 
@@ -629,4 +683,9 @@ input[type="number"] {
   mix-blend-mode: overlay;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+
+/* FAQ TDAH — details chevron rotation (accesible, sin JS) */
+.faq-details > summary { list-style: none; }
+.faq-details > summary svg { transition: transform 0.2s ease; }
+.faq-details[open] > summary svg { transform: rotate(180deg); }
 }

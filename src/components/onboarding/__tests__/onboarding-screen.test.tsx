@@ -11,7 +11,7 @@ describe('OnboardingScreen', () => {
   it('renders step 1 — name input', () => {
     render(<OnboardingScreen />);
 
-    expect(screen.getByText('1/9')).toBeInTheDocument();
+    expect(screen.getByText('1/10')).toBeInTheDocument();
     expect(screen.getByText('Empecemos')).toBeInTheDocument();
     expect(screen.getByText('¿Cómo te llamamos?')).toBeInTheDocument();
 
@@ -36,7 +36,7 @@ describe('OnboardingScreen', () => {
     fireEvent.change(screen.getByPlaceholderText('Tu nombre'), { target: { value: 'Ana' } });
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
-    expect(screen.getByText('2/9')).toBeInTheDocument();
+    expect(screen.getByText('2/10')).toBeInTheDocument();
     expect(screen.getByText('Tu objetivo')).toBeInTheDocument();
     expect(screen.getByText('Fuerza y músculo')).toBeInTheDocument();
     expect(screen.getByText('Energía y salud')).toBeInTheDocument();
@@ -66,17 +66,17 @@ describe('OnboardingScreen', () => {
     // Go to step 2
     fireEvent.change(screen.getByPlaceholderText('Tu nombre'), { target: { value: 'Ana' } });
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
-    expect(screen.getByText('2/9')).toBeInTheDocument();
+    expect(screen.getByText('2/10')).toBeInTheDocument();
 
     // Click back button (first button with SVG chevron-left path)
     const backButton = screen.getAllByRole('button')[0];
     fireEvent.click(backButton);
 
-    expect(screen.getByText('1/9')).toBeInTheDocument();
+    expect(screen.getByText('1/10')).toBeInTheDocument();
     expect(screen.getByText('Empecemos')).toBeInTheDocument();
   });
 
-  it('creates digital twin after completing all 9 steps', () => {
+  it('creates digital twin after completing all 10 steps', () => {
     render(<OnboardingScreen />);
 
     // Step 1: Name
@@ -89,38 +89,47 @@ describe('OnboardingScreen', () => {
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
     // Step 3: Level
-    expect(screen.getByText('3/9')).toBeInTheDocument();
+    expect(screen.getByText('3/10')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Estoy empezando'));
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
     // Step 4: Neurotype
-    expect(screen.getByText('4/9')).toBeInTheDocument();
+    expect(screen.getByText('4/10')).toBeInTheDocument();
     fireEvent.click(screen.getByText('TDAH combinado'));
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
     // Step 5: Chronotype
-    expect(screen.getByText('5/9')).toBeInTheDocument();
+    expect(screen.getByText('5/10')).toBeInTheDocument();
     fireEvent.click(screen.getByText('León (mañana)'));
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
     // Step 6: Equipment + Days
-    expect(screen.getByText('6/9')).toBeInTheDocument();
+    expect(screen.getByText('6/10')).toBeInTheDocument();
     fireEvent.click(screen.getByText('Sin equipo'));
     fireEvent.click(screen.getByText('2-3 días'));
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
     // Step 7: Medication
-    expect(screen.getByText('7/9')).toBeInTheDocument();
+    expect(screen.getByText('7/10')).toBeInTheDocument();
     fireEvent.click(screen.getByText('No aplica'));
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
-    // Step 8: Theme
-    expect(screen.getByText('8/9')).toBeInTheDocument();
+    // Step 8: Body — medidas corporales (imperial default)
+    expect(screen.getByText('8/10')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /imperial/i })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(screen.getByRole('button', { name: 'Mujer' }));
+    fireEvent.change(document.getElementById('onboarding-weight')!, { target: { value: '132' } });
+    fireEvent.change(document.getElementById('onboarding-height-ft')!, { target: { value: '5' } });
+    fireEvent.change(document.getElementById('onboarding-height-in')!, { target: { value: '7' } });
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+    // Step 9: Theme
+    expect(screen.getByText('9/10')).toBeInTheDocument();
     fireEvent.click(screen.getByText('David'));
     fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
 
-    // Step 9: Sensory → Create twin
-    expect(screen.getByText('9/9')).toBeInTheDocument();
+    // Step 10: Sensory → Create twin
+    expect(screen.getByText('10/10')).toBeInTheDocument();
     // Toggle quiet mode on
     fireEvent.click(screen.getByLabelText('Activar Modo silencio'));
 
@@ -133,6 +142,11 @@ describe('OnboardingScreen', () => {
     expect(state.profile?.goal).toBe('fuerza');
     expect(state.profile?.chronotype).toBe('leon');
     expect(state.profile?.medication).toBe('no');
+    expect(state.profile?.sex).toBe('femenino');
+    // 132 lb ≈ 59.9 kg · 5'7" ≈ 170.2 cm (canónico métrico)
+    expect(state.profile?.weight_kg).toBeCloseTo(59.9, 0);
+    expect(state.profile?.height_cm).toBeCloseTo(170.2, 0);
+    expect(state.profile?.units).toBe('imperial');
     expect(state.questState.selectedTheme).toBe('david');
     expect(state.sensory.quiet).toBe(true);
     expect(state.sensory.dim).toBe(false);
@@ -142,14 +156,80 @@ describe('OnboardingScreen', () => {
     // Boot sequence now plays after twin creation; view='home' is set asynchronously
   });
 
-  it('shows 9 step progress indicators with active first dot', () => {
+  it('body step: se puede saltar sin registrar medidas', () => {
+    render(<OnboardingScreen />);
+
+    fireEvent.change(screen.getByPlaceholderText('Tu nombre'), { target: { value: 'Ana' } });
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('Fuerza y músculo'));
+    fireEvent.click(screen.getByText('20 min'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('Estoy empezando'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('TDAH combinado'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('León (mañana)'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('Sin equipo'));
+    fireEvent.click(screen.getByText('2-3 días'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('No aplica'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+    // Paso body: Continuar habilitado sin tocar nada
+    expect(screen.getByText('8/10')).toBeInTheDocument();
+    const continueBtn = screen.getByRole('button', { name: /continuar/i });
+    expect(continueBtn).not.toBeDisabled();
+    fireEvent.click(continueBtn);
+
+    // Llega a hiperfijación
+    expect(screen.getByText('9/10')).toBeInTheDocument();
+    expect(screen.getByText('Tu hiperfijación')).toBeInTheDocument();
+  });
+
+  it('body step: el toggle a métrico convierte los valores escritos', () => {
+    render(<OnboardingScreen />);
+
+    fireEvent.change(screen.getByPlaceholderText('Tu nombre'), { target: { value: 'Ana' } });
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('Fuerza y músculo'));
+    fireEvent.click(screen.getByText('20 min'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('Estoy empezando'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('TDAH combinado'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('León (mañana)'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('Sin equipo'));
+    fireEvent.click(screen.getByText('2-3 días'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+    fireEvent.click(screen.getByText('No aplica'));
+    fireEvent.click(screen.getByRole('button', { name: /continuar/i }));
+
+    // Paso body: escribe en imperial
+    fireEvent.change(document.getElementById('onboarding-weight')!, { target: { value: '132' } });
+    fireEvent.change(document.getElementById('onboarding-height-ft')!, { target: { value: '5' } });
+    fireEvent.change(document.getElementById('onboarding-height-in')!, { target: { value: '7' } });
+
+    // Cambia a métrico → convierte valores
+    fireEvent.click(screen.getByRole('button', { name: /m[eé]trico/i }));
+
+    expect((document.getElementById('onboarding-weight') as HTMLInputElement).value).toBe('59.9');
+    const cmInput = document.getElementById('onboarding-height') as HTMLInputElement;
+    expect(cmInput).toBeInTheDocument();
+    expect(cmInput.value).toBe('170.2');
+    expect(document.getElementById('onboarding-height-ft')).toBeNull();
+  });
+
+  it('shows 10 step progress indicators with active first dot', () => {
     render(<OnboardingScreen />);
 
     // Progress dots are <span> elements
     const progressDots = document.querySelectorAll(
       '[class*="h-2"][class*="rounded-full"]'
     );
-    expect(progressDots.length).toBe(9);
+    expect(progressDots.length).toBe(10);
   });
 
   // ─────────────────────────────────────────────────────

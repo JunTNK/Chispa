@@ -1,0 +1,136 @@
+/**
+ * 🟢 LiveNowCard — "Estoy entrenando ahora"
+ *
+ * Principio ND aplicado:
+ * - Presente, no pasado. Un toque arranca el timer.
+ * - Si el usuario ya entrenó, puede "Terminar y guardar".
+ * - El timer persiste en el store para sobrevivir refresh.
+ * - Link secundario: "Registrar algo que ya hice" → ruta a quick-log.
+ */
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
+import { useLocale } from '@/lib/i18n/use-t';
+import { useToast } from '@/components/ui/toast';
+import { Dumbbell } from 'lucide-react';
+
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+}
+
+export function LiveTimer({ since }: { since: number }) {
+  const [elapsed, setElapsed] = useState(Date.now() - since);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed(Date.now() - since);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [since]);
+
+  return <span className="text-2xl font-mono font-bold text-[#34d399]">{formatElapsed(elapsed)}</span>;
+}
+
+export function LiveNowCard() {
+  const t = useT();
+  const locale = useLocale();
+  const toast = useToast();
+  const startedAt = useStore((s) => s.liveNowStartedAt);
+  const startLive = useStore((s) => s.startLive);
+  const finishLive = useStore((s) => s.finishLive);
+  const setView = useStore((s) => s.setView);
+  const addWorkout = useStore((s) => s.addWorkout);
+
+  const handleFinish = () => {
+    const elapsedMs = Date.now() - (startedAt ?? Date.now());
+    const minutes = Math.ceil(elapsedMs / 60000);
+
+    addWorkout({
+      id: `live_${Date.now()}`,
+      user_id: '',
+      date: new Date().toISOString(),
+      duration: minutes,
+      focus: 'full',
+      intensity: minutes >= 30 ? 'standard' : 'light',
+      score: 75,
+      completed_rate: 1,
+      exercises: [],
+      actual_minutes: minutes,
+      rpe: 'justo',
+      created_at: new Date().toISOString(),
+    });
+
+    finishLive();
+    toast.success('Cada minuto cuenta.');
+  };
+
+  if (startedAt) {
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        className="rounded-xl border border-[#34d399]/30 bg-[rgba(52,211,153,0.06)] p-4"
+      >
+        <p className="text-sm font-semibold mb-3 flex items-center gap-2">
+          Te estás moviendo{' '}
+          <span role="img" aria-label="corazón">
+            💚
+          </span>
+        </p>
+        <div className="flex items-center justify-between mb-4">
+          <LiveTimer since={startedAt} />
+          <button
+            onClick={() => {
+              finishLive();
+              toast.info('Timer cancelado');
+            }}
+            className="text-xs underline text-[var(--muted)] hover:text-[var(--text)]"
+          >
+            {t('Cancelar')}
+          </button>
+        </div>
+        <button
+          onClick={handleFinish}
+          className="w-full py-2 rounded-xl bg-gradient-to-r from-[#34d399] to-[#10b981] text-[#0a0d14] font-bold text-sm transition-all hover:brightness-110"
+        >
+          {t('live.finish')}
+        </button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+    >
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={startLive}
+        className="w-full py-4 rounded-2xl border border-white/[.07] bg-gradient-to-b from-[#0a0d14] to-[#151b2a] text-left px-4 flex flex-col gap-1 transition-all hover:border-[#34d399]/30 focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]"
+      >
+        <span className="text-base font-bold flex items-center gap-2">
+          <span>▶</span>{t('live.start')}
+        </span>
+        <span className="text-xs text-[var(--muted)]">{t('live.hint')}</span>
+      </motion.button>
+
+      <button
+        onClick={() => setView('quick-log')}
+        className="mt-2 w-full text-center text-xs text-[var(--muted)] hover:text-[var(--text)] underline underline-offset-1"
+      >
+        {t('live.manual')}
+      </button>
+    </motion.div>
+  );
+}

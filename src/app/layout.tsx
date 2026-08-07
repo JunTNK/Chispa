@@ -79,7 +79,7 @@ export default function RootLayout({
   `,
 }} />
       </head>
-      <body suppressHydrationWarning className="min-h-dvh font-sans bg-[#0a0d14] text-[#f2f5fc] overflow-x-hidden">
+      <body suppressHydrationWarning className="min-h-dvh font-sans bg-[#0a0d14] text-[var(--text)] overflow-x-hidden">
         <WebVitals />
         {children}
         <script dangerouslySetInnerHTML={{

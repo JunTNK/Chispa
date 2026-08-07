@@ -2,8 +2,11 @@
 
 import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
+import { onAuthStateChange } from '@/lib/auth/supabase-auth';
+import { trackDAU } from '@/lib/analytics';
 import { AppLayout } from '@/components/layout/app-layout';
 import { ToastContainer } from '@/components/ui/toast';
 import { AchievementToast } from '@/components/awards/achievement-toast';
@@ -45,6 +48,12 @@ const ProgressScreen = dynamic(() => import('@/components/progress/progress-scre
   ssr: true,
 });
 
+const AnalyticsScreen = dynamic(() => import('@/components/analytics/analytics-screen').then(m => ({ default: m.AnalyticsScreen })), {
+  ssr: true,
+});
+const PricingScreen = dynamic(() => import('@/components/pricing/pricing-screen').then(m => ({ default: m.PricingScreen })), {
+  ssr: true,
+});
 const ProfileScreen = dynamic(() => import('@/components/profile/profile-screen').then(m => ({ default: m.ProfileScreen })), {
   ssr: true,
 });
@@ -80,17 +89,27 @@ const QuickLogScreen = dynamic(() => import('@/components/training/quick-log-scr
 const ExerciseCatalogScreen = dynamic(() => import('@/components/training/exercise-catalog-screen').then(m => ({ default: m.ExerciseCatalogScreen })), {
   ssr: true,
 });
+const JournalScreen = dynamic(() => import('@/components/training/journal-screen').then(m => ({ default: m.JournalScreen })), {
+  ssr: false,
+});
+
+const FeedbackScreen = dynamic(() => import('@/components/feedback/feedback-screen').then(m => ({ default: m.FeedbackScreen })), {
+  ssr: true,
+});
 
 /* ─── Fallback loading states ─── */
 
-const ScreenFallback = () => (
-  <div className="min-h-dvh flex items-center justify-center p-4">
-    <div className="flex flex-col items-center gap-3">
-      <div className="w-8 h-8 rounded-full border-2 border-[#ffb454] border-t-transparent animate-spin" />
-      <p className="text-sm text-[#94a0b8]">Cargando...</p>
+const ScreenFallback = () => {
+  const t = useT();
+  return (
+    <div className="min-h-dvh flex items-center justify-center p-4">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 rounded-full border-2 border-[#ffb454] border-t-transparent animate-spin" />
+        <p className="text-sm text-[var(--muted)]">{t('Cargando...')}</p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ─── Animation Variants ─── */
 
@@ -123,11 +142,47 @@ function PageWrapper({ view, children }: { view: string; children: React.ReactNo
 export default function App() {
   const view = useStore((s) => s.view);
   const prefs = useStore((s) => s.prefs);
+  const lang = useStore((s) => s.lang);
+
+   useEffect(() => {
+     document.body.classList.toggle('hc', prefs.highContrast);
+     document.body.classList.toggle('large', prefs.fontLarge);
+     document.body.classList.toggle('light', prefs.light ?? false);
+   }, [prefs]);
 
   useEffect(() => {
-    document.body.classList.toggle('hc', prefs.highContrast);
-    document.body.classList.toggle('large', prefs.fontLarge);
-  }, [prefs]);
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  // High Contrast: respeta la preferencia del SO/UX → persiste en prefs.highContrast.
+  // Solo auto-activa si el usuario aún no la ha forzado y el sistema pide más contraste.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (prefs.highContrast) return;
+    if (window.matchMedia('(prefers-contrast: more)').matches) {
+      useStore.getState().setPref('highContrast', true);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restaura la sesión de Supabase al montar/recargar: el idioma vive en el
+  // Digital Twin (digital_twins.lang) y se aplica al store tras el pull,
+  // para que la preferencia siga al usuario entre dispositivos.
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((event, session) => {
+      // Auto-navigate authenticated users to their home view
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+        const store = useStore.getState();
+        const { profile, onboarded } = store;
+        if (profile && onboarded) {
+          store.setView('home');
+        } else if (profile && !onboarded) {
+          store.setView('onboarding');
+        }
+      }
+    });
+    trackDAU();
+    return unsubscribe;
+  }, []);
 
   const renderScreen = () => {
     const content = (() => {
@@ -151,6 +206,10 @@ export default function App() {
           return <AppLayout><CoachScreen /></AppLayout>;
         case 'progress':
           return <AppLayout><ProgressScreen /></AppLayout>;
+        case 'analytics':
+          return <AppLayout><AnalyticsScreen /></AppLayout>;
+        case 'pricing':
+          return <AppLayout><PricingScreen /></AppLayout>;
         case 'profile':
           return <AppLayout><ProfileScreen /></AppLayout>;
         case 'quest':
@@ -165,8 +224,12 @@ export default function App() {
           return <CreateWorkoutScreen />;
         case 'quick-log':
           return <QuickLogScreen />;
-        case 'catalog':
-          return <AppLayout><ExerciseCatalogScreen /></AppLayout>;
+         case 'catalog':
+           return <AppLayout><ExerciseCatalogScreen /></AppLayout>;
+         case 'journal':
+           return <AppLayout><JournalScreen /></AppLayout>;
+        case 'feedback':
+          return <AppLayout><FeedbackScreen /></AppLayout>;
         case 'sistema':
           return <AppLayout><SistemaScreen /></AppLayout>;
         default:
@@ -184,12 +247,14 @@ export default function App() {
   };
 
   return (
-    <div id="app" className="max-w-[440px] mx-auto min-h-dvh relative bg-[#0a0d14] overflow-hidden">
-      <AnimatePresence mode="wait">
-        {renderScreen()}
-      </AnimatePresence>
-      <ToastContainer />
-      <AchievementToast />
-    </div>
+    <MotionConfig reducedMotion="user">
+      <div id="app" className="max-w-[440px] lg:max-w-none mx-auto min-h-dvh relative bg-[var(--bg)] overflow-hidden">
+        <AnimatePresence mode="wait">
+          {renderScreen()}
+        </AnimatePresence>
+        <ToastContainer />
+        <AchievementToast />
+      </div>
+    </MotionConfig>
   );
 }

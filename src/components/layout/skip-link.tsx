@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useT } from '@/lib/i18n/use-t';
 
 /**
  * SkipLink — Primer elemento focusable del layout.
@@ -8,6 +9,7 @@ import React from 'react';
  * la navegación inferior e ir directo al contenido principal.
  */
 export function SkipLink() {
+  const t = useT();
   return (
     <a
       href="#main-content"
@@ -22,7 +24,7 @@ export function SkipLink() {
         outline-none focus-visible:ring-2 focus-visible:ring-[#ffb454] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]
       "
     >
-      Saltar al contenido
+      {t('Saltar al contenido')}
     </a>
   );
 }

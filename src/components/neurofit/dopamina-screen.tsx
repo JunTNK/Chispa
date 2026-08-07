@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import {
   Sparkles, Brain, Anchor, Calendar, Leaf, Dumbbell,
@@ -45,6 +46,7 @@ const HABIT_STACKS = [
 ];
 
 export function DopaminaScreen() {
+  const t = useT();
   const workouts = useStore((s) => s.workouts);
   const [habitStacks, setHabitStacks] = React.useState(HABIT_STACKS);
 
@@ -76,7 +78,7 @@ export function DopaminaScreen() {
           </span>
           <div>
             <h1 className="text-lg font-black tracking-tight">DOPAMINA</h1>
-            <p className="text-[10px] text-[#94a0b8] uppercase tracking-wider">El Menú Dopamina</p>
+            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider">{t('El Menú Dopamina')}</p>
           </div>
         </div>
       </motion.div>
@@ -85,8 +87,8 @@ export function DopaminaScreen() {
       <Card variant="glass" className="p-3 border-[rgba(0,212,170,0.25)]">
         <div className="flex gap-2.5 items-start">
           <Brain size={18} className="text-[#00D4AA] shrink-0 mt-0.5" />
-          <p className="text-[11.5px] leading-relaxed text-[#94a0b8]">
-            Herramienta clínica real para ADHD: elige una <b className="text-[#00D4AA]">actividad de bajo esfuerzo</b> como puente. La dopamina sube y el workout entra solo. Cero fuerza de voluntad.
+          <p className="text-[11.5px] leading-relaxed text-[var(--muted)]">
+            {t('Herramienta clínica real para ADHD: elige una actividad de bajo esfuerzo como puente. La dopamina sube y el workout entra solo. Cero fuerza de voluntad.')}
           </p>
         </div>
       </Card>
@@ -101,8 +103,8 @@ export function DopaminaScreen() {
         >
           <div className="flex items-center gap-2 mb-2 mt-4">
             <cat.icon size={14} style={{ color: cat.color }} />
-            <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: cat.color }}>{cat.label}</h2>
-            <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">{cat.time}</span>
+            <h2 className="text-xs font-bold uppercase tracking-wider" style={{ color: cat.color }}>{t(cat.label)}</h2>
+            <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{cat.time}</span>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {cat.items.map((it, ii) => (
@@ -122,8 +124,8 @@ export function DopaminaScreen() {
                 <span className="w-7 h-7 rounded-lg flex items-center justify-center mb-1.5" style={{ backgroundColor: `${cat.color}22`, color: cat.color }}>
                   <it.icon size={14} />
                 </span>
-                <div className="text-sm font-semibold">{it.name}</div>
-                <div className="text-[10px] text-[#94a0b8] font-mono mt-0.5">{it.sub}</div>
+                <div className="text-sm font-semibold">{t(it.name)}</div>
+                <div className="text-[10px] text-[var(--muted)] font-mono mt-0.5">{t(it.sub)}</div>
               </motion.button>
             ))}
           </div>
@@ -133,9 +135,9 @@ export function DopaminaScreen() {
       {/* Habit Stacking */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <Anchor size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Habit Stacking</h2>
-          <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">{doneHabits}/{habitStacks.length} hoy</span>
+          <Anchor size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Habit Stacking</h2>
+          <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{t('{a}/{b} hoy', { a: doneHabits, b: habitStacks.length })}</span>
         </div>
         <div className="space-y-2">
           {habitStacks.map((h, i) => (
@@ -152,12 +154,12 @@ export function DopaminaScreen() {
                 <Anchor size={15} />
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] text-[#94a0b8] font-mono">después de: {h.anchor}</div>
-                <div className="text-sm font-semibold">{h.action}</div>
+                <div className="text-[10px] text-[var(--muted)] font-mono">{t('después de: {anchor}', { anchor: t(h.anchor) })}</div>
+                <div className="text-sm font-semibold">{t(h.action)}</div>
               </div>
               <button
                 onClick={() => toggleHabit(i)}
-                aria-label={h.done ? `Marcar ${h.action} como pendiente` : `Marcar ${h.action} como hecho`}
+                aria-label={h.done ? t('Marcar {x} como pendiente', { x: t(h.action) }) : t('Marcar {x} como hecho', { x: t(h.action) })}
                 className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                   h.done
                     ? 'bg-[#00D4AA] border-[#00D4AA] text-[#042019]'
@@ -174,32 +176,32 @@ export function DopaminaScreen() {
       {/* Weekly Review */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <Calendar size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Weekly Review</h2>
-          <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">sin culpa</span>
+          <Calendar size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Weekly Review</h2>
+          <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{t('sin culpa')}</span>
         </div>
         <Card variant="glass" className="p-4 border-[rgba(167,139,250,0.3)]">
           <div className="flex items-center gap-2 mb-3">
             <Calendar size={16} className="text-[#a78bfa]" />
-            <span className="text-sm font-bold">Resumen de la semana</span>
-            <span className="text-[9px] text-[#94a0b8] font-mono ml-auto">auto · Auditor</span>
+            <span className="text-sm font-bold">{t('Resumen de la semana')}</span>
+            <span className="text-[9px] text-[var(--muted)] font-mono ml-auto">auto · Auditor</span>
           </div>
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="rounded-xl bg-white/[.04] border border-white/[.07] p-2 text-center">
               <div className="text-lg font-black">{thisWeek}</div>
-              <div className="text-[9px] text-[#94a0b8] uppercase tracking-wider">sesiones</div>
+              <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{t('sesiones')}</div>
             </div>
             <div className="rounded-xl bg-white/[.04] border border-white/[.07] p-2 text-center">
               <div className="text-lg font-black">{mins}</div>
-              <div className="text-[9px] text-[#94a0b8] uppercase tracking-wider">minutos</div>
+              <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{t('minutos')}</div>
             </div>
             <div className="rounded-xl bg-white/[.04] border border-white/[.07] p-2 text-center">
               <div className="text-lg font-black">{totalXp}</div>
-              <div className="text-[9px] text-[#94a0b8] uppercase tracking-wider">XP</div>
+              <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">XP</div>
             </div>
           </div>
-          <p className="text-sm italic text-[#94a0b8] leading-relaxed border-l-2 border-[#a78bfa] pl-3">
-            &ldquo;{thisWeek} sesiones esta semana. {thisWeek >= 3 ? 'Consistencia sólida.' : thisWeek >= 1 ? 'Buen comienzo.' : 'Sin presión. Mañana es una nueva oportunidad.'}&rdquo;
+          <p className="text-sm italic text-[var(--muted)] leading-relaxed border-l-2 border-[#a78bfa] pl-3">
+            &ldquo;{t('{n} sesiones esta semana.', { n: thisWeek })}{' '}{thisWeek >= 3 ? t('Consistencia sólida.') : thisWeek >= 1 ? t('Buen comienzo.') : t('Sin presión. Mañana es una nueva oportunidad.')}&rdquo;
           </p>
         </Card>
       </div>

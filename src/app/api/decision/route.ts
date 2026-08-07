@@ -44,13 +44,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { checkin, profile, twin, workouts_last_30_days, last_workout } = result.data;
+    const { checkin, profile, twin, workouts_last_30_days, workouts_last_7_days, last_workout } = result.data;
 
     // Build the input for the Decision Engine
     const targetPerWeek = profile.days_per_week === '4-5' ? 4 : 3;
     const consistency = calculateConsistency(
       workouts_last_30_days ?? 0,
-      targetPerWeek
+      targetPerWeek,
+      workouts_last_7_days
     );
 
     // Zod validates shape; cast to the expected @/types interfaces

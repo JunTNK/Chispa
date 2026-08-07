@@ -147,8 +147,19 @@ export function getExerciseImageUrls(exercise: Exercise): string[] {
 export function getExerciseMediaUrls(exercise: Exercise): { gifUrl: string; staticUrl: string } | null {
   if (!exercise.images || exercise.images.length === 0) return null;
 
-  const basePath = exercise.images[0].replace(/\d+\.jpg$/, '');
-  const exName = basePath.replace(/\/$/, '');
+  // images[0] format: "exercise_name/0.jpg" or "0.jpg" (flat)
+  const imgPath = exercise.images[0];
+  const slashIndex = imgPath.lastIndexOf('/');
+
+  // Flat path (no folder) — images sit at the base URL directly
+  if (slashIndex <= 0) {
+    return {
+      gifUrl: `${IMAGE_BASE_URL}animation.gif`,
+      staticUrl: `${IMAGE_BASE_URL}${imgPath}`,
+    };
+  }
+
+  const exName = imgPath.slice(0, slashIndex);
 
   return {
     gifUrl: `${IMAGE_BASE_URL}${exName}/animation.gif`,

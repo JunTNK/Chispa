@@ -13,7 +13,8 @@ import { RecRing } from '@/components/ui/ring';
 import { useExercises } from '@/lib/utils/use-exercises';
 import { ExerciseImage, ExerciseMedia, getExerciseVisual, getExerciseMediaUrls } from '@/lib/utils/exercise-visuals';
 import type { Exercise, WorkoutExercise } from '@/types';
-import { Dumbbell, Zap, Wind, StopCircle, Camera } from 'lucide-react';
+import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen } from 'lucide-react';
+import { ExerciseExplainer } from './exercise-explainer';
 
 // Lazy-load FormCheck (heavy: imports pose engine + onnxruntime)
 // Only loaded when user opens the camera form-check overlay
@@ -82,6 +83,7 @@ export function SessionScreen() {
   const [finished, setFinished] = React.useState(false);
   const [showComplete, setShowComplete] = React.useState(false);
   const [showFormCheck, setShowFormCheck] = React.useState(false);
+  const [showExplainer, setShowExplainer] = React.useState(false);
   const completeTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Refs for stable callback references (assigned .current right after each useCallback)
@@ -107,6 +109,13 @@ export function SessionScreen() {
   const exerciseCue = useMemo(() => {
     const lookup: Record<string, string> = {};
     catalog.forEach((e) => { lookup[e.name] = e.cue; });
+    return lookup;
+  }, [catalog]);
+
+  // Name → full Exercise object lookup (for ExerciseExplainer)
+  const exerciseLookup = useMemo(() => {
+    const lookup: Record<string, Exercise> = {};
+    catalog.forEach((e) => { lookup[e.name] = e; });
     return lookup;
   }, [catalog]);
 
@@ -221,6 +230,7 @@ export function SessionScreen() {
     setRepsCur(markedExs[next].reps);
     setRestLeft(0);
     setTimeRun(false);
+    setShowExplainer(false);
   }, []);
   endRestRef.current = advance;
 
@@ -270,6 +280,7 @@ export function SessionScreen() {
     setRepsCur(nextExs[next].reps);
     setRestLeft(0);
     setTimeRun(false);
+    setShowExplainer(false);
   }, []);
 
   const finishSession = useCallback(() => {
@@ -446,6 +457,32 @@ export function SessionScreen() {
             exerciseCue[ex.name] || t('Mantén la forma')
           )}
         </motion.p>
+
+        {/* Exercise explainer toggle + panel */}
+        {exerciseLookup[ex.name] && (
+          <div className="mb-4">
+            <button
+              onClick={() => setShowExplainer(!showExplainer)}
+              className="flex items-center gap-1.5 mx-auto text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+            >
+              <BookOpen size={13} />
+              {showExplainer ? t('Ocultar detalles') : t('¿Cómo se hace?')}
+            </button>
+            <AnimatePresence>
+              {showExplainer && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden mt-2"
+                >
+                  <ExerciseExplainer exercise={exerciseLookup[ex.name]} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 8 }}

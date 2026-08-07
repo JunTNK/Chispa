@@ -56,7 +56,9 @@ test('Audit 1/3 — Welcome → Login → Register → Home → Create → Catal
   await page.waitForTimeout(1000);
   await checkErrors(page, 'catalog');
   await expect(page.locator('text=Paso 2 de 2')).toBeVisible();
-  await expect(page.locator('text=Toque para agregar')).toBeVisible({ timeout: 3000 });
+  // Selector rediseñado (CHISPA-UX-002): arranca en modo Guíame con sugerencias,
+  // nunca un lienzo en blanco (el antiguo grid "Toque para agregar" ya no existe)
+  await expect(page.locator('text=Sugerido para ti')).toBeVisible({ timeout: 3000 });
   console.log('✅ 6. Catalog');
 
   const errCount = reportAudit('Audit 1/3', 6);

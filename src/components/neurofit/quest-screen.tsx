@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -13,6 +14,7 @@ import {
   computeWorkoutXp,
 } from '@/lib/awards/achievements';
 import { useExercises } from '@/lib/utils/use-exercises';
+import { useSound } from '@/lib/awards/use-sound';
 import type { Workout } from '@/types';
 import {
   Flame, Trophy, Sword, Lock, Gift, Gamepad, Target,
@@ -20,69 +22,10 @@ import {
   CheckCircle, Snowflake, Dumbbell, Activity,
 } from 'lucide-react';
 import {
-  ShieldIcon,
   BoltIcon,
   PulseIcon,
 } from '@/components/ui/icons-rpg';
-
-/* ─── Constants ─── */
-
-const THEME_CATEGORIES: {
-  label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  themes: Record<string, { name: string; resource: string; nouns: string[]; color: string }>;
-}[] = [
-  {
-    label: 'Fitness', icon: Dumbbell,
-    themes: {
-      fitness_iniciacion: { name: 'Iniciación', resource: 'Energía', nouns: ['Constancia', 'Hábito', 'Progreso'], color: '#34d399' },
-      fitness_resistencia: { name: 'Resistencia', resource: 'Acero', nouns: ['Voluntad', 'Determinación', 'Aguante'], color: '#fbbf24' },
-      fitness_elite: { name: 'Élite', resource: 'Poder', nouns: ['Dominio', 'Maestría', 'Legado'], color: '#f87171' },
-    },
-  },
-  {
-    label: 'Taíno', icon: ShieldIcon,
-    themes: {
-      taino_naboria: { name: 'Naboría', resource: 'Conuco', nouns: ['Pueblo', 'Tierra', 'Comunidad'], color: '#4ade80' },
-      taino_nitaino: { name: 'Nitaíno', resource: 'Guáni', nouns: ['Guerrero', 'Honor', 'Batey'], color: '#22d3ee' },
-      taino_bohique: { name: 'Bohique', resource: 'Cemí', nouns: ['Espíritu', 'Visión', 'Cohoba'], color: '#a78bfa' },
-      taino_cacique: { name: 'Cacique', resource: 'Macana', nouns: ['Liderazgo', 'Caney', 'Duho'], color: '#fbbf24' },
-    },
-  },
-  {
-    label: 'Marvel', icon: BoltIcon,
-    themes: {
-      marvel_spiderman: { name: 'Spider-Man', resource: 'Sentido Arácnido', nouns: ['Responsabilidad', 'Red', 'Heroe'], color: '#e23636' },
-      marvel_ironman: { name: 'Iron Man', resource: 'Arc Reactor', nouns: ['Innovación', 'Armadura', 'Genio'], color: '#f73c3c' },
-      marvel_capitan: { name: 'Capitán América', resource: 'Escudo', nouns: ['Justicia', 'Valor', 'S.H.I.E.L.D.'], color: '#003087' },
-      marvel_thor: { name: 'Thor', resource: 'Mjolnir', nouns: ['Dios del Trueno', 'Asgard', 'Rayos'], color: '#6b7280' },
-    },
-  },
-  {
-    label: 'DC', icon: Crown,
-    themes: {
-      dc_batman: { name: 'Batman', resource: 'Sombra', nouns: ['Noche', 'Estrategia', 'Cowl'], color: '#1a1a2e' },
-      dc_flash: { name: 'The Flash', resource: 'Velocidad', nouns: ['Movimiento', 'Carrera', 'Relámpago'], color: '#dc2626' },
-      dc_wonderwoman: { name: 'Wonder Woman', resource: 'Verdad', nouns: ['Amazonas', 'Tiara', 'Lazo'], color: '#fbbf24' },
-      dc_linterna: { name: 'Linterna Verde', resource: 'Voluntad', nouns: ['Anillo', 'Valor', 'OA'], color: '#22c55e' },
-    },
-  },
-  {
-    label: 'Anime', icon: Gamepad,
-    themes: {
-      one_piece: { name: 'One Piece', resource: 'Haki', nouns: ['Gear Fifth', 'Haki Supremo', 'Yonko'], color: '#fbbf24' },
-      elden_ring: { name: 'Elden Ring', resource: 'Runas', nouns: ['Elden Lord', 'Tarnished', 'Erdtree'], color: '#a78bfa' },
-      dragon_ball: { name: 'Dragon Ball', resource: 'Ki', nouns: ['Super Saiyan', 'Genki Dama', 'Kamehameha'], color: '#FF6B35' },
-      zelda: { name: 'Zelda', resource: 'Rupees', nouns: ['Hylian', 'Trifuerza', 'Maestro Espada'], color: '#34d399' },
-    },
-  },
-];
-
-// Build flat THEMES from categories for backwards compatibility
-const THEMES: Record<string, { name: string; resource: string; nouns: string[]; color: string }> = {};
-for (const cat of THEME_CATEGORIES) {
-  Object.assign(THEMES, cat.themes);
-}
+import { THEME_CATEGORIES, THEME_BY_VALUE, DEFAULT_THEME } from '@/lib/system/themes';
 
 const VAULT_DEFS = [
   { id: 'v1', name: '30 min de videojuego', icon: Gamepad, cost: 1 },
@@ -92,14 +35,15 @@ const VAULT_DEFS = [
   { id: 'v5', name: 'Día sin alarmas', icon: Snowflake, cost: 7 },
 ];
 
-const BOSS_NAMES = ['Elden Beast', 'Gear Fifth Luffy', 'Calamity Ganon', 'Frieza', 'Malenia'];
+const BOSS_NAMES = ['Titán de Cristal', 'Guardián de Niebla', 'Jabalí de Ónix', 'Serpiente de Cobre', 'Centinela de Runas'];
 
 /* ─── Real Sparkline from workout data (with gradient area fill) ─── */
 
 function WorkoutSparkline({ workouts }: { workouts: Workout[] }) {
+  const t = useT();
   const completed = workouts.filter(w => w.completed_rate >= 0.5);
   if (completed.length < 2) {
-    return <div className="h-14 flex items-center justify-center text-[#5C6577] text-[11px] font-mono">Completa más sesiones para ver tu progresión</div>;
+    return <div className="h-14 flex items-center justify-center text-[#5C6577] text-[11px] font-mono">{t('Completa más sesiones para ver tu progresión')}</div>;
   }
 
   // Show last 12 workouts
@@ -161,6 +105,7 @@ function WorkoutSparkline({ workouts }: { workouts: Workout[] }) {
 /* ─── Real Heatmap ─── */
 
 function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
+  const t = useT();
   const cells = useMemo(() => {
     const result: { cls: string; date: string }[] = [];
     const today = new Date();
@@ -187,13 +132,13 @@ function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
           <div key={c.date} className={`aspect-square rounded-[2px] ${c.cls}`} title={c.date} />
         ))}
       </div>
-      <div className="flex items-center gap-1.5 mt-2 text-[9px] text-[#94a0b8] font-mono">
-        menos
+      <div className="flex items-center gap-1.5 mt-2 text-[9px] text-[var(--muted)] font-mono">
+        {t('menos')}
         <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[.06]" />
         <div className="w-2.5 h-2.5 rounded-[2px] bg-[#0e4f3f]" />
         <div className="w-2.5 h-2.5 rounded-[2px] bg-[#0f7a5c]" />
         <div className="w-2.5 h-2.5 rounded-[2px] bg-[#00D4AA]" />
-        más
+        {t('más')}
       </div>
     </Card>
   );
@@ -201,26 +146,54 @@ function WorkoutHeatmap({ workouts }: { workouts: Workout[] }) {
 
 /* ─── Real Skill Tree (from exercise catalog + XP) ─── */
 
-const SKILL_BRANCHES = [
+// Real ids from the exercise catalog (free-exercise-db + wger merged).
+// These resolve to actual catalog entries with images — verified against
+// src/lib/utils/exercises.json.
+export const SKILL_BRANCHES = [
   {
     branch: 'Fuerza', color: '#FF6B35', icon: Dumbbell,
-    exercises: ['pushup', 'squat', 'db_bicep_curl', 'bb_deadlift', 'bb_bench_press'],
+    exercises: [
+      'Pushups',
+      'Bodyweight_Squat',
+      'Dumbbell_Alternate_Bicep_Curl',
+      'Barbell_Deadlift',
+      'Barbell_Bench_Press_-_Medium_Grip',
+    ],
   },
   {
     branch: 'Cardio', color: '#00D4AA', icon: BoltIcon,
-    exercises: ['jumping_jacks', 'high_knees', 'burpees', 'mountain_climbers', 'gym_bike'],
+    exercises: [
+      '89443e49-e5be-4b67-a5f6-e3f5ff80f6ea', // Jumping Jack HD
+      'Rope_Jumping',
+      '48ee1385-47c5-4821-8b6a-57fac6130776', // Burpees
+      'Mountain_Climbers',
+      'Air_Bike',
+    ],
   },
   {
     branch: 'Movilidad', color: '#a78bfa', icon: PulseIcon,
-    exercises: ['arm_circles', 'yoga_flow', 'single_leg_balance', 'wall_sit', 'glute_bridge'],
+    exercises: [
+      'Arm_Circles',
+      'd8d1b919-94e1-4e91-b37e-29bb8a479740', // Postura de la Cobra (en Yoga)
+      'Balance_Board',
+      'Single_Leg_Glute_Bridge',
+      'Calf_Stretch_Elbows_Against_Wall',
+    ],
   },
   {
     branch: 'Core', color: '#fbbf24', icon: Activity,
-    exercises: ['plank', 'side_plank', 'crunch', 'db_russian_twist', 'bb_hanging_leg_raise'],
+    exercises: [
+      'Plank',
+      'Push_Up_to_Side_Plank',
+      '3_4_Sit-Up',
+      'Russian_Twist',
+      'Hanging_Leg_Raise',
+    ],
   },
 ];
 
-function SkillTree({ xp }: { xp: number }) {
+export function SkillTree({ xp }: { xp: number }) {
+  const t = useT();
   const { exercises: catalog } = useExercises();
   return (
     <div className="space-y-2">
@@ -237,8 +210,8 @@ function SkillTree({ xp }: { xp: number }) {
           >
             <div className="flex items-center gap-2 mb-2.5">
               <span style={{ color: br.color }}><br.icon size={14} /></span>
-              <span className="text-xs font-bold" style={{ color: br.color }}>{br.branch}</span>
-              <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">{xp} XP</span>
+              <span className="text-xs font-bold" style={{ color: br.color }}>{t(br.branch)}</span>
+              <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{xp} XP</span>
             </div>
             <div className="flex items-center gap-0 overflow-x-auto scrollbar-none">
               {exs.map((ex, ni) => {
@@ -265,7 +238,7 @@ function SkillTree({ xp }: { xp: number }) {
                       >
                         {unlocked ? <CheckCircle size={14} /> : <Lock size={12} />}
                       </div>
-                      <span className="text-[9px] text-[#94a0b8] text-center leading-tight font-mono">{ex.name.split(' ')[0]}</span>
+                      <span className="text-[9px] text-[var(--muted)] text-center leading-tight font-mono">{ex.name.split(' ')[0]}</span>
                       {!unlocked && <span className="text-[8px] text-[#fbbf24] font-mono">{cost} XP</span>}
                       {unlocked && <span className="text-[8px] text-[#34d399] font-mono">✓</span>}
                     </div>
@@ -283,14 +256,17 @@ function SkillTree({ xp }: { xp: number }) {
 /* ─── Main QuestScreen ─── */
 
 export function QuestScreen() {
+  const t = useT();
   const workouts = useStore((s) => s.workouts);
   const questState = useStore((s) => s.questState);
   const setQuestState = useStore((s) => s.setQuestState);
   const claimVaultItem = useStore((s) => s.claimVaultItem);
   const defeatBoss = useStore((s) => s.defeatBoss);
+  const { play: playSound } = useSound();
 
   // Real data from store + engine
   const ctx = useMemo(() => computeAchievementContext(workouts), [workouts]);
+  const prefs = useStore((s) => s.prefs);
   const totalXp = useMemo(() => computeTotalXp(workouts), [workouts]);
   const level = useMemo(() => computeLevel(totalXp), [totalXp]);
   const xpInLevel = totalXp % 200;
@@ -322,16 +298,18 @@ export function QuestScreen() {
     }, 0);
   const bossHp = Math.max(0, bossMaxHp - bossDamage);
   const bossDefeated = questState.bossDefeatedThisWeek || bossHp <= 0;
-  const theme = THEMES[questState.selectedTheme] ?? THEMES.one_piece;
+  const theme = THEME_BY_VALUE[questState.selectedTheme] ?? THEME_BY_VALUE[DEFAULT_THEME];
 
   // Check if boss was just defeated
   const prevBossDefeatedRef = React.useRef(bossDefeated);
   React.useEffect(() => {
     if (bossDefeated && !prevBossDefeatedRef.current && !questState.bossDefeatedThisWeek) {
       defeatBoss();
+      // Epic victory fanfare — the moment the weekly boss falls
+      playSound('bossDefeated');
     }
     prevBossDefeatedRef.current = bossDefeated;
-  }, [bossDefeated, questState.bossDefeatedThisWeek, defeatBoss]);
+  }, [bossDefeated, questState.bossDefeatedThisWeek, defeatBoss, playSound]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="px-4 pb-6 space-y-3.5 min-h-dvh">
@@ -347,13 +325,14 @@ export function QuestScreen() {
           </span>
           <div>
             <h1 className="text-lg font-black tracking-tight">QUEST</h1>
-            <p className="text-[10px] text-[#94a0b8] uppercase tracking-wider">Hyper-fixación</p>
+            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider">{t('Hyper-fixación')}</p>
           </div>
         </div>
         <Badge variant="epic">Nv.{level}</Badge>
       </motion.div>
 
       {/* Streak Card */}
+      {!prefs.hideStreaks && (
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -364,17 +343,18 @@ export function QuestScreen() {
             <Flame size={20} />
           </span>
           <div className="flex-1">
-            <div className="text-sm font-bold flex items-center gap-2">
-              {streak} {streak === 1 ? 'día' : 'días'} seguidos
-              <span className="float inline-block"><Flame size={14} className="text-[#FF6B35]" /></span>
-            </div>
-            <div className="text-[11px] text-[#94a0b8]">RSD Shield: nunca &ldquo;rompes&rdquo; la racha</div>
+             <div className="text-sm font-bold flex items-center gap-2">
+               {streak} {streak === 1 ? t('día') : t('días')} {t('en movimiento')}
+               <span className="float inline-block"><Flame size={14} className="text-[#FF6B35]" /></span>
+             </div>
+             <div className="text-[11px] text-[var(--muted)]">{t('RSD Shield: nunca "rompes" la racha')}</div>
           </div>
           <Badge variant="rare" className="gap-1">
             <Snowflake size={10} /> ×2
           </Badge>
         </Card>
       </motion.div>
+      )}
 
       {/* Boss Battle — estilo épico como referencia neurofit-v3 */}
       <motion.div
@@ -386,8 +366,8 @@ export function QuestScreen() {
           <Card className="flex items-center gap-3 p-4 border-[rgba(52,211,153,0.3)] bg-[rgba(52,211,153,0.05)]">
             <Trophy size={22} className="text-[#34d399]" />
             <div>
-              <div className="text-sm font-bold">Jefe derrotado esta semana</div>
-              <div className="text-[11px] text-[#94a0b8]">+500 {theme.resource}. Nuevo jefe el lunes.</div>
+              <div className="text-sm font-bold">{t('Jefe derrotado esta semana')}</div>
+              <div className="text-[11px] text-[var(--muted)]">+500 {t(theme.resource)}. {t('Nuevo jefe el lunes.')}</div>
             </div>
           </Card>
         ) : (
@@ -400,15 +380,15 @@ export function QuestScreen() {
                 }} />
               </div>
               <Badge variant="push" className="mb-1 relative z-10">
-                <Gamepad size={10} /> BOSS BATTLE · SEMANAL
-              </Badge>
-            </div>
-            <div className="px-4 pb-4">
-              <h3 className="text-lg font-black mt-1 mb-1.5 tracking-tight">{bossName}</h3>
-              <div className="flex justify-between text-[10px] text-[#94a0b8] mb-1.5 font-mono">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#f87171] shadow-[0_0_6px_rgba(248,113,113,0.6)]" />
-                  HP
+                 <Gamepad size={10} /> {t('Jefe semanal')}
+               </Badge>
+             </div>
+             <div className="px-4 pb-4">
+               <h3 className="text-lg font-black mt-1 mb-1.5 tracking-tight">{bossName}</h3>
+               <div className="flex justify-between text-[10px] text-[var(--muted)] mb-1.5 font-mono">
+                 <span className="flex items-center gap-1.5">
+                   <span className="w-2 h-2 rounded-full bg-[#f87171] shadow-[0_0_6px_rgba(248,113,113,0.6)]" />
+                   {t('Vida')}
                 </span>
                 <span className="font-bold text-[#f87171]">{bossHp} / {bossMaxHp}</span>
               </div>
@@ -425,12 +405,12 @@ export function QuestScreen() {
                 </motion.div>
               </div>
               <div className="flex items-center gap-3 mt-2.5">
-                <p className="text-[10px] text-[#94a0b8] flex items-center gap-1.5">
+                <p className="text-[10px] text-[var(--muted)] flex items-center gap-1.5">
                   <Sword size={11} className="text-[#fbbf24]" />
-                  {thisWeekWorkouts} sesiones · {bossDamage} HP daño
+                  {t('{n} sesiones · {m} Vida daño', { n: thisWeekWorkouts, m: bossDamage })}
                 </p>
-                <span className="text-[9px] font-mono text-[#5c6577] ml-auto">
-                  reps × 2 = daño
+                <span className="text-[9px] font-mono text-[var(--muted)] ml-auto">
+                  {t('reps × 2 = daño')}
                 </span>
               </div>
             </div>
@@ -450,8 +430,8 @@ export function QuestScreen() {
       >
         <div className="px-4 py-5 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
-            <Badge variant="epic">{theme.name}</Badge>
-            <span className="text-[10px] text-[#fbbf24] font-mono tracking-wider">{theme.resource}</span>
+            <Badge variant="epic">{t(theme.label_key)}</Badge>
+            <span className="text-[10px] text-[#fbbf24] font-mono tracking-wider">{t(theme.resource)}</span>
           </div>
 
           {/* Ring circular con XP y nivel */}
@@ -485,22 +465,22 @@ export function QuestScreen() {
                 >
                   {totalXp}
                 </motion.div>
-                <div className="text-[8px] text-[#94a0b8] uppercase tracking-wider mt-0.5">
-                  {theme.resource}
+                <div className="text-[8px] text-[var(--muted)] uppercase tracking-wider mt-0.5">
+                  {t(theme.resource)}
                 </div>
               </div>
             </div>
           </div>
 
           <div className="mt-1 text-left">
-            <div className="flex justify-between text-[11px] text-[#94a0b8] mb-1 font-mono">
+            <div className="flex justify-between text-[11px] text-[var(--muted)] mb-1 font-mono">
               <span className="flex items-center gap-1.5">
                 <Crown size={12} className="text-[#a78bfa]" />
-                Nivel {level}
+                {t('Nivel {n}', { n: level })}
               </span>
-              <span>{xpInLevel}/200 → Nv.{level + 1}</span>
+              <span>{xpInLevel}/200 → {t('Nv.{n}', { n: level + 1 })}</span>
             </div>
-            <Progress value={(xpInLevel / 200) * 100} className="h-2" aria-label="Progreso de nivel" />
+            <Progress value={(xpInLevel / 200) * 100} className="h-2" aria-label={t('Progreso de nivel')} />
           </div>
         </div>
       </motion.div>
@@ -508,9 +488,9 @@ export function QuestScreen() {
       {/* Skill Tree (from real exercises + XP) */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <TrendingUp size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Skill Tree</h2>
-          <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">{totalXp} XP</span>
+          <TrendingUp size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{'Skill Tree'}</h2>
+          <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{totalXp} XP</span>
         </div>
         <SkillTree xp={totalXp} />
       </div>
@@ -518,9 +498,9 @@ export function QuestScreen() {
       {/* Reward Vault (real persisted claims) */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <Gift size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Reward Vault</h2>
-          <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">Premack</span>
+          <Gift size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{'Reward Vault'}</h2>
+          <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{'Premack'}</span>
         </div>
         <div className="space-y-2">
           {VAULT_DEFS.map((v, i) => {
@@ -545,18 +525,18 @@ export function QuestScreen() {
                     ? 'bg-[rgba(52,211,153,0.12)] text-[#34d399]'
                     : open
                       ? 'bg-[rgba(255,184,0,0.12)] text-[#fbbf24]'
-                      : 'bg-white/[.05] text-[#94a0b8]'
+                      : 'bg-white/[.05] text-[var(--muted)]'
                 }`}>
                   <v.icon size={16} />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm font-semibold">{v.name}</div>
-                  <div className="text-[10px] text-[#94a0b8] font-mono">
-                    requiere {v.cost} workout{v.cost > 1 ? 's' : ''}
+                  <div className="text-sm font-semibold">{t(v.name)}</div>
+                  <div className="text-[10px] text-[var(--muted)] font-mono">
+                    {t('requiere {n} {plural}', { n: v.cost, plural: v.cost > 1 ? 'workouts' : 'workout' })}
                   </div>
                 </div>
                 {claimed ? (
-                  <span className="text-[11px] font-bold font-mono text-[#34d399]">reclamado</span>
+                  <span className="text-[11px] font-bold font-mono text-[#34d399]">{t('reclamado')}</span>
                 ) : (
                   <button
                     disabled={!open}
@@ -567,7 +547,7 @@ export function QuestScreen() {
                         : 'text-[#5C6577] cursor-default'
                     }`}
                   >
-                    {open ? 'Reclamar' : `${v.cost - thisWeekWorkouts} más`}
+                    {open ? t('Reclamar') : t('{n} más', { n: v.cost - thisWeekWorkouts })}
                   </button>
                 )}
               </motion.div>
@@ -579,17 +559,17 @@ export function QuestScreen() {
       {/* Progresión de fuerza (real sparkline) */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <TrendingUp size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Progresión de fuerza</h2>
-          <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">{Math.min(12, totalWorkouts)} sesiones</span>
+          <TrendingUp size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{t('Progresión de fuerza')}</h2>
+          <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{t('{n} sesiones', { n: Math.min(12, totalWorkouts) })}</span>
         </div>
         <Card className="p-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold text-[#94a0b8] flex items-center gap-1.5">
-              <TrendingUp size={13} className="text-[#34d399]" /> Carga estimada
+            <span className="text-[11px] font-bold text-[var(--muted)] flex items-center gap-1.5">
+              <TrendingUp size={13} className="text-[#34d399]" /> {t('Carga estimada')}
             </span>
             <span className="text-[10px] font-mono text-[#34d399]">
-              +{totalWorkouts > 0 ? Math.round(totalWorkouts * 1.8) : 0}% vs inicio
+              +{t('{n}% vs inicio', { n: totalWorkouts > 0 ? Math.round(totalWorkouts * 1.8) : 0 })}
             </span>
           </div>
           <WorkoutSparkline workouts={workouts} />
@@ -599,8 +579,8 @@ export function QuestScreen() {
       {/* Heatmap (real data) */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <Grid size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Consistencia · 12 semanas</h2>
+          <Grid size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{t('Consistencia · 12 semanas')}</h2>
         </div>
         <WorkoutHeatmap workouts={workouts} />
       </div>
@@ -608,9 +588,9 @@ export function QuestScreen() {
       {/* Temas (persist selection) — categorizados */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <Target size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Tema de fijación</h2>
-          <span className="text-[10px] text-[#94a0b8] font-mono ml-auto">1 rep = pts</span>
+          <Target size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{t('Tema de fijación')}</h2>
+          <span className="text-[10px] text-[var(--muted)] font-mono ml-auto">{'1 rep = pts'}</span>
         </div>
         <div className="space-y-4">
           {THEME_CATEGORIES.map((cat, ci) => (
@@ -621,25 +601,25 @@ export function QuestScreen() {
               transition={{ delay: 0.1 + ci * 0.06 }}
             >
               <div className="flex items-center gap-1.5 mb-2">
-                <cat.icon size={14} className="text-[#5c6577]" />
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[#5c6577]">{cat.label}</span>
+                <cat.icon size={14} className="text-[var(--muted)]" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--muted)]">{cat.label}</span>
               </div>
               <div className="grid grid-cols-2 gap-1.5">
-                {Object.entries(cat.themes).map(([k, t]) => (
+                {cat.themes.map((th) => (
                   <motion.button
-                    key={k}
+                    key={th.value}
                     whileTap={{ scale: 0.96 }}
-                    onClick={() => setQuestState({ selectedTheme: k })}
+                    onClick={() => setQuestState({ selectedTheme: th.value })}
                     className={`text-left rounded-xl border p-2.5 transition-all ${
-                      questState.selectedTheme === k
+                      questState.selectedTheme === th.value
                         ? 'border-[#a78bfa] bg-[rgba(167,139,250,0.08)] shadow-[0_0_12px_rgba(167,139,250,0.12)]'
                         : 'border-white/[.07] bg-white/[.03] hover:bg-white/[.06]'
                     }`}
                   >
-                    <div className="font-bold text-sm" style={questState.selectedTheme === k ? { color: t.color } : {}}>{t.name}</div>
-                    <div className="text-[9px] text-[#5c6577] font-mono mt-0.5 flex items-center gap-1">
-                      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: t.color }} />
-                      {t.resource}
+                    <div className="font-bold text-sm" style={questState.selectedTheme === th.value ? { color: th.color } : {}}>{t(th.label_key)}</div>
+                    <div className="text-[9px] text-[var(--muted)] font-mono mt-0.5 flex items-center gap-1">
+                      <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: th.color }} />
+                      {t(th.resource)}
                     </div>
                   </motion.button>
                 ))}
@@ -652,8 +632,8 @@ export function QuestScreen() {
       {/* Quest Log (real workout history) */}
       <div>
         <div className="flex items-center gap-2 mb-2 mt-4">
-          <ChartBar size={14} className="text-[#94a0b8]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[#94a0b8]">Últimas ganancias</h2>
+          <ChartBar size={14} className="text-[var(--muted)]" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{t('Últimas ganancias')}</h2>
         </div>
         <Card className="p-3">
           {totalWorkouts > 0 ? (
@@ -661,8 +641,8 @@ export function QuestScreen() {
               const xpEarned = computeWorkoutXp(w.completed_rate, w.actual_minutes || w.duration);
               return (
                 <div key={w.id} className="flex items-center justify-between py-2 border-b border-white/[.06] last:border-0">
-                  <span className="text-sm text-[#94a0b8]">
-                    {w.focus === 'full' ? 'Full body' : w.focus === 'upper' ? 'Tren superior' : w.focus === 'lower' ? 'Tren inferior' : 'Core'} · {w.date.slice(5)}
+                  <span className="text-sm text-[var(--muted)]">
+                    {w.focus === 'full' ? t('Cuerpo completo') : w.focus === 'upper' ? t('Tren superior') : w.focus === 'lower' ? t('Tren inferior') : t('Core')} · {w.date.slice(5)}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] text-[#5C6577] font-mono">{Math.round(w.score)}%</span>
@@ -672,8 +652,8 @@ export function QuestScreen() {
               );
             })
           ) : (
-            <div className="text-center py-4 text-sm text-[#94a0b8] font-mono">
-              Completa un workout para ganar {theme.resource}.
+            <div className="text-center py-4 text-sm text-[var(--muted)] font-mono">
+              {t('Completa un workout para ganar {r}.', { r: t(theme.resource) })}
             </div>
           )}
         </Card>

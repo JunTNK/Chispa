@@ -175,14 +175,26 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
 
-    // ──── STEP 8: Hiperfijación ────
+    // ──── STEP 8: Tu cuerpo (medidas corporales) ────
+    await expect(page.locator('text=¿Quieres registrar tus medidas?')).toBeVisible();
+    // Imperial es el default
+    await expect(page.locator('button', { hasText: 'Imperial (lb · ft)' })).toHaveAttribute('aria-pressed', 'true');
+    // El usuario registra sexo, peso y estatura
+    await page.locator('button', { hasText: 'Femenino' }).click();
+    await page.locator('input[id="onboarding-weight"]').fill('130');
+    await page.locator('input[id="onboarding-height-ft"]').fill('5');
+    await page.locator('input[id="onboarding-height-in"]').fill('6');
+    await page.locator('button', { hasText: 'Continuar' }).click();
+    await userPause(page);
+
+    // ──── STEP 9: Hiperfijación ────
     await expect(page.locator('text=Tu hiperfijación')).toBeVisible();
     await expect(page.locator('text=Pop culture')).toBeVisible();
     await page.locator('button').filter({ hasText: 'One Piece' }).click();
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
 
-    // ──── STEP 9: Perfil sensorial ────
+    // ──── STEP 10: Perfil sensorial ────
     await expect(page.locator('text=Perfil sensorial')).toBeVisible();
     await expect(page.locator('text=Modo silencio')).toBeVisible();
     await expect(page.locator('text=Modo dim')).toBeVisible();
@@ -312,12 +324,17 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await expect(page.locator('text=Paso 2 de 2')).toBeVisible();
     await expect(page.locator('text=Elige ejercicios')).toBeVisible();
 
+    // ✅ Selector rediseñado: el buscador vive en el modo "Yo elijo"
+    // (el default es Guíame con sugerencias; nunca un lienzo en blanco)
+    await page.locator('button').filter({ hasText: 'Yo elijo' }).click();
+    await userPause(page, 400);
+
     // ✅ Buscador visible
     const searchInput = page.locator('input[placeholder*="Buscar"]');
     await expect(searchInput).toBeVisible();
 
-    // ✅ Grid "Toque para agregar" visible
-    await expect(page.locator('text=Toque para agregar')).toBeVisible({ timeout: 5000 });
+    // ✅ Balance de la rutina visible (antes grid "Toque para agregar")
+    await expect(page.locator('text=Balance de la rutina')).toBeVisible({ timeout: 5000 });
 
     // ✅ Los ejercicios tienen SVG icon (FitnessIcon)
     const exerciseButtons = page.locator('button').filter({ has: page.locator('svg') });
@@ -397,6 +414,12 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await page.locator('text=No aplica').click();
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
+
+    // Paso 8: Tu cuerpo — opcional, lo saltamos (Continuar siempre habilitado)
+    await expect(page.locator('text=¿Quieres registrar tus medidas?')).toBeVisible();
+    await page.locator('button', { hasText: 'Continuar' }).click();
+    await userPause(page);
+
     await page.locator('button').filter({ hasText: 'One Piece' }).click();
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
@@ -472,7 +495,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page, 200);
 
-    // ═══ PARTE 4: Navegar a step 9 (sensory) ═══
+    // ═══ PARTE 4: Navegar a step 10 (sensory) ═══
     // Step 2 → 3: Goal + Duración
     await page.locator('text=Fuerza y músculo').click();
     await page.locator('text=20 min').click();
@@ -505,13 +528,18 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page, 200);
 
-    // Step 8 → 9: Hyperfixation
+    // Step 8 → 9: Body — medidas (opcional). Lo saltamos.
+    await expect(page.locator('text=¿Quieres registrar tus medidas?')).toBeVisible();
+    await page.locator('button', { hasText: 'Continuar' }).click();
+    await userPause(page, 200);
+
+    // Step 9 → 10: Hyperfixation
     await page.locator('button').filter({ hasText: 'One Piece' }).click();
     await userPause(page, 150);
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page, 200);
 
-    // ═══ PARTE 5: Step 9 — Sensory toggle aria-label bidireccional ═══
+    // ═══ PARTE 5: Step 10 — Sensory toggle aria-label bidireccional ═══
     await expect(page.locator('text=Perfil sensorial')).toBeVisible();
     await expect(page.locator('text=Modo silencio')).toBeVisible();
     await expect(page.locator('text=Modo dim')).toBeVisible();

@@ -40,6 +40,14 @@ export interface Database {
           days_per_week: '2-3' | '4-5' | 'flex';
           neurotype: 'adh-c' | 'adh-i' | 'audhd' | 'spd' | 'curious' | 'other';
           preferred_duration: 10 | 20 | 30;
+          /** ⚧️ Sexo registrado por el usuario */
+          sex: 'masculino' | 'femenino' | null;
+          /** 📏 Estatura en cm (canónico) */
+          height_cm: number | null;
+          /** ⚖️ Peso en kg (canónico) */
+          weight_kg: number | null;
+          /** 📐 Sistema de unidades de display: 'imperial' (default) | 'metric' */
+          units: 'imperial' | 'metric';
           created_at: string;
           updated_at: string;
         };
@@ -52,6 +60,10 @@ export interface Database {
           days_per_week: '2-3' | '4-5' | 'flex';
           neurotype?: 'adh-c' | 'adh-i' | 'audhd' | 'spd' | 'curious' | 'other';
           preferred_duration?: 10 | 20 | 30;
+          sex?: 'masculino' | 'femenino' | null;
+          height_cm?: number | null;
+          weight_kg?: number | null;
+          units?: 'imperial' | 'metric';
         };
         Update: {
           goal?: 'fuerza' | 'energia' | 'grasa';
@@ -61,6 +73,10 @@ export interface Database {
           days_per_week?: '2-3' | '4-5' | 'flex';
           neurotype?: 'adh-c' | 'adh-i' | 'audhd' | 'spd' | 'curious' | 'other';
           preferred_duration?: 10 | 20 | 30;
+          sex?: 'masculino' | 'femenino' | null;
+          height_cm?: number | null;
+          weight_kg?: number | null;
+          units?: 'imperial' | 'metric';
           updated_at?: string;
         };
       };
@@ -273,6 +289,24 @@ export interface Database {
           progress_current?: number;
           progress_target?: number;
           updated_at?: string;
+        };
+      };
+      weight_log: {
+        Row: {
+          user_id: string;
+          date: string;
+          weight_kg: number;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          date: string;
+          weight_kg: number;
+        };
+        Update: {
+          date?: string;
+          weight_kg?: number;
+          created_at?: string;
         };
       };
     };

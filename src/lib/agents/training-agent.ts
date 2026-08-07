@@ -1,4 +1,4 @@
-import { DecisionEngineOutput, DigitalTwin } from '@/types';
+import { DecisionEngineOutput, DigitalTwin, Exercise } from '@/types';
 import { EXERCISE_CATALOG } from '@/lib/utils/exercises';
 import { matchesEquipment } from '@/lib/utils/helpers';
 import { FOCUS_MUSCLES, TITLES } from '@/lib/utils/constants';
@@ -17,6 +17,9 @@ function parseDuration(instructions: string): number {
   return unit.startsWith('min') || unit === 'm' ? finalValue * 60 : finalValue;
 }
 
+/** Orden de carga cognitiva: low primero (gancho) para neurodivergencia. */
+const COG_LOAD_ORDER: Record<string, number> = { low: 0, med: 1, high: 2 };
+
 /**
  * Training Agent — Genera una rutina de ejercicios completa.
  *
@@ -24,6 +27,10 @@ function parseDuration(instructions: string): number {
  * - Tablas de series/repeticiones según intensidad
  * - Soporte para 3 niveles de equipo
  * - Progresión automática (+2 reps en ejercicios dominados)
+ * - Prioridad a ejercicios que el usuario ya domina (afinidad por maestría)
+ * - Variedad: evita repetir los ejercicios de la última sesión
+ * - Orden por carga cognitiva (low primero = arranque fácil, ADHD-friendly)
+ * - Ajuste de reps por objetivo (grasa → más volumen)
  */
 export class TrainingAgent {
   static generate(
@@ -31,7 +38,8 @@ export class TrainingAgent {
     twin: DigitalTwin,
     equipment: string,
     lastFocusOverride?: string,
-    clientLastFocus?: string
+    clientLastFocus?: string,
+    opts?: { recentExerciseIds?: string[]; goal?: string }
   ) {
     const countMap: Record<string, number> = { minimal: 3, light: 4, standard: 5, push: 6 };
     const setsMap: Record<string, number> = { minimal: 2, light: 2, standard: 3, push: 4 };
@@ -44,17 +52,34 @@ export class TrainingAgent {
     const rest = restMap[decision.intensity];
 
     const focus = this._pickFocus(twin, lastFocusOverride, clientLastFocus);
-    const picked = this._pickExercises(count, decision.intensity, focus, equipment);
+    const picked = this._pickExercises(
+      count,
+      decision.intensity,
+      focus,
+      equipment,
+      twin,
+      opts?.recentExerciseIds
+    );
+
+    // Meta de grasa → +2 reps (más volumen). No aplica a minimal (fijado por tests).
+    const goalRepsBonus = opts?.goal === 'grasa' && decision.intensity !== 'minimal' ? 2 : 0;
+
     const exercises = picked.map((ex) => {
       const isTime = ex.load_type === 'time';
       const progressed = !isTime && this._shouldProgress(ex.id, twin);
+      const difficultyBump =
+        decision.intensity !== 'minimal' && ex.difficulty === 3 ? 10 : 0;
       return {
         exercise_id: ex.id,
         name: ex.name,
         muscle: ex.muscle,
         sets,
-        reps: isTime ? parseDuration(ex.instructions) : progressed ? reps + 2 : reps,
-        rest,
+        reps: isTime
+          ? parseDuration(ex.instructions)
+          : progressed
+            ? reps + 2 + goalRepsBonus
+            : reps + goalRepsBonus,
+        rest: rest + difficultyBump,
         completed_sets: 0,
         completed_reps: [],
         status: 'pending' as const,
@@ -62,6 +87,11 @@ export class TrainingAgent {
         load_type: ex.load_type,
       };
     });
+
+    // Arranque fácil: ejercicios de carga cognitiva baja primero.
+    exercises.sort(
+      (a, b) => this._cogLoadOf(a.exercise_id) - this._cogLoadOf(b.exercise_id)
+    );
 
     return {
       focus,
@@ -92,45 +122,92 @@ export class TrainingAgent {
     return next;
   }
 
+  /** El usuario domina un ejercicio: easy ≥ 2 y sin RPE alto reciente. */
   private static _shouldProgress(exId: string, twin: DigitalTwin): boolean {
     const p = twin.ex_progress[exId];
-    return p !== undefined && (p.easy ?? 0) >= 2;
+    if (!p) return false;
+    return (p.easy ?? 0) >= 2 && (p.last_rpe === undefined || p.last_rpe <= 3);
   }
 
-  private static _pickExercises(count: number, intensity: string, focus: string, equipment: string) {
+  private static _cogLoadOf(exId: string): number {
+    const ex = EXERCISE_CATALOG.find((e) => e.id === exId);
+    return COG_LOAD_ORDER[ex?.cognitive_load ?? 'med'] ?? 1;
+  }
+
+  private static _pickExercises(
+    count: number,
+    intensity: string,
+    focus: string,
+    equipment: string,
+    twin: DigitalTwin,
+    recentExerciseIds?: string[]
+  ) {
+    const recent = new Set(recentExerciseIds ?? []);
     const pool = EXERCISE_CATALOG.filter(
       (e) => matchesEquipment(equipment, e.equipment) &&
-        (intensity === 'push' || (e.cognitive_load !== 'high'))
+        (intensity === 'push' || e.cognitive_load !== 'high') &&
+        !twin.avoid?.includes(e.id)
     );
 
     const muscles = FOCUS_MUSCLES[focus] || FOCUS_MUSCLES.full;
-    const queues = muscles.map((m) => this._shuffle(pool.filter((e) => e.muscle === m)));
-    const chosen: typeof pool = [];
-    const used = new Set<string>();
-    let guard = 0;
+    const queues = muscles.map((m) =>
+      this._shuffle(pool.filter((e) => e.muscle === m))
+    );
 
-    while (chosen.length < count && guard++ < 200) {
+    // Score de afinidad por maestría + variedad (no repetir la última sesión).
+    const scoreCandidate = (e: Exercise) => {
+      const p = twin.ex_progress[e.id];
+      let score = 0;
+      if (p) {
+        if ((p.easy ?? 0) >= 2) score += 3;         // lo domina → alto
+        else if ((p.easy ?? 0) >= 1) score += 1.5;  // familiar
+        if ((p.last_rpe ?? 0) >= 7) score -= 2;     // le costó → bajar prioridad
+      }
+      if (recent.has(e.id)) score -= 3;              // variedad / novedad
+      return score;
+    };
+
+    // Grupos por músculo (deduplicados: FOCUS_MUSCLES repite entradas),
+    // cada uno ordenado por afinidad (maestría) + variedad.
+    const groups = [...new Map(queues.map((q) => [q[0]?.muscle, q])).values()]
+      .map((q) => [...q].sort((a, b) => scoreCandidate(b) - scoreCandidate(a)))
+      .filter((g) => g.length > 0);
+
+    // Selección round-robin por músculo: el mejor de cada grupo por turno,
+    // máx. 2 por grupo → garantiza variedad muscular y el conteo exacto.
+    const chosen: Exercise[] = [];
+    const perGroup: number[] = groups.map(() => 0);
+    let guard = 0;
+    while (chosen.length < count && guard++ < 1000) {
       let added = false;
-      for (const q of queues) {
-        if (q.length && chosen.length < count) {
-          const ex = q.shift()!;
-          if (!used.has(ex.id)) {
-            chosen.push(ex);
-            used.add(ex.id);
-            added = true;
-          }
-        }
+      for (let gi = 0; gi < groups.length; gi++) {
+        if (chosen.length >= count) break;
+        const g = groups[gi];
+        if (perGroup[gi] >= 2 || g.length === 0) continue; // máx. 2 por músculo
+        chosen.push(g.shift()!);
+        perGroup[gi]++;
+        added = true;
       }
       if (!added) break;
     }
 
+    // Fallback: si los grupos de foco no cubren el conteo (pools pequeños o
+    // pocos músculos distintos tras el cap de 2 por músculo), rellenar desde
+    // el pool del FOCUS (nunca de músculos ajenos al foco), respetando
+    // variedad (máx. 2 por músculo).
     if (chosen.length < count) {
-      for (const e of this._shuffle(pool)) {
-        if (!used.has(e.id)) {
-          chosen.push(e);
-          used.add(e.id);
-          if (chosen.length >= count) break;
-        }
+      const allowed = new Set(
+        [...new Map(queues.map((q) => [q[0]?.muscle, q])).values()].map((q) => q[0]!.muscle)
+      );
+      const focusPool = pool.filter((e) => allowed.has(e.muscle));
+      const counts: Record<string, number> = {};
+      for (const c of chosen) counts[c.muscle] = (counts[c.muscle] ?? 0) + 1;
+      for (const e of this._shuffle(focusPool)) {
+        if (chosen.some((c) => c.id === e.id)) continue;
+        if ((counts[e.muscle] ?? 0) >= 2) continue;
+        chosen.push(e);
+        counts[e.muscle] = (counts[e.muscle] ?? 0) + 1;
+        if (chosen.length >= count) break;
       }
     }
 

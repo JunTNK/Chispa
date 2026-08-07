@@ -5,8 +5,12 @@ import {
   STYLE_LABELS,
   EQUIPMENT_LABELS,
   NEURO_LABELS,
+  GOAL_LABELS,
+  LEVEL_LABELS,
+  DAYS_LABELS,
 } from '@/lib/utils/constants';
 import { LocalLLM } from './local-llm';
+import { consistencyMomentum } from '@/lib/agents/habit-engine';
 
 /* ─── Interfaces ─── */
 
@@ -22,6 +26,8 @@ interface CoachContext {
   plan: (DecisionEngineOutput & { date?: string; workout?: any; message?: string; done?: boolean; result?: any }) | null;
   workouts: Workout[];
   checkins: Record<string, any>;
+  /** Idioma de la UI: el LLM responde en ese idioma */
+  lang?: 'es' | 'en';
 }
 
 /* ─── CoachAgent ─── */
@@ -54,6 +60,21 @@ export class CoachAgent {
     return templates[style] || templates.data;
   }
 
+  /** Mastery & difficulty lists from the Digital Twin (ex_progress). */
+  private _masterySummary(): string {
+    const progress = this.context.twin.ex_progress ?? {};
+    const mastered: string[] = [];
+    const hard: string[] = [];
+    for (const [id, p] of Object.entries(progress)) {
+      if ((p.easy ?? 0) >= 2) mastered.push(id);
+      if ((p.hard ?? 0) >= 2 || (p.last_rpe ?? 0) >= 7) hard.push(id);
+    }
+    const parts: string[] = [];
+    if (mastered.length) parts.push(`Domina: ${mastered.slice(0, 6).join(', ')}`);
+    if (hard.length) parts.push(`Le resultan difíciles: ${hard.slice(0, 6).join(', ')}`);
+    return parts.join(' · ') || 'Sin historial de dominio aún';
+  }
+
   /** Builds the system prompt from the current context */
   private buildSystemPrompt(): string {
     const c = this.context;
@@ -63,38 +84,57 @@ export class CoachAgent {
 
     const bestHour = this._bestHourStr();
     const style = STYLE_LABELS[t.motivation_style] || t.motivation_style;
+    const mastery = this._masterySummary();
+
+    // Momentum del hábito: última semana vs objetivo semanal.
+    const last7 = c.workouts.filter((w) => {
+      const days = Math.floor((Date.now() - Date.parse(w.date)) / 86400000);
+      return days <= 7 && w.completed_rate >= 0.5;
+    }).length;
+    const target = p.days_per_week === '4-5' ? 4 : 3;
+    const momentum = consistencyMomentum(last7, target);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const checkin = c.checkins[today];
+    const checkinStr = checkin
+      ? `Sueño ${checkin.sleep}h · Energía ${checkin.energy}/10 · Estrés ${checkin.stress}/10`
+      : 'Sin check-in hoy aún';
 
     return `Eres CHISPA Coach, un asistente de fitness experto para personas con TDAH y neurodivergencias.
 
 ## REGLAS ESENCIALES
 1. ERES el 5% LLM que COMUNICA. El 80% son algoritmos deterministas (Decision Engine). El 15% son agentes especializados (Training, Recovery, Habit, Motivation).
 2. NUNCA generes rutinas de ejercicio, planes de entrenamiento ni diagnósticos médicos.
-  3. Siempre basas tus respuestas en LOS DATOS del usuario que te proporcionamos abajo.
-  4. Si no sabes algo, DILO HONESTAMENTE. No inventes ni alucines.
-  5. Usa un tono ${style}. Sé natural y conversacional.
+3. Siempre basas tus respuestas en LOS DATOS del usuario que te proporcionamos abajo.
+4. Si no sabes algo, DILO HONESTAMENTE. No inventes ni alucines.
+5. Usa un tono ${style}. Sé natural y conversacional.
+6. Tienes memoria de conversación: el usuario puede referirse a mensajes anteriores. Úsala.
+7. Responde SIEMPRE en el idioma del usuario: ${c.lang === 'en' ? 'INGLÉS (English)' : 'ESPAÑOL (Spanish)'}.
 
 ## DATOS DEL PERFIL DEL USUARIO
 - Nombre: ${p.name}
-- Nivel: ${p.level}
+- Nivel: ${LEVEL_LABELS[p.level] || p.level}
+- Objetivo: ${GOAL_LABELS[p.goal] || p.goal}
 - Equipo: ${EQUIPMENT_LABELS[p.equipment] || p.equipment}
 - Neurotipo: ${NEURO_LABELS[p.neurotype] || p.neurotype}
-- Objetivo: ${p.goal}
-- Días por semana: ${p.days_per_week}
+- Días por semana: ${DAYS_LABELS[p.days_per_week] || p.days_per_week}
+- Duración preferida: ${p.preferred_duration} min
 - Estilo de motivación: ${style}
 
 ## PLAN DE HOY ${d ? `(confianza: ${d.confidence ?? 50}%)` : '(pendiente de check-in)'}
-${d ? `- Acción: ${d.action === 'train' ? 'Entrenar' : 'Recuperación activa'}
-- Intensidad: ${INTENSITY_LABELS[d.intensity] || d.intensity}
-- Duración: ${d.duration} min
-- Razones del motor: ${d.reasons.join(', ')}
-- Score recuperación: ${d.recovery_score ?? 'N/A'}/100` : '- Haz el check-in para obtener el plan del día'}
+${d ? `- Acción: ${d.action === 'train' ? 'Entrenar' : 'Recuperación activa'}\n- Intensidad: ${INTENSITY_LABELS[d.intensity] || d.intensity}\n- Duración: ${d.duration} min\n- Razones del motor: ${d.reasons.join(', ')}\n- Score recuperación: ${d.recovery_score ?? 'N/A'}/100` : '- Haz el check-in para obtener el plan del día'}
 
 ## ESTADÍSTICAS DEL DIGITAL TWIN
 - Tasa de finalización: ${Math.round(t.patterns.completion_rate * 100)}%
 - Duración promedio: ${Math.round(t.patterns.avg_duration)} min
 - ${bestHour}
 - Tasa de abandono: ${Math.round(t.patterns.abandon_rate * 100)}%
+- ${mastery}
+- Inercia semanal: ${momentum > 0.3 ? 'positiva (vas por encima del ritmo)' : momentum < -0.3 ? 'negativa (última semana floja)' : 'estable'}
 - Estilo de entrenamiento: ${t.training_style}
+
+## CHECK-IN DE HOY
+${checkinStr}
 
 ## HISTORIAL RECIENTE
 - Sesiones completadas (últimos 30d): ${c.workouts.filter(w => w.completed_rate >= 0.5).length}
@@ -109,22 +149,30 @@ ${d ? `- Acción: ${d.action === 'train' ? 'Entrenar' : 'Recuperación activa'}
 Responde de forma natural y conversacional.`;
   }
 
-  /** Main reply — uses LLM if available, falls back to rule-based */
-  async reply(userInput: string): Promise<CoachResponse> {
+  /** Main reply — uses LLM if available (with history), falls back to rule-based */
+  async reply(
+    userInput: string,
+    history: { role: 'user' | 'assistant'; content: string }[] = []
+  ): Promise<CoachResponse> {
     const lower = userInput.toLowerCase();
 
-    // Use LLM if loaded (singleton, always fresh)
+    // Use LLM if loaded (singleton, always fresh) — pasamos historial completo
+    // para que la conversación tenga contexto real.
     if (this.llm.isLoaded) {
       try {
         const system = this.buildSystemPrompt();
+        const messages = [
+          ...history.slice(-6),
+          { role: 'user' as const, content: userInput },
+        ];
         const result = await this.llm.chat(
-          [{ role: 'user', content: userInput }],
+          messages,
           system,
           { temperature: 0.7, max_new_tokens: 300 }
         );
         return {
           text: result,
-          data_used: ['local_llm (Qwen2.5-1.5B)', 'profile', 'digital_twin', 'decision_engine'],
+          data_used: ['local_llm (Qwen2.5-1.5B)', 'profile', 'digital_twin', 'decision_engine', 'conversation_history'],
           confidence: 0.85,
         };
       } catch (err) {
@@ -153,6 +201,7 @@ Responde de forma natural y conversacional.`;
     if (/(rutina|ejercici|entren|plan|sesi[oó]n)/.test(lower)) return this.explainWorkout();
     if (/(sueñ|suen|dormir|estres|estr[ée]s|ansie|descans)/.test(lower)) return this.explainRecovery();
     if (/(consejo|tip|ayuda|recomien)/.test(lower)) return this.giveAdvice();
+    if (/(cu[aá]ndo|mejor hora|horario|franja|momento del d[ií]a)/.test(lower)) return this.bestTimeAdvice();
     if (/(hola|buenas|hey|qu[eé] tal|que tal)/.test(lower)) {
       return {
         text: `¡Hola ${this.context.profile.name}! Pregúntame por tu plan de hoy, tu progreso o cómo funciona el motor. Te respondo con tus datos reales.`,
@@ -269,6 +318,22 @@ Responde de forma natural y conversacional.`;
       text: `El sueño pesa 40% en tu Recovery Score, la energía 30% y el estrés 30%. Tu check-in de hoy: ${checkin ? 'registrado' : 'pendiente'}. Con eso el motor ya adaptó la sesión — no tienes que decidir nada.`,
       data_used: ['recovery_engine', 'checkin_data'],
       confidence: 0.9,
+    };
+  }
+
+  private bestTimeAdvice(): CoachResponse {
+    const best = this._bestHourStr();
+    if (best === '—') {
+      return {
+        text: 'Aún no tengo suficientes entrenamientos registrados para conocer tu mejor franja. Sigue entrenando y el twin lo aprenderá solo.',
+        data_used: ['digital_twin', 'best_hours'],
+        confidence: 0.8,
+      };
+    }
+    return {
+      text: `Según tu historial, tu mejor franja es ${best}. Es el momento en que más sesiones completas has cerrado. Si puedes, ahí rinde más tu energía.`,
+      data_used: ['digital_twin', 'best_hours'],
+      confidence: 0.95,
     };
   }
 

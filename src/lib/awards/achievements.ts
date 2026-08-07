@@ -4,8 +4,11 @@ import type { Achievement, UserAchievement, Workout } from '@/types';
 
 /**
  * ─── Achievement Definitions Catalog ───
- * 28 achievements across 8 NEUROFIT-inspired categories.
+ * 33 achievements across 9 NEUROFIT-inspired categories.
  * Each has a condition evaluator that checks store data.
+ *
+ * Filosofía CHISPA: NUNCA se gamifican datos corporales (peso/IMC/medidas).
+ * Las recompensas celebran el movimiento, no el cuerpo.
  */
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -52,6 +55,13 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'night_owl', category: 'hidden', name: 'Noctámbulo', description: 'Entrena después de las 10:00 PM', icon: 'Moon', tier: 'rare', condition_type: 'time_based', condition_value: { after_hour: 22 }, sort_order: 26 },
   { id: 'adapter', category: 'hidden', name: 'Adaptabilidad', description: 'Adapta la intensidad en medio de la sesión 5 veces', icon: 'Wrench', tier: 'rare', condition_type: 'adaptation_count', condition_value: { min: 5 }, sort_order: 27 },
   { id: 'rpe_master', category: 'hidden', name: 'Auto-consciencia', description: 'Califica tu RPE como "justo" 10 veces', icon: 'Smile', tier: 'epic', condition_type: 'rpe_justo_count', condition_value: { min: 10 }, sort_order: 28 },
+
+  // ── Movimiento · sin presión sobre el cuerpo ──
+  { id: 'movimiento_7', category: 'movimiento', name: 'Ritmo de movimiento', description: 'Muévete en 7 días distintos (no tienen que ser seguidos)', icon: 'Footprints', tier: 'uncommon', condition_type: 'movement_days', condition_value: { min: 7 }, sort_order: 31 },
+  { id: 'rutina_nueva', category: 'movimiento', name: 'Explorador de rutinas', description: 'Prueba 3 tipos de rutina diferentes', icon: 'Compass', tier: 'rare', condition_type: 'focus_variety', condition_value: { min: 3 }, sort_order: 32 },
+  { id: 'mini_victoria', category: 'movimiento', name: 'Mini victoria', description: 'Completa una sesión de 1 minuto. Un minuto cuenta.', icon: 'Sparkles', tier: 'common', condition_type: 'min_session', condition_value: { min: 1 }, sort_order: 33 },
+  { id: 'cinco_seguidos', category: 'movimiento', name: 'Cinco días en movimiento', description: 'Muévete en 5 días distintos dentro de dos semanas.', icon: 'HeartPulse', tier: 'uncommon', condition_type: 'windowed_days', condition_value: { min_days: 5, window_days: 14 }, sort_order: 34 },
+  { id: 'intensidades_2sem', category: 'movimiento', name: 'Variedad en 2 semanas', description: 'Prueba las 4 intensidades en un plazo de 2 semanas.', icon: 'Activity', tier: 'rare', condition_type: 'intensities_in_days', condition_value: { min_days: 14 }, sort_order: 35 },
 ];
 
 /** Build a lookup map by id */
@@ -62,7 +72,7 @@ export const ACHIEVEMENT_MAP = Object.fromEntries(
 /* ─── Tier display config ─── */
 
 export const TIER_CONFIG: Record<string, { label: string; glow: string; bg: string; text: string; border: string }> = {
-  common:    { label: 'Común',     glow: '',                                 bg: 'bg-white/[.04]', text: 'text-[#94a0b8]', border: 'border-white/[.10]' },
+  common:    { label: 'Común',     glow: '',                                 bg: 'bg-white/[.04]', text: 'text-[var(--muted)]', border: 'border-white/[.10]' },
   uncommon:  { label: 'Poco común', glow: 'shadow-[0_0_12px_rgba(76,201,240,0.15)]',  bg: 'bg-[rgba(76,201,240,0.06)]', text: 'text-[#4CC9F0]', border: 'border-[rgba(76,201,240,0.3)]' },
   rare:      { label: 'Raro',      glow: 'shadow-[0_0_14px_rgba(167,139,250,0.2)]', bg: 'bg-[rgba(167,139,250,0.08)]', text: 'text-[#a78bfa]', border: 'border-[rgba(167,139,250,0.35)]' },
   epic:      { label: 'Épico',     glow: 'shadow-[0_0_18px_rgba(255,107,53,0.25)]', bg: 'bg-[rgba(255,107,53,0.08)]', text: 'text-[#FF6B35]', border: 'border-[rgba(255,107,53,0.35)]' },
@@ -74,6 +84,8 @@ export const TIER_CONFIG: Record<string, { label: string; glow: string; bg: stri
 const XP_PER_WORKOUT_BASE = 50;
 const XP_PER_MINUTE = 1;
 const XP_PERFECT_BONUS = 20;
+/** Minutos mínimos para merecer el bonus de sesión perfecta (anti-farming XP) */
+const MINUTES_FOR_PERFECT_BONUS = 5;
 
 /**
  * Calculate total XP from all completed workouts.
@@ -84,7 +96,10 @@ export function computeTotalXp(workouts: Workout[]): number {
   return workouts.reduce((total, w) => {
     const base = w.completed_rate * XP_PER_WORKOUT_BASE;
     const mins = (w.actual_minutes || w.duration) * XP_PER_MINUTE;
-    const perfect = w.completed_rate >= 1 ? XP_PERFECT_BONUS : 0;
+    const perfect =
+      w.completed_rate >= 1 && (w.actual_minutes || w.duration) >= MINUTES_FOR_PERFECT_BONUS
+        ? XP_PERFECT_BONUS
+        : 0;
     return total + Math.round(base + mins + perfect);
   }, 0);
 }
@@ -105,7 +120,11 @@ export function computeWorkoutXp(
   completedRate: number,
   actualMinutes: number
 ): number {
-  return Math.round(completedRate * XP_PER_WORKOUT_BASE + actualMinutes * XP_PER_MINUTE + (completedRate >= 1 ? XP_PERFECT_BONUS : 0));
+  const perfect =
+    completedRate >= 1 && actualMinutes >= MINUTES_FOR_PERFECT_BONUS
+      ? XP_PERFECT_BONUS
+      : 0;
+  return Math.round(completedRate * XP_PER_WORKOUT_BASE + actualMinutes * XP_PER_MINUTE + perfect);
 }
 
 /* ─── Category config ─── */
@@ -119,6 +138,7 @@ export const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = 
   level:      { label: 'Niveles',        icon: 'TrendingUp' },
   boss:       { label: 'Jefes',          icon: 'Sword' },
   hidden:     { label: 'Especiales',     icon: 'Sparkles' },
+  movimiento: { label: 'Movimiento',     icon: 'Footprints' },
 };
 
 /* ─── Achievement Evaluation Engine ─── */
@@ -133,6 +153,14 @@ export interface AchievementContext {
   rpeJustoCount?: number;
   completedIntensities?: Set<string>;
   completedFocuses?: Record<string, number>;
+  /** Nº de días distintos con sesión completada (movimiento, no consecutivos) */
+  movementDays?: number;
+  /** Nº de días distintos con sesión en la última ventana (rolling) */
+  windowedDays?: number;
+  /** Nº de tipos de rutina (focus) distintos probados */
+  focusVariety?: number;
+  /** Nº de sesiones de 1 minuto o menos (mini victorias) */
+  minSessions?: number;
 }
 
 /**
@@ -174,6 +202,25 @@ export function computeAchievementContext(
     completedFocuses[w.focus] = (completedFocuses[w.focus] || 0) + 1;
   }
 
+  // Movimiento: días distintos con sesión (no exige racha) + variedad de rutinas
+  const movementDays = new Set(completed.map((w) => w.date)).size;
+  // Windowed days: días distintos con movimiento en los últimos N días (rolling)
+  // Cuenta hacia atrás desde today para que "5 en 7" funcione con cualquier dato histórico
+  const recentDates = new Set<string>();
+  for (const w of completed) {
+    const wDate = new Date(w.date);
+    const dayDiff = Math.floor((today.getTime() - wDate.getTime()) / 86400000);
+    if (dayDiff >= 0 && dayDiff < 7) { // últimos 7 días (0-6)
+      recentDates.add(w.date);
+    }
+  }
+  const windowedDays = recentDates.size;
+  const focusVariety = Object.keys(completedFocuses).length;
+  // Mini victorias: sesiones de 1 minuto o menos (cualquier movimiento cuenta)
+  const minSessions = workouts.filter(
+    (w) => typeof w.actual_minutes === 'number' && w.actual_minutes > 0 && w.actual_minutes <= 1
+  ).length;
+
   return {
     workouts,
     totalWorkouts,
@@ -184,6 +231,10 @@ export function computeAchievementContext(
     rpeJustoCount: extra?.rpeJustoCount ?? 0,
     completedIntensities,
     completedFocuses,
+    movementDays,
+    windowedDays,
+    focusVariety,
+    minSessions,
   };
 }
 
@@ -295,6 +346,63 @@ export function evaluateAchievement(
       unlocked = (ctx.rpeJustoCount ?? 0) >= progressTarget;
       break;
     }
+    case 'movement_days': {
+      progressCurrent = ctx.movementDays ?? 0;
+      progressTarget = (condition_value as { min: number }).min;
+      unlocked = progressCurrent >= progressTarget;
+      break;
+    }
+    case 'windowed_days': {
+      const { min_days, window_days } = condition_value as { min_days: number; window_days: number };
+      // Calculate distinct days with movement in the rolling window
+      const completed = ctx.workouts.filter((w) => w.completed_rate >= 0.5);
+      const today = new Date();
+      const recentDates = new Set<string>();
+      for (const w of completed) {
+        const wDate = new Date(w.date);
+        const dayDiff = Math.floor((today.getTime() - wDate.getTime()) / 86400000);
+        if (dayDiff >= 0 && dayDiff < window_days) {
+          recentDates.add(w.date);
+        }
+      }
+      progressCurrent = recentDates.size;
+      progressTarget = min_days;
+      unlocked = progressCurrent >= min_days;
+      break;
+    }
+    case 'focus_variety': {
+      progressCurrent = ctx.focusVariety ?? 0;
+      progressTarget = (condition_value as { min: number }).min;
+      unlocked = progressCurrent >= progressTarget;
+      break;
+    }
+    case 'min_session': {
+      progressCurrent = ctx.minSessions ?? 0;
+      progressTarget = (condition_value as { min: number }).min ?? 1;
+      unlocked = progressCurrent >= progressTarget;
+      break;
+    }
+    case 'intensities_in_days': {
+      // Las 4 intensidades probadas (sesiones completadas) dentro de un plazo
+      const { min_days } = condition_value as { min_days: number };
+      const ALL = ['minimal', 'light', 'standard', 'push'];
+      const byIntensity = new Map<string, string>(); // intensidad → fecha más reciente
+      for (const w of ctx.workouts) {
+        if (w.completed_rate >= 0.5 && ALL.includes(w.intensity)) {
+          byIntensity.set(w.intensity, w.date);
+        }
+      }
+      progressCurrent = byIntensity.size;
+      progressTarget = 4;
+      if (byIntensity.size === 4) {
+        const dates = [...byIntensity.values()].sort();
+        const first = new Date(dates[0]).getTime();
+        const last = new Date(dates[dates.length - 1]).getTime();
+        // Redondea para tolerar horas residuales en fechas con timestamp
+        unlocked = Math.round((last - first) / 86400000) <= min_days;
+      }
+      break;
+    }
     default:
       break;
   }
@@ -317,14 +425,21 @@ export function evaluateAllAchievements(
   const progress: Record<string, UserAchievement> = {};
   const newlyUnlocked: string[] = [];
 
-  for (const achievement of ACHIEVEMENTS) {
+  // Excluir categoría 'streak' (legacy) de evaluación activa; 
+  // sus logros permanecen en datos históricos pero no se desbloquean nuevos.
+  const activeAchievements = ACHIEVEMENTS.filter((a) => a.category !== 'streak');
+
+  for (const achievement of activeAchievements) {
     const existing = currentProgress[achievement.id];
     const wasUnlocked = existing?.unlocked ?? false;
     const evaluation = evaluateAchievement(achievement, ctx);
 
+    // Monotónico: un logro desbloqueado NUNCA se revoca (aunque el progreso
+    // pueda bajar, p.ej. al borrar entradas del historial de peso).
+    const unlocked = wasUnlocked || evaluation.unlocked;
     progress[achievement.id] = {
       achievement_id: achievement.id,
-      unlocked: evaluation.unlocked,
+      unlocked,
       unlocked_at: evaluation.unlocked && !wasUnlocked ? now : (existing?.unlocked_at ?? null),
       progress_current: evaluation.progressCurrent,
       progress_target: evaluation.progressTarget,

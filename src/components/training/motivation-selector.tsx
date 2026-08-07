@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { BarChart3, Flame, Wind } from 'lucide-react';
 
@@ -11,13 +12,13 @@ interface MotivOption {
   text: React.ReactNode;
 }
 
-const MOTIV_OPTIONS: MotivOption[] = [
+const MOTIV_OPTIONS: (t: (s: string, v?: Record<string, string | number>) => string) => MotivOption[] = (t) => [
   {
     val: 'data',
     text: (
       <>
-        <BarChart3 size={14} className="inline text-[#94a0b8] mr-1" />
-        Recuperación 78%. Consistencia 69%. Los datos dicen que puedes.
+        <BarChart3 size={14} className="inline text-[var(--muted)] mr-1" />
+        {t('Recuperación 78%. Consistencia 69%. Los datos dicen que puedes.')}
       </>
     ),
   },
@@ -26,7 +27,7 @@ const MOTIV_OPTIONS: MotivOption[] = [
     text: (
       <>
         <Flame size={14} className="inline text-[#ffb454] mr-1" />
-        La chispa se enciende moviéndote. ¡A por hoy!
+        {t('La chispa se enciende moviéndote. ¡A por hoy!')}
       </>
     ),
   },
@@ -34,8 +35,8 @@ const MOTIV_OPTIONS: MotivOption[] = [
     val: 'calm',
     text: (
       <>
-        <Wind size={14} className="inline text-[#94a0b8] mr-1" />
-        Sin prisa. A tu ritmo. Un paso cada vez.
+        <Wind size={14} className="inline text-[var(--muted)] mr-1" />
+        {t('Sin prisa. A tu ritmo. Un paso cada vez.')}
       </>
     ),
   },
@@ -47,16 +48,18 @@ interface MotivationSelectorProps {
 }
 
 export function MotivationSelector({ value, onChange }: MotivationSelectorProps) {
+  const t = useT();
+  const options = MOTIV_OPTIONS(t);
   return (
     <Card>
       <div className="flex items-center gap-2 mb-3">
-        <span className="font-bold text-sm">¿Qué mensaje te motiva más?</span>
-        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/[.07] text-[10px] font-bold text-[#94a0b8]">
-          el motor aprende
+        <span className="font-bold text-sm">{t('¿Qué mensaje te motiva más?')}</span>
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-white/[.07] text-[10px] font-bold text-[var(--muted)]">
+          {t('el motor aprende')}
         </span>
       </div>
       <div className="space-y-2">
-        {MOTIV_OPTIONS.map((o) => {
+        {options.map((o) => {
           const selected = value === o.val;
           return (
             <button

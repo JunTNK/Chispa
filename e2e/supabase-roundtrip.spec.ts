@@ -155,6 +155,9 @@ test.describe('Round-trip real con Supabase: twin conserva hard/last_date', () =
       // Ruido esperado: imágenes de ejercicios desde CDN externa, favicon, Hydration
       if (t.includes('Hydration failed') || t.includes('favicon')) return;
       if (t.includes('status of 404')) return;
+      // 406 = PGRST116 (no rows) del pull en neuro_profiles/quest_states para
+      // usuarios nuevos sin filas — esperado, no es un error real.
+      if (t.includes('status of 406')) return;
       pageErrors.push(t);
     });
 

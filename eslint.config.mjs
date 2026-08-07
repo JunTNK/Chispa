@@ -11,6 +11,9 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
+  {
+    ignores: ["node_modules/", ".next/", ".netlify/", "coverage/", "dist/", "out/"],
+  },
   ...compat.extends("next/core-web-vitals"),
   {
     plugins: {

@@ -292,7 +292,7 @@ end $$;
 
 create table if not exists public.achievements (
   id text primary key,
-  category text not null check (category in ('workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden')),
+  category text not null check (category in ('workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden', 'body')),
   name text not null,
   description text not null,
   icon text not null,
@@ -342,7 +342,11 @@ insert into public.achievements (id, category, name, description, icon, tier, co
   ('early_bird',          'hidden',     'Madrugador',          'Entrena antes de las 7:00 AM',                  'Sun',           'rare',      'time_based',        '{"before_hour": 7}',           25),
   ('night_owl',           'hidden',     'Noctámbulo',          'Entrena después de las 10:00 PM',               'Moon',          'rare',      'time_based',        '{"after_hour": 22}',           26),
   ('adapter',             'hidden',     'Adaptabilidad',       'Adapta la intensidad en medio de la sesión 5 veces', 'Wrench',    'rare',      'adaptation_count',  '{"min": 5}',     27),
-  ('rpe_master',          'hidden',     'Auto-consciencia',    'Califica tu RPE como "justo" 10 veces',         'Smile',         'epic',      'rpe_justo_count',   '{"min": 10}',    28)
+  ('rpe_master',          'hidden',     'Auto-consciencia',    'Califica tu RPE como "justo" 10 veces',         'Smile',         'epic',      'rpe_justo_count',   '{"min": 10}',    28),
+  ('peso_registrado',     'body',       'Báscula',             'Registra tu peso corporal',                      'Scale',         'common',    'weight_logged',     '{"min": 1}',     29),
+  ('perfil_corporal',     'body',       'Ficha completa',      'Registra tu sexo, peso y estatura',              'PersonStanding', 'uncommon',  'body_profile',      '{"min": 3}',     30),
+  ('peso_5',              'body',       'Ritmo de báscula',    'Registra tu peso 5 veces',                       'Scale',         'uncommon',  'weight_entries_count', '{"min": 5}',   31),
+  ('peso_20',             'body',       'Maestro de la báscula', 'Registra tu peso 20 veces',                    'Scale',         'rare',      'weight_entries_count', '{"min": 20}',  32)
 on conflict (id) do nothing;
 
 create index if not exists idx_user_achievements_user on public.user_achievements(user_id);
@@ -532,7 +536,98 @@ alter table public.profiles alter column preferred_duration set default 20;
 alter table public.workouts alter column duration set default 0;
 
 -- ═══════════════════════════════════════════════════════════
+-- MIGRATION 009: Body metrics & body achievements
+-- ═══════════════════════════════════════════════════════════
+
+-- 1. profiles: medidas corporales (canónico en métrico) + sistema de unidades
+alter table public.profiles
+  add column if not exists sex text check (sex in ('masculino', 'femenino', 'otro')),
+  add column if not exists height_cm numeric(5,1),
+  add column if not exists weight_kg numeric(5,1),
+  add column if not exists units text check (units in ('imperial', 'metric')) default 'imperial';
+
+-- 2. achievements: ampliar check de categoría con 'body'
+alter table public.achievements drop constraint if exists achievements_category_check;
+alter table public.achievements
+  add constraint achievements_category_check
+  check (category in ('workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden', 'body'));
+
+-- 3. Nuevos logros de la categoría 'body'
+insert into public.achievements (id, category, name, description, icon, tier, condition_type, condition_value, sort_order) values
+  ('peso_registrado', 'body', 'Báscula', 'Registra tu peso corporal', 'Scale', 'common', 'weight_logged', '{"min": 1}', 29),
+  ('perfil_corporal', 'body', 'Ficha completa', 'Registra tu sexo, peso y estatura', 'PersonStanding', 'uncommon', 'body_profile', '{"min": 3}', 30)
+on conflict (id) do nothing;
+
+-- ═══════════════════════════════════════════════════════════
+-- MIGRATION 010: Weight history & scale-consistency achievements
+-- ═══════════════════════════════════════════════════════════
+
+create table if not exists public.weight_log (
+  user_id uuid references public.users on delete cascade not null,
+  date date not null,
+  weight_kg numeric(5,1) not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  primary key (user_id, date)
+);
+
+create index if not exists idx_weight_log_user_date on public.weight_log(user_id, date desc);
+
+alter table public.weight_log enable row level security;
+create policy "Weight log: own data" on public.weight_log for all using (auth.uid() = user_id);
+
+insert into public.achievements (id, category, name, description, icon, tier, condition_type, condition_value, sort_order) values
+  ('peso_5',  'body', 'Ritmo de báscula',      'Registra tu peso 5 veces',   'Scale', 'uncommon', 'weight_entries_count', '{"min": 5}',  31),
+  ('peso_20', 'body', 'Maestro de la báscula', 'Registra tu peso 20 veces',  'Scale', 'rare',     'weight_entries_count', '{"min": 20}', 32)
+on conflict (id) do nothing;
+
+-- ═══════════════════════════════════════════════════════════
+-- MIGRATION 011: Movement achievements replace body-measurement rewards
+-- ═══════════════════════════════════════════════════════════
+-- Filosofía CHISPA (cero culpa): no se gamifican datos corporales.
+-- Retira los logros de peso/medidas y añade logros de movimiento.
+
+delete from public.achievements where id in ('peso_registrado', 'perfil_corporal', 'peso_5', 'peso_20');
+
+-- ── 1b. El check de categoría debe aceptar 'movimiento' (y ya no 'body'):
+--       la migración 009 lo definió con 'body', que ya no se usa.
+-- ──
+alter table public.achievements drop constraint if exists achievements_category_check;
+alter table public.achievements
+  add constraint achievements_category_check
+  check (category in ('workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden', 'movimiento'));
+
+insert into public.achievements (id, category, name, description, icon, tier, condition_type, condition_value, sort_order) values
+  ('movimiento_7', 'movimiento', 'Ritmo de movimiento',    'Muévete en 7 días distintos (no tienen que ser seguidos)', 'Footprints', 'uncommon', 'movement_days', '{"min": 7}', 31),
+  ('rutina_nueva', 'movimiento', 'Explorador de rutinas',  'Prueba 3 tipos de rutina diferentes',                      'Compass',    'rare',     'focus_variety', '{"min": 3}', 32)
+on conflict (id) do nothing;
+
+delete from public.user_achievements where achievement_id in ('peso_registrado', 'perfil_corporal', 'peso_5', 'peso_20');
+
+-- ═══════════════════════════════════════════════════════════
+-- MIGRATION 012: More movement achievements
+-- ═══════════════════════════════════════════════════════════
+-- Mini victoria (sesión de 1 min), 5 días seguidos sin culpa, 4 intensidades en 2 semanas.
+
+insert into public.achievements (id, category, name, description, icon, tier, condition_type, condition_value, sort_order) values
+  ('mini_victoria',    'movimiento', 'Mini victoria',        'Completa una sesión de 1 minuto. Un minuto cuenta.',               'Sparkles',  'common',   'min_session',        '{"min": 1}',          33),
+  ('cinco_seguidos',   'movimiento', 'Cinco días en movimiento', 'Muévete en 5 días distintos dentro de una semana.',          'HeartPulse', 'uncommon', 'windowed_days',      '{"min_days": 5, "window_days": 7}', 34),
+  ('intensidades_2sem','movimiento', 'Variedad en 2 semanas','Prueba las 4 intensidades en un plazo de 2 semanas.',              'Activity',  'rare',     'intensities_in_days', '{"min_days": 14}',    35)
+on conflict (id) do nothing;
+
+-- ═══════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════
+-- MIGRATION 013: Reconcile profiles.neurotype check with the app
+-- ═══════════════════════════════════════════════════════════
+-- La DB real se creó con un check antiguo ('tdah','neuro','nose'); la app
+-- escribe los valores modernos ('adh-c','adh-i','audhd','spd','curious','other').
+alter table public.profiles drop constraint if exists profiles_neurotype_check;
+alter table public.profiles
+  add constraint profiles_neurotype_check
+  check (neurotype in ('adh-c', 'adh-i', 'audhd', 'spd', 'curious', 'other'));
+
+-- ═══════════════════════════════════════════════════════════
 -- VERIFICATION
+-- ═══════════════════════════════════════════════════════════
 -- ═══════════════════════════════════════════════════════════
 
 do $$
@@ -545,10 +640,26 @@ begin
   select count(*) into exercise_count from public.exercises;
   select count(*) into achievement_count from public.achievements;
   raise notice '═══════════════════════════════════════';
-  raise notice '✅ MIGRATIONS COMPLETE';
+  raise notice '✅ MIGRATIONS COMPLETE (incl. 009 body metrics + 010 weight log + 011/012 movement achievements)';
   raise notice '   Tables: %', table_count;
   raise notice '   Exercises: %', exercise_count;
   raise notice '   Achievements: %', achievement_count;
   raise notice '   RLS enabled: YES (verified in migration)';
   raise notice '═══════════════════════════════════════';
 end $$;
+-- CHISPA — Migration 014: Remove 'otro' option from sex column
+-- Elimina la opción 'otro' del sexo registrado y migra datos existentes.
+-- Coherente con el tipo TypeScript Profile.sex ('masculino' | 'femenino').
+-- Idempotent: safe to run multiple times.
+
+-- 1. Migrar datos existentes: 'otro' → NULL
+update public.profiles
+  set sex = null
+  where sex = 'otro';
+
+-- 2. Actualizar check constraint (solo permite masculino/femenino)
+alter table public.profiles 
+  drop constraint if exists profiles_sex_check;
+alter table public.profiles
+  add constraint profiles_sex_check
+  check (sex in ('masculino', 'femenino'));

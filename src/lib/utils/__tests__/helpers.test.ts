@@ -117,10 +117,9 @@ describe('uid', () => {
     expect(a).not.toBe(b);
   });
 
-  it('has reasonable length (base36 timestamp + random)', () => {
+  it('generates a valid UUID v4 (DB espera uuid en workouts.id)', () => {
     const id = uid();
-    expect(id.length).toBeGreaterThanOrEqual(5);
-    expect(id.length).toBeLessThanOrEqual(20);
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
   });
 });
 

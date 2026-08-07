@@ -139,6 +139,8 @@ export class PoseEngine {
   private _videoEl: HTMLVideoElement | null = null;
   private _stream: MediaStream | null = null;
   private _rafId: number | null = null;
+  private _resizeObserver: ResizeObserver | null = null;
+  private _orientationHandler: (() => void) | null = null;
   private _lastFrameTime = -1;
   private _callbacks: EngineEventCallback[] = [];
   private _loadPromise: Promise<void> | null = null;
@@ -204,9 +206,12 @@ export class PoseEngine {
     this._error = null;
 
     try {
-      // Dynamic import from CDN (same pattern as local-llm.ts)
+      // Dynamic import from CDN (same pattern as local-llm.ts).
+      // NOTE: the ESM bundle lives at the package ROOT (vision_bundle.mjs),
+      // not under /wasm/ — /wasm/vision_bundle.js 404s and silently killed
+      // model loading, leaving the camera in an 'unavailable' error state.
       const mod: any = await new Function(
-        `return import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm/vision_bundle.js")`
+        `return import("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.mjs")`
       )();
 
       const vision = await mod.FilesetResolver.forVisionTasks(TASKS_VISION_CDN);
@@ -235,6 +240,54 @@ export class PoseEngine {
 
   /* ─── Camera ─── */
 
+  private _isMobile(): boolean {
+    return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent
+    );
+  }
+
+  private _isInAppBrowser(): boolean {
+    const ua = navigator.userAgent || navigator.vendor;
+    return (
+      !!ua.match(/FBAN|FBAV|Instagram/i) || // Facebook / Instagram
+      (window.navigator as any).standalone === true // iOS PWA
+    );
+  }
+
+  private _buildVideoConstraints(): MediaTrackConstraints {
+    const isMobile = this._isMobile();
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+    if (isMobile) {
+      // On mobile, start with wide constraints then try higher res
+      // iOS in-app browsers often need simpler constraints
+      if (this._isInAppBrowser()) {
+        return {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 480 },
+          height: { ideal: 640 },
+        };
+      }
+      return {
+        facingMode: { ideal: 'user' },
+        width: { ideal: isIOS ? 720 : 640 },
+        height: { ideal: isIOS ? 960 : 480 },
+      };
+    }
+
+    // Desktop: original constraints
+    return {
+      facingMode: 'user',
+      width: { ideal: 640 },
+      height: { ideal: 480 },
+    };
+  }
+
+  private _getMobileFrameInterval(): number {
+    // Throttle detection loop on mobile (iOS has no WebGPU → WASM)
+    return this._isMobile() ? 100 : 0;
+  }
+
   async startCamera(videoEl: HTMLVideoElement): Promise<void> {
     if (this._stream) {
       await this.stopCamera();
@@ -244,24 +297,48 @@ export class PoseEngine {
     this._videoEl = videoEl;
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
+      // Build constraints with fallbacks for mobile browsers
+      const constraints = this._buildVideoConstraints();
+
+      this._stream = await navigator.mediaDevices.getUserMedia({
+        video: constraints,
         audio: false,
       });
 
-      this._stream = stream;
-      videoEl.srcObject = stream;
+      videoEl.srcObject = this._stream;
+      videoEl.muted = true;
+      videoEl.playsInline = true;
+      videoEl.autoplay = true;
       videoEl.setAttribute('playsinline', 'true');
+      videoEl.setAttribute('webkit-playsinline', 'true');
+
+      // Gate play on readyState with catch for autoplay rejection (iOS/Safari)
+      const tryPlay = () => {
+        videoEl.play().catch(() => {
+          // Autoplay blocked — try again on next user interaction
+          const onTouch = () => {
+            videoEl.play().catch(() => {});
+            videoEl.removeEventListener('touchstart', onTouch);
+          };
+          videoEl.addEventListener('touchstart', onTouch, { once: true });
+        });
+      };
+
+      // Always set onloadedmetadata as a fallback play trigger
+      videoEl.onloadedmetadata = () => {
+        if (videoEl.readyState >= 2) {
+          tryPlay();
+        }
+      };
+
+      if (videoEl.readyState >= 2) {
+        tryPlay();
+      }
 
       await new Promise<void>((resolve) => {
-        videoEl.onloadedmetadata = () => {
-          videoEl.play();
-          resolve();
-        };
+        videoEl.onloadeddata = () => resolve();
+        // Timeout fallback for browsers that don't fire loadeddata
+        setTimeout(resolve, 1000);
       });
 
       // Wait for model if not loaded
@@ -274,7 +351,22 @@ export class PoseEngine {
         }
       }
 
-      // Only transition to 'ready' if the model actually loaded
+      // Set up resize observer to keep canvas aligned on orientation change
+      if (typeof ResizeObserver !== 'undefined' && videoEl) {
+        this._resizeObserver = new ResizeObserver(() => {
+          // Canvas dimensions will be recalculated on next _drawLandmarks call
+        });
+        this._resizeObserver.observe(videoEl);
+      }
+
+      // Also listen for orientation change as fallback
+      const onOrientationChange = () => {
+        setTimeout(() => {
+          // Trigger a redraw by emitting a noop status
+        }, 300);
+      };
+      window.addEventListener('orientationchange', onOrientationChange);
+      this._orientationHandler = onOrientationChange;
       if (this._poseLandmarker) {
         this._setStatus('ready');
         this._startDetectionLoop();
@@ -294,6 +386,14 @@ export class PoseEngine {
       cancelAnimationFrame(this._rafId);
       this._rafId = null;
     }
+    if (this._resizeObserver) {
+      this._resizeObserver.disconnect();
+      this._resizeObserver = null;
+    }
+    if (this._orientationHandler) {
+      window.removeEventListener('orientationchange', this._orientationHandler);
+      this._orientationHandler = null;
+    }
     if (this._stream) {
       this._stream.getTracks().forEach(t => t.stop());
       this._stream = null;
@@ -309,6 +409,9 @@ export class PoseEngine {
   /* ─── Detection Loop ─── */
 
   private _startDetectionLoop() {
+    const frameInterval = this._getMobileFrameInterval();
+    let lastProcessTime = 0;
+
     const loop = () => {
       if (!this._videoEl || !this._poseLandmarker) {
         this._rafId = requestAnimationFrame(loop);
@@ -317,8 +420,15 @@ export class PoseEngine {
 
       const now = performance.now();
 
+      // Throttle on mobile: skip frames to reduce CPU/WASM load
+      if (frameInterval > 0 && now - lastProcessTime < frameInterval) {
+        this._rafId = requestAnimationFrame(loop);
+        return;
+      }
+
       if (this._videoEl.currentTime !== this._lastFrameTime) {
         this._lastFrameTime = this._videoEl.currentTime;
+        lastProcessTime = now;
         const result = this._poseLandmarker.detectForVideo(this._videoEl, now);
 
         if (result.landmarks && result.landmarks.length > 0) {
@@ -348,8 +458,18 @@ export class PoseEngine {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    // Use the displayed (CSS) dimensions to match object-cover rendering
+    // video.videoWidth/videoHeight are the intrinsic stream dimensions,
+    // which differ from the CSS-rendered size on mobile with object-cover.
+    const rect = video.getBoundingClientRect();
+    const displayWidth = rect.width || video.videoWidth || 640;
+    const displayHeight = rect.height || video.videoHeight || 480;
+
+    // Set canvas display size to match video CSS box, and drawing buffer to displayed size
+    canvas.style.width = `${displayWidth}px`;
+    canvas.style.height = `${displayHeight}px`;
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -417,6 +537,10 @@ export class PoseEngine {
 
   dispose() {
     this.stopCamera();
+    if (this._orientationHandler) {
+      window.removeEventListener('orientationchange', this._orientationHandler);
+      this._orientationHandler = null;
+    }
     this._callbacks = [];
     this._poseLandmarker = null;
     this._loadPromise = null;

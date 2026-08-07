@@ -8,8 +8,8 @@
 //    https://github.com/wger-project/wger
 //    https://github.com/yuhonas/free-exercise-db
 //
-//  Generated: 2026-07-28
-//  Exercises: 1222
+//  Generated: 2026-07-31
+//  Exercises: 1110
 // ═══════════════════════════════════════════════════════════════
 
 import { Exercise } from '@/types';

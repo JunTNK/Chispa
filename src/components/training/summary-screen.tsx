@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
@@ -21,6 +22,7 @@ import { computeTotalXp, computeLevel } from '@/lib/awards/achievements';
 import { logError } from '@/lib/utils/logger';
 
 export function SummaryScreen() {
+  const t = useT();
   const setView = useStore((s) => s.setView);
   const plan = useStore((s) => s.plan);
   const setPlan = useStore((s) => s.setPlan);
@@ -117,12 +119,12 @@ export function SummaryScreen() {
     setView('home');
   };
 
-  const title = result.rate >= 0.8 ? '¡Hecho!' : result.rate >= 0.4 ? 'Buen movimiento' : 'Guardamos lo de hoy';
+  const title = result.rate >= 0.8 ? t('¡Hecho!') : result.rate >= 0.4 ? t('Buen movimiento') : t('Guardamos lo de hoy');
   const sub = result.rate >= 0.8
-    ? 'Sesión completa. El motor ya está aprendiendo de ti.'
+    ? t('Sesión completa. El motor ya está aprendiendo de ti.')
     : result.rate >= 0.4
-      ? 'Más de la mitad hecho. Eso cuenta, y mucho.'
-      : 'Empezar ya es ganar. El motor lo ha registrado.';
+      ? t('Más de la mitad hecho. Eso cuenta, y mucho.')
+      : t('Empezar ya es ganar. El motor lo ha registrado.');
 
   const xpEarned = Math.round((result.doneEx / Math.max(1, result.totalEx)) * 50 + result.minutes);
 
@@ -148,8 +150,8 @@ export function SummaryScreen() {
             >
               <Zap size={36} className="inline text-[#a78bfa] mb-1" />
             </motion.span>
-            <h3 className="text-xl font-black level-up-text mt-1">¡SUBISTE A NIVEL {newLevel}!</h3>
-            <p className="text-xs text-[#a78bfa] mt-1">Tu consistencia te fortalece. Sigue así.</p>
+            <h3 className="text-xl font-black level-up-text mt-1">{t('¡SUBISTE A NIVEL {nivel}!', { nivel: newLevel })}</h3>
+            <p className="text-xs text-[#a78bfa] mt-1">{t('Tu consistencia te fortalece. Sigue así.')}</p>
           </motion.div>
         )}
 
@@ -163,9 +165,9 @@ export function SummaryScreen() {
             {title}
             {result.rate >= 0.8 && <Sparkles size={32} className="inline text-emerald-400 ml-1 sparkle" />}
             {result.rate < 0.8 && result.rate >= 0.4 && <TrendingUp size={32} className="inline text-[#ffb454] ml-1" />}
-            {result.rate < 0.4 && <Sprout size={32} className="inline text-[#94a0b8] ml-1" />}
+            {result.rate < 0.4 && <Sprout size={32} className="inline text-[var(--muted)] ml-1" />}
           </motion.h2>
-          <p className="text-sm text-[#94a0b8] text-center mt-1">{sub}</p>
+          <p className="text-sm text-[var(--muted)] text-center mt-1">{sub}</p>
           {/* XP Earned */}
           <motion.div
             initial={{ opacity: 0, y: 8 }}
@@ -188,11 +190,11 @@ export function SummaryScreen() {
             >
               {result.minutes}
             </motion.span>
-            <span className="text-xs text-[#94a0b8]">minutos</span>
+            <span className="text-xs text-[var(--muted)]">{t('minutos')}</span>
           </Card>
           <Card className="text-center py-4 px-2">
             <span className="text-2xl font-black block">{result.doneEx}/{result.totalEx}</span>
-            <span className="text-xs text-[#94a0b8]">ejercicios</span>
+            <span className="text-xs text-[var(--muted)]">{t('ejercicios')}</span>
           </Card>
           <Card className="text-center py-4 px-2">
             <motion.span
@@ -203,13 +205,13 @@ export function SummaryScreen() {
             >
               {Math.round(result.rate * 100)}%
             </motion.span>
-            <span className="text-xs text-[#94a0b8]">completado</span>
+            <span className="text-xs text-[var(--muted)]">{t('completado')}</span>
           </Card>
         </div>
 
         {result.adapted && (
           <div className="bg-[rgba(96,165,250,0.1)] border border-[rgba(96,165,250,0.25)] text-[#bfdbfe] rounded-2xl px-4 py-3 text-sm text-center">
-            <Wrench size={16} className="inline text-blue-400 mr-1 mt-[-2px]" /> El motor redujo la intensidad durante la sesión. Adaptarse no es fallar.
+            <Wrench size={16} className="inline text-blue-400 mr-1 mt-[-2px]" /> {t('El motor redujo la intensidad durante la sesión. Adaptarse no es fallar.')}
           </div>
         )}
 
@@ -218,7 +220,7 @@ export function SummaryScreen() {
         <MotivationSelector value={motiv} onChange={setMotiv} />
 
         <Button variant="primary" size="large" className="w-full" onClick={handleSave}>
-          <Icons.Check /> Guardar entrenamiento
+          <Icons.Check /> {t('Guardar entrenamiento')}
         </Button>
       </div>
     </motion.div>

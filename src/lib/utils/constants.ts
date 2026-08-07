@@ -41,6 +41,14 @@ export const INTENSITY_LABELS: Record<string, string> = {
   push: 'Progreso',
 };
 
+/** 🎨 Colores consistentes para los chips de intensidad (reutilizado en JournalScreen + SessionScreen). */
+export const INTENSITY_COLORS: Record<string, string> = {
+  minimal: 'bg-[#a78bfa]/20 text-[#a78bfa]',
+  light: 'bg-[#fbbf24]/20 text-[#fbbf24]',
+  standard: 'bg-[#34d399]/20 text-[#34d399]',
+  push: 'bg-[#f87171]/20 text-[#f87171]',
+};
+
 export const FOCUS_LABELS: Record<string, string> = {
   full: 'Cuerpo completo',
   upper: 'Tren superior',
@@ -53,6 +61,22 @@ export const STYLE_LABELS: Record<string, string> = {
   energy: 'Energía',
   direct: 'Directo',
   calm: 'Calma',
+};
+
+export const SEX_LABELS: { es: Record<string, string>; en: Record<string, string> } = {
+  es: {
+    masculine: 'Hombre',
+    feminine: 'Mujer',
+  },
+  en: {
+    masculine: 'Male',
+    feminine: 'Female',
+  },
+};
+
+export const UNITS_LABELS: Record<string, string> = {
+  imperial: 'Imperial (lb · ft)',
+  metric: 'Métrico (kg · cm)',
 };
 
 export const TITLES: Record<string, string> = {
@@ -70,8 +94,9 @@ export const REC_WORDS: Record<string, string> = {
 };
 
 export const FOCUS_MUSCLES: Record<string, string[]> = {
-  full: ['piernas', 'pecho', 'espalda', 'core', 'gluteos', 'full_body'],
-  upper: ['pecho', 'espalda', 'hombros', 'brazos', 'full_body'],
-  lower: ['piernas', 'gluteos', 'full_body', 'piernas'],
-  core: ['core', 'cardio', 'full_body', 'core'],
+  // Alineado con el registro canónico de muscles.ts (los 8 músculos del catálogo).
+  full: ['piernas', 'gluteos', 'pecho', 'espalda', 'hombros', 'brazos', 'core', 'cardio'],
+  upper: ['pecho', 'espalda', 'hombros', 'brazos', 'core'],
+  lower: ['piernas', 'gluteos', 'core'],
+  core: ['core', 'cardio', 'piernas', 'gluteos'],
 };

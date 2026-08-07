@@ -179,9 +179,9 @@ test.describe('Performance — carga y métricas', () => {
   test('3. No hay fugas de memoria después del onboarding completo', async ({ page }) => {
     // Use shared helper to complete onboarding
     await page.goto('/', { waitUntil: 'networkidle', timeout: 30000 });
-    await navigateOnboarding(page, 9);
+    await navigateOnboarding(page, 10);
 
-    // navigateOnboarding with step=9 already clicks "Crear mi Digital Twin"
+    // navigateOnboarding with step=10 already clicks "Crear mi Digital Twin"
     // which finalizes onboarding. BootScreen auto-transitions to Home in ~4.5s.
     // Wait for boot sequence + home to render (greeting text)
     await page.waitForFunction(

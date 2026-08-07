@@ -1,4 +1,4 @@
-import { type Page, expect } from '@playwright/test';
+import { type Page } from '@playwright/test';
 
 /**
  * Navigate through onboarding steps making all required selections
@@ -12,9 +12,10 @@ import { type Page, expect } from '@playwright/test';
  *   4 = Neurotype    → Step 5 (Chronotype)
  *   5 = Chronotype   → Step 6 (Equipment)
  *   6 = Equipment+Days → Step 7 (Medication)
- *   7 = Medication   → Step 8 (Theme/Hiperfijación)
- *   8 = Theme        → Step 9 (Sensory)
- *   9 = Sensory      → finish (button: "Crear mi Digital Twin") → BootScreen → Home
+ *   7 = Medication   → Step 8 (Body — medidas, opcional)
+ *   8 = Body         → Step 9 (Theme/Hiperfijación)
+ *   9 = Theme        → Step 10 (Sensory)
+ *   10 = Sensory     → finish (button: "Crear mi Digital Twin") → BootScreen → Home
  */
 export async function navigateOnboarding(page: Page, targetStep: number) {
   // Step 0: Welcome → click CTA
@@ -68,13 +69,18 @@ export async function navigateOnboarding(page: Page, targetStep: number) {
   await page.waitForTimeout(300);
   if (targetStep <= 7) return;
 
-  // Step 8: Theme (hiperfijación)
-  await page.locator('text=One Piece').click();
+  // Step 8: Body — medidas corporales (opcional; imperial default). Saltar.
   await page.locator('button', { hasText: 'Continuar' }).click();
   await page.waitForTimeout(300);
   if (targetStep <= 8) return;
 
-  // Step 9: Sensory — just Continue; button says "Crear mi Digital Twin" on last step
+  // Step 9: Theme (hiperfijación)
+  await page.locator('text=One Piece').click();
+  await page.locator('button', { hasText: 'Continuar' }).click();
+  await page.waitForTimeout(300);
+  if (targetStep <= 9) return;
+
+  // Step 10: Sensory — just Continue; button says "Crear mi Digital Twin" on last step
   await page.locator('button', { hasText: 'Crear mi Digital Twin' }).click();
   // After this click, BootScreen appears and auto-transitions to Home (~4.5s)
 }
@@ -85,7 +91,7 @@ export async function navigateOnboarding(page: Page, targetStep: number) {
  */
 export async function completeOnboarding(page: Page, timeout = 20000) {
   await page.goto('/');
-  await navigateOnboarding(page, 9); // submits → BootScreen → Home
+  await navigateOnboarding(page, 10); // submits → BootScreen → Home
 
   // Wait for BootScreen to finish and Home to render.
   // The greeting contains "Buenos días", "Buenas tardes", "Buenas noches", or "Buenas" + name

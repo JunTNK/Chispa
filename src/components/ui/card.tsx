@@ -8,10 +8,10 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 const Card = React.forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', ...props }, ref) => {
     const variants: Record<string, string> = {
-      default: 'bg-[#151b2a] border border-white/[.07]',
+      default: 'bg-[var(--card)] border border-[var(--line)]',
       glass: 'glass',
-      glow: 'bg-[#151b2a] border border-[rgba(255,180,84,0.25)] shadow-[0_0_20px_rgba(255,180,84,0.08)]',
-      boss: 'bg-[#151b2a] border border-[rgba(248,113,113,0.25)] shadow-[0_0_20px_rgba(248,113,113,0.08)]',
+      glow: 'bg-[var(--card)] border border-[rgba(255,180,84,0.25)] shadow-[0_0_20px_rgba(255,180,84,0.08)]',
+      boss: 'bg-[var(--card)] border border-[rgba(248,113,113,0.25)] shadow-[0_0_20px_rgba(248,113,113,0.08)]',
     };
     return (
       <div

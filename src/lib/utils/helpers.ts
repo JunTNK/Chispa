@@ -14,8 +14,29 @@ export function ema(prev: number, current: number, weight: number) {
 }
 
 export function uid() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  // UUID v4 válido: la DB espera uuid en workouts.id/chat.id (migración 001).
+  // Fallback a base36 si crypto.randomUUID no está disponible (SSR/edge).
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
 }
+
+export function calculateBmi(weightKg: number, heightCm: number): number | null {
+  if (weightKg <= 0 || heightCm <= 0) return null;
+  const heightM = heightCm / 100;
+  const bmi = weightKg / (heightM * heightM);
+  return Math.round(bmi * 10) / 10;
+}
+
+export type BmiResult = {
+  value: number;
+  category: string;
+};
 
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
@@ -111,4 +132,32 @@ export function localSet(key: string, value: unknown) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
   } catch {}
+}
+
+/**
+ * Copia texto al portapapeles con fallback legacy.
+ * Devuelve `true` si la copia tuvo éxito (para feedback de UI).
+ */
+export async function copyText(text: string): Promise<boolean> {
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // Clipboard API bloqueada — probamos fallback legacy
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    ta.remove();
+    return ok;
+  } catch {
+    return false;
+  }
 }

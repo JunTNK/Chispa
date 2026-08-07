@@ -7,6 +7,19 @@ export interface User {
   updated_at: string;
 }
 
+/** Social graph (local-first MVP, zero-blame). */
+export interface FriendEntry {
+  id: string;            // 6-digit invite code
+  name: string;          // peer display name (local label)
+  joined_at: string;     // ISO
+  status: 'active' | 'pending';
+}
+
+export interface InviteCode {
+  code: string;          // 6 digits
+  expires_at: string;    // ISO, 48h
+}
+
 export interface Profile {
   user_id: string;
   name: string;
@@ -24,9 +37,65 @@ export interface Profile {
   /** ⏰ Medication intake time in HH:MM format */
   medication_time?: string;
 
+  /** ⚧️ Sexo registrado por el usuario (opcional) */
+  sex?: 'masculino' | 'femenino';
+  /** 📏 Estatura en centímetros — almacenada SIEMPRE en métrico (canónico) */
+  height_cm?: number;
+  /** ⚖️ Peso en kilogramos — almacenado SIEMPRE en métrico (canónico) */
+  weight_kg?: number;
+  /** 📐 Sistema de unidades preferido para mostrar medidas: imperial (default) o métrico */
+  units?: 'imperial' | 'metric';
+
   preferred_duration: number;
   created_at: string;
   updated_at: string;
+}
+
+export type SubscriptionTier = 'free' | 'pro' | 'lifetime';
+
+export interface UserSubscription {
+  tier: SubscriptionTier;
+  activatedAt?: string | null;
+  trialEndsAt?: string | null;
+  isInTrial: boolean;
+  trialDaysLeft: number;
+  stripeCustomerId?: string | null;
+}
+
+export const PRO_TIER_PRICE_USD = 4.99;
+export const LIFETIME_FOUNDERS_PRICE_USD = 49;
+export const TRIAL_DAYS = 7;
+
+export const PRO_FEATURES = [
+  'analytics_advanced',
+  'plan_custom',
+  'themes_all',
+  'sound_packs',
+  'export_data',
+  'priority_support',
+] as const;
+export type ProFeature = (typeof PRO_FEATURES)[number];
+
+export function hasFeature(
+  sub: UserSubscription | undefined,
+  feature: ProFeature,
+): boolean {
+  if (!sub || sub.tier === 'free') return false;
+  if (sub.tier === 'lifetime') return true;
+  // analytics_advanced and plan_custom require paid Pro (not trial) for compute cost justification
+  if (feature === 'analytics_advanced' || feature === 'plan_custom') {
+    return sub.tier === 'pro' && !sub.isInTrial;
+  }
+  // Other Pro features available during trial
+  if (sub.tier === 'pro' && sub.isInTrial && sub.trialDaysLeft > 0) return true;
+  return sub.tier === 'pro';
+}
+
+export function getTrialDaysLeft(activatedAt?: string | null): number {
+  if (!activatedAt) return 0;
+  const diff = Date.now() - new Date(activatedAt).getTime();
+  const days = Math.ceil(TRIAL_DAYS - diff / 86440000);
+  return Math.max(0, Math.min(days, TRIAL_DAYS));
 }
 
 export interface Exercise {
@@ -66,6 +135,10 @@ export interface Exercise {
   mechanic?: 'compound' | 'isolation' | null;
   /** Image paths from free-exercise-db */
   images?: string[];
+  /** Benefits / "Para qué sirve" — functional purpose, muscles trained */
+  benefits?: string;
+  /** Precautions / warnings — safety notes, common mistakes */
+  precautions?: string;
 }
 
 export interface Workout {
@@ -174,7 +247,7 @@ export interface ChatMessage {
 
 export interface Achievement {
   id: string;
-  category: 'workouts' | 'streak' | 'intensity' | 'focus' | 'completion' | 'level' | 'boss' | 'hidden';
+  category: 'workouts' | 'streak' | 'intensity' | 'focus' | 'completion' | 'level' | 'boss' | 'hidden' | 'movimiento';
   name: string;
   description: string;
   icon: string;
@@ -267,6 +340,17 @@ export interface WorkoutTemplate {
   last_used?: string;
   /** Balance de patrones y dopamina al guardar (spec CHISPA-UX-002) */
   balance?: TemplateBalance;
+}
+
+/**
+ * A dated body-weight entry (historial de peso).
+ * Almacenado SIEMPRE en métrico canónico (kg); la UI muestra según units.
+ */
+export interface WeightEntry {
+  /** YYYY-MM-DD (una entrada por día) */
+  date: string;
+  /** Peso en kg */
+  weight_kg: number;
 }
 
 /**

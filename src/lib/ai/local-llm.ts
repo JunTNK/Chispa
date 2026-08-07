@@ -192,34 +192,65 @@ export class LocalLLM {
 
   /* ─── Chat ─── */
 
+  /**
+   * Conversación con el modelo local.
+   *
+   * - Recibe el historial completo (mensajes previos + el nuevo) para dar
+   *   contexto conversacional real (seguimiento de preguntas, referencias).
+   * - `max_new_tokens` se escala con la longitud del prompt: respuestas largas
+   *   solo cuando el historial lo justifica, ahorrando cómputo en el resto.
+   * - Limpia la respuesta (quita marcadores ChatML residuales, espacios
+   *   repetidos) y lanza error si el modelo no genera nada — el CoachAgent
+   *   usa ese error para caer a su fallback rule-based.
+   */
   async chat(
     messages: { role: 'user' | 'assistant'; content: string }[],
     system: string,
-    opts?: { max_new_tokens?: number; temperature?: number }
+    opts?: { max_new_tokens?: number; temperature?: number; repetition_penalty?: number }
   ): Promise<string> {
     if (!this._pipeline) {
       throw new Error('Model not loaded. Call load() first.');
     }
 
     const prompt = buildPrompt(system, messages);
+    // Escalar tokens con el historial: más contexto → respuesta algo más larga.
+    const historyTokens = messages.slice(0, -1).reduce((n, m) => n + m.content.length, 0);
+    const maxNew = opts?.max_new_tokens ?? (historyTokens > 400 ? 512 : 256);
 
     const result = await this._pipeline(prompt, {
-      max_new_tokens: opts?.max_new_tokens ?? 256,
+      max_new_tokens: maxNew,
       temperature: opts?.temperature ?? 0.7,
       top_p: 0.9,
+      top_k: 40,
       do_sample: true,
-      repetition_penalty: 1.1,
+      repetition_penalty: opts?.repetition_penalty ?? 1.1,
     });
 
     const full = result[0]?.generated_text ?? '';
     // Extract only the assistant's response (after the final `|<im_start|>assistant\n`)
     const idx = full.lastIndexOf('<|im_start|>assistant\n');
+    let raw = '';
     if (idx !== -1) {
-      return full.slice(idx + '<|im_start|>assistant\n'.length).trim();
+      raw = full.slice(idx + '<|im_start|>assistant\n'.length);
+    } else {
+      // Fallback: return everything after the prompt
+      raw = full.slice(prompt.length);
     }
-    // Fallback: return everything after the prompt
-    const promptEnd = prompt.length;
-    return full.slice(promptEnd).trim();
+
+    const cleaned = this._clean(raw);
+    if (!cleaned) {
+      throw new Error('Model returned empty response');
+    }
+    return cleaned;
+  }
+
+  /** Limpieza determinista de la respuesta del modelo. */
+  private _clean(raw: string): string {
+    return raw
+      .replace(/<\|im_end\|>|<\|im_start\|>/g, '') // tokens ChatML residuales
+      .replace(/\s+/g, ' ')                           // espacios/nuevas líneas repetidas
+      .replace(/\s+([.,;:!?])/g, '$1')                // puntuación pegada
+      .trim();
   }
 
   /* ─── Reset ─── */

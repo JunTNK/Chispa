@@ -3,10 +3,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { signInWithEmail, signInWithGoogle } from '@/lib/auth/supabase-auth';
+import { supabaseSync, applyPulledPayload } from '@/lib/sync/supabase-sync';
+import { logError } from '@/lib/utils/logger';
 import { Button } from '@/components/ui/button';
 
 export function LoginScreen() {
+  const t = useT();
   const setView = useStore((s) => s.setView);
 
   const [email, setEmail] = React.useState('');
@@ -16,7 +20,7 @@ export function LoginScreen() {
 
   const handleEmailLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      setError('Completa todos los campos');
+      setError(t('Completa todos los campos'));
       return;
     }
     setLoading(true);
@@ -24,15 +28,20 @@ export function LoginScreen() {
     const { user, error: authErr } = await signInWithEmail(email, password);
     setLoading(false);
 
-    if (authErr) {
+     if (authErr) {
       if (authErr.message?.includes('Supabase')) {
-        setError('Supabase no está configurado. Usa "Crear mi perfil" para modo local.');
+        setError(t('Supabase no está configurado. Usa "Crear mi perfil" para modo local.'));
       } else {
         setError(authErr.message);
       }
       return;
     }
-    if (user) setView('home');
+    // Await data pull before navigating — prevents race condition where
+    // user sees stale local data instead of synced remote state
+    if (user) {
+      supabaseSync.pull().then(applyPulledPayload).catch(logError('auth:pull-on-login'));
+      setView('home');
+    }
   };
 
   const handleGoogleLogin = async () => {
@@ -40,7 +49,7 @@ export function LoginScreen() {
     const { error: authErr } = await signInWithGoogle();
     setLoading(false);
     if (authErr) {
-      setError('Supabase no está configurado. Usa "Crear mi perfil" para modo local.');
+      setError(t('Supabase no está configurado. Usa "Crear mi perfil" para modo local.'));
     }
   };
 
@@ -53,7 +62,7 @@ export function LoginScreen() {
       {/* Back button */}
       <button
         onClick={() => setView('welcome')}
-        aria-label="Volver"
+        aria-label={t('Volver')}
         className="self-start w-11 h-11 rounded-2xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center text-white mb-8"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 5l-7 7 7 7"/></svg>
@@ -65,16 +74,16 @@ export function LoginScreen() {
         transition={{ delay: 0.1 }}
         className="text-3xl font-black tracking-tight mb-2"
       >
-        Iniciar sesión
+        {t('Iniciar sesión')}
       </motion.h1>
 
       <motion.p
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.15 }}
-        className="text-sm text-[#94a0b8] mb-8"
+        className="text-sm text-[var(--muted)] mb-8"
       >
-        Accede a tu cuenta para sincronizar tu progreso.
+        {t('Accede a tu cuenta para sincronizar tu progreso.')}
       </motion.p>
 
       {error && (
@@ -89,8 +98,8 @@ export function LoginScreen() {
 
       <div className="space-y-4 flex-1">
         <div>
-          <label className="text-sm font-semibold text-[#94a0b8] mb-1.5 block" htmlFor="login-email">
-            Correo electrónico
+          <label className="text-sm font-semibold text-[var(--muted)] mb-1.5 block" htmlFor="login-email">
+            {t('Correo electrónico')}
           </label>
           <input
             id="login-email"
@@ -103,8 +112,8 @@ export function LoginScreen() {
         </div>
 
         <div>
-          <label className="text-sm font-semibold text-[#94a0b8] mb-1.5 block" htmlFor="login-password">
-            Contraseña
+          <label className="text-sm font-semibold text-[var(--muted)] mb-1.5 block" htmlFor="login-password">
+            {t('Contraseña')}
           </label>
           <input
             id="login-password"
@@ -124,12 +133,12 @@ export function LoginScreen() {
           disabled={loading}
           onClick={handleEmailLogin}
         >
-          {loading ? 'Entrando...' : 'Entrar'}
+          {loading ? t('Entrando...') : t('Entrar')}
         </Button>
 
         <div className="flex items-center gap-3 my-4">
           <span className="flex-1 h-px bg-white/[.07]" />
-          <span className="text-xs text-[#94a0b8] font-semibold">o continúa con</span>
+          <span className="text-xs text-[var(--muted)] font-semibold">{t('o continúa con')}</span>
           <span className="flex-1 h-px bg-white/[.07]" />
         </div>
 
@@ -146,19 +155,19 @@ export function LoginScreen() {
       </div>
 
       <div className="text-center mt-6">
-        <p className="text-sm text-[#94a0b8]">
-          ¿No tienes cuenta?{' '}
+        <p className="text-sm text-[var(--muted)]">
+          {t('¿No tienes cuenta?')}{' '}
           <button
             onClick={() => setView('register')}
             className="text-[#ffb454] font-semibold hover:underline"
           >
-            Registrarse
+            {t('Registrarse')}
           </button>
         </p>
-        <p className="text-xs text-[#94a0b8] mt-4">
-          O puedes{' '}
+        <p className="text-xs text-[var(--muted)] mt-4">
+          {t('O puedes')}{' '}
           <button onClick={() => setView('welcome')} className="text-[#ffb454] hover:underline">
-            continuar sin cuenta
+            {t('continuar sin cuenta')}
           </button>
         </p>
       </div>

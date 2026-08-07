@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { fetchLeaderboard, pushLeaderboard, type LeaderboardEntry } from '@/lib/sync/leaderboard';
 import { computeTotalXp, computeLevel } from '@/lib/awards/achievements';
 import { logError, fallback } from '@/lib/utils/logger';
@@ -56,6 +57,7 @@ function RankRow({
   entry: LeaderboardEntry;
   index: number;
 }) {
+  const t = useT();
   const isTop3 = index < 3;
 
   return (
@@ -74,7 +76,7 @@ function RankRow({
         {isTop3 ? (
           <span className="text-[#fbbf24]">{MEDAL_COMPONENTS[index]}</span>
         ) : (
-          <span className="text-xs font-bold text-[#5c6577] tabular-nums">
+          <span className="text-xs font-bold text-[var(--muted)] tabular-nums">
             #{entry.rank}
           </span>
         )}
@@ -91,7 +93,7 @@ function RankRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold truncate">
-            {entry.isCurrentUser ? 'Tú' : `Jugador #${entry.avatarId}`}
+            {entry.isCurrentUser ? t('Tú') : t('Jugador #{n}', { n: entry.avatarId })}
           </span>
           {entry.isCurrentUser && (
             <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-[rgba(255,180,84,0.15)] text-[#ffb454] border border-[rgba(255,180,84,0.3)]">
@@ -99,13 +101,13 @@ function RankRow({
             </span>
           )}
         </div>
-        <div className="text-[11px] text-[#5c6577]">
+        <div className="text-[11px] text-[var(--muted)]">
           Nv.{entry.level} · {entry.totalXp.toLocaleString()} XP
         </div>
       </div>
 
       {/* Level badge */}
-      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[.06] text-[#94a0b8] border border-white/[.08]">
+      <span className="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/[.06] text-[var(--muted)] border border-white/[.08]">
         Lv.{entry.level}
       </span>
     </motion.div>
@@ -125,6 +127,7 @@ function StatsBar({
   totalXp: number;
   level: number;
 }) {
+  const t = useT();
   const xpInLevel = totalXp - (level - 1) * 200;
   const xpForNext = 200;
   const xpPct = Math.min(100, Math.round((xpInLevel / xpForNext) * 100));
@@ -132,10 +135,10 @@ function StatsBar({
   return (
     <div className="rounded-2xl border border-white/[.07] bg-white/[.03] p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-[#94a0b8]">Tu posición</span>
+        <span className="text-sm text-[var(--muted)]">{t('Tu posición')}</span>
         <span className="text-xl font-black text-[#ffb454]">
           {userRank ? `#${userRank}` : '—'}
-          <span className="text-xs text-[#5c6577] font-semibold ml-1">
+          <span className="text-xs text-[var(--muted)] font-semibold ml-1">
             / {totalPlayers}
           </span>
         </span>
@@ -160,6 +163,7 @@ function StatsBar({
 /* ─── Main screen ─── */
 
 export function LeaderboardScreen() {
+  const t = useT();
   const workouts = useStore((s) => s.workouts);
   const leaderboard = useStore((s) => s.leaderboard);
   const setLeaderboard = useStore((s) => s.setLeaderboard);
@@ -192,14 +196,14 @@ export function LeaderboardScreen() {
       const result = await fetchLeaderboard(50);
       setLeaderboard(result.entries);
       if (result.entries.length === 0) {
-        setError('Aún no hay otros jugadores. ¡Sé el primero!');
+        setError(t('Aún no hay otros jugadores. ¡Sé el primero!'));
       }
     } catch {
-      setError('No pudimos cargar la tabla. Intenta de nuevo.');
+      setError(t('No pudimos cargar la tabla. Intenta de nuevo.'));
     } finally {
       setLoading(false);
     }
-  }, [totalXp, level, setLeaderboard]);
+  }, [totalXp, level, setLeaderboard, t]);
 
   // Adaptive refresh interval based on rank
   const refreshInterval = useMemo(() => {
@@ -217,17 +221,17 @@ export function LeaderboardScreen() {
 
   const secsStr = `${refreshLabel.secs}s`;
   const rankAnnouncement = useMemo(() => {
-    const sub = `refrescando cada ${secsStr}`;
+    const sub = t('refrescando cada {secs}', { secs: secsStr });
     const isTop3 = userRank && userRank <= 3;
     if (!leaderboard.length || !userRank) {
-      return { icon: <StarIcon size={18} />, label: 'Explorando', sub };
+      return { icon: <StarIcon size={18} />, label: t('Explorando'), sub };
     }
     if (userRank === 1) return { icon: <CrownIcon size={18} />, label: '#1', sub };
     if (isTop3) return { icon: MEDAL_COMPONENTS[userRank - 1], label: `#${userRank}`, sub };
-    if (userRank <= 10) return { icon: <FlameIcon size={18} />, label: 'Top 10', sub };
-    if (userRank <= 50) return { icon: <BoltIcon size={18} />, label: 'Top 50', sub };
-    return { icon: <StarIcon size={18} />, label: 'Subiendo', sub };
-  }, [userRank, leaderboard.length, secsStr]);
+    if (userRank <= 10) return { icon: <FlameIcon size={18} />, label: t('Top 10'), sub };
+    if (userRank <= 50) return { icon: <BoltIcon size={18} />, label: t('Top 50'), sub };
+    return { icon: <StarIcon size={18} />, label: t('Subiendo'), sub };
+  }, [userRank, leaderboard.length, secsStr, t]);
 
   useEffect(() => {
     loadLeaderboard();
@@ -266,10 +270,10 @@ export function LeaderboardScreen() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
-              Tabla de Campeones
+              {t('Tabla de Campeones')}
             </h1>
-            <p className="text-sm text-[#94a0b8] mt-0.5">
-              Ranking anónimo de XP — compite sin presión
+            <p className="text-sm text-[var(--muted)] mt-0.5">
+              {t('Ranking anónimo de XP — compite sin presión')}
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#fbbf24] to-[#f59e0b] flex items-center justify-center shadow-lg">
@@ -280,8 +284,8 @@ export function LeaderboardScreen() {
         {/* Info banner */}
         <div className="mt-3 flex items-start gap-2.5 rounded-xl border border-[rgba(167,139,250,0.25)] bg-[rgba(167,139,250,0.06)] p-3">
           <span className="shrink-0 mt-0.5"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#a78bfa]"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
-          <p className="text-xs text-[#94a0b8] leading-relaxed">
-            Nadie ve tu nombre ni tu correo. Solo aparecen XP y nivel con un identificador anónimo.
+          <p className="text-xs text-[var(--muted)] leading-relaxed">
+            {t('Nadie ve tu nombre ni tu correo. Solo aparecen XP y nivel con un identificador anónimo.')}
           </p>
         </div>
       </div>
@@ -293,19 +297,19 @@ export function LeaderboardScreen() {
             <div className="space-y-1.5">
               <p className="font-semibold text-white/90 text-xs">
                 {userRank && userRank <= 10
-                  ? '🏁 Estás cerca de la cima'
+                  ? t('🏁 Estás cerca de la cima')
                   : userRank && userRank <= 50
-                  ? '📈 Vas por buen camino'
-                  : '🌱 Toda gran historia empieza con un paso'}
+                  ? t('📈 Vas por buen camino')
+                  : t('🌱 Toda gran historia empieza con un paso')}
               </p>
               <p className="opacity-70 text-[11px]">
-                Completa entrenamientos para ganar XP.{' '}
+                {t('Completa entrenamientos para ganar XP.')}{' '}
                 {userRank && userRank <= 3
-                  ? 'Defiende tu podio: entre más constante seas, más subes.'
-                  : 'Entre más constante seas, más alto escalas en la tabla.'}
+                  ? t('Defiende tu podio: entre más constante seas, más subes.')
+                  : t('Entre más constante seas, más alto escalas en la tabla.')}
               </p>
               <div className="flex items-center gap-2 pt-1 text-[10px] opacity-60 border-t border-white/[.08] mt-1.5">
-                <span>🎯 XP por entrenamiento completo + minutos + constancia</span>
+                <span>{t('🎯 XP por entrenamiento completo + minutos + constancia')}</span>
               </div>
             </div>
           }
@@ -332,12 +336,12 @@ export function LeaderboardScreen() {
                     ? 'text-[#fbbf24]'
                     : userRank && userRank <= 50
                     ? 'text-[#4CC9F0]'
-                    : 'text-[#94a0b8]'
+                    : 'text-[var(--muted)]'
                 }`}
               >
                 {rankAnnouncement.label}
               </span>
-              <span className="text-xs text-[#5c6577] ml-2">
+              <span className="text-xs text-[var(--muted)] ml-2">
                 {rankAnnouncement.sub}
               </span>
             </div>
@@ -381,7 +385,7 @@ export function LeaderboardScreen() {
           >
             ↻
           </motion.span>
-          {syncing ? 'Sincronizando...' : 'Actualizar'}
+          {syncing ? t('Sincronizando...') : t('Actualizar')}
         </Button>
         {/* Live indicator */}
         {!loading && leaderboard.length > 0 && (
@@ -409,8 +413,8 @@ export function LeaderboardScreen() {
                   : 'bg-[#5c6577]'
               }`}
             />
-            <span className="text-[10px] font-semibold text-[#94a0b8] tabular-nums">
-              En vivo: cada {refreshLabel.secs}s
+            <span className="text-[10px] font-semibold text-[var(--muted)] tabular-nums">
+              {t('En vivo: cada {secs}s', { secs: refreshLabel.secs })}
             </span>
           </motion.div>
         )}
@@ -439,9 +443,9 @@ export function LeaderboardScreen() {
       {!loading && error && (
         <div className="rounded-2xl border border-[rgba(248,113,113,0.2)] bg-[rgba(248,113,113,0.06)] p-6 text-center space-y-3">
           <span className="text-2xl"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6a6 6 0 1 0 6 6"/><path d="M12 10a2 2 0 1 0 2 2"/></svg></span>
-          <p className="text-sm text-[#94a0b8]">{error}</p>
+          <p className="text-sm text-[var(--muted)]">{error}</p>
           <Button variant="ghost" size="sm" onClick={loadLeaderboard} noSound>
-            Reintentar
+            {t('Reintentar')}
           </Button>
         </div>
       )}
@@ -457,8 +461,8 @@ export function LeaderboardScreen() {
 
       {/* Footer */}
       {!loading && leaderboard.length > 0 && (
-        <p className="text-[10px] text-center text-[#5c6577] pt-2">
-          Compite sin presión. A tu ritmo.
+        <p className="text-[10px] text-center text-[var(--muted)] pt-2">
+          {t('Compite sin presión. A tu ritmo.')}
         </p>
       )}
     </motion.div>

@@ -50,6 +50,7 @@ const { mockFrom, trainedTwin } = vi.hoisted(() => {
     return {
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
+          maybeSingle: vi.fn(single),
           single: vi.fn(single),
           gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue(emptyList) })),
           order: vi.fn().mockResolvedValue(emptyList),
@@ -57,6 +58,7 @@ const { mockFrom, trainedTwin } = vi.hoisted(() => {
         order: vi.fn().mockResolvedValue(emptyList),
       })),
       eq: vi.fn(() => ({
+        maybeSingle: vi.fn(single),
         single: vi.fn(single),
         gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue(emptyList) })),
         order: vi.fn().mockResolvedValue(emptyList),
@@ -124,6 +126,7 @@ describe('supabaseSync — persistencia de la inteligencia entrenada', () => {
       return {
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
+            maybeSingle: vi.fn(single),
             single: vi.fn(single),
             gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: [], error: null }) })),
             order: vi.fn().mockResolvedValue({ data: [], error: null }),
@@ -131,6 +134,7 @@ describe('supabaseSync — persistencia de la inteligencia entrenada', () => {
           order: vi.fn().mockResolvedValue({ data: [], error: null }),
         })),
         eq: vi.fn(() => ({
+          maybeSingle: vi.fn(single),
           single: vi.fn(single),
           gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: [], error: null }) })),
           order: vi.fn().mockResolvedValue({ data: [], error: null }),

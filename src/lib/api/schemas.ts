@@ -110,6 +110,7 @@ export const workoutRequestSchema = z.object({
   client_last_focus: z.string().optional(),
   goal: z.enum(['fuerza', 'energia', 'grasa']).optional(),
   recent_exercise_ids: z.array(z.string()).optional(),
+  lang: z.enum(['es', 'en']).optional().default('es'),
 });
 
 /* ═══════════════════════════════════════════

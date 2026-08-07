@@ -4,6 +4,28 @@ const withBundleAnalyzer = process.env.ANALYZE === 'true'
   ? require('@next/bundle-analyzer')({ enabled: true, openAnalyzer: false })
   : (config: NextConfig) => config;
 
+// Sentry integration — wraps the config with error tracking.
+// Uses synchronous require to avoid top-level await issues.
+// The plugin is a no-op when no DSN is set (local dev).
+let sentryWrap = (config: NextConfig) => config;
+try {
+  const sentry = require('@sentry/nextjs');
+  if (sentry.withSentryConfig && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
+    sentryWrap = (config: NextConfig) =>
+      sentry.withSentryConfig(config, {
+        org: process.env.SENTRY_ORG,
+        project: process.env.SENTRY_PROJECT,
+        authToken: process.env.SENTRY_AUTH_TOKEN,
+        // Only upload source maps in CI/production builds
+        dryRun: process.env.NODE_ENV !== 'production',
+      });
+  }
+} catch {
+  // @sentry/nextjs may not be installed in some environments
+  console.warn('[sentry] @sentry/nextjs not available — error tracking disabled');
+  // Fall through — no Sentry wrapping
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   async rewrites() {
@@ -63,4 +85,4 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default withBundleAnalyzer(nextConfig);
+export default withBundleAnalyzer(sentryWrap(nextConfig));

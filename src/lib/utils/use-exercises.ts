@@ -1,17 +1,21 @@
 /**
- * Lazy-loaded exercise catalog.
+ * Lazy-loaded exercise catalog + custom exercises from IndexedDB.
  *
  * Uses a module-level cache with dynamic import so webpack extracts
  * the 1.62 MB exercises.json into a single shared chunk instead of
  * duplicating it into every screen's lazy chunk.
+ *
+ * Custom exercises are stored in IndexedDB and merged with the
+ * catalog at load time. Custom exercises appear first in the list.
  *
  * For server-side usage (training-agent), import EXERCISE_CATALOG
  * directly from './exercises' — the static import is fine there.
  */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Exercise } from '@/types';
+import { getAllCustomExercises, type CustomExercise } from '@/lib/db/custom-exercises-db';
 
 // Module-level cache: shared across all components on the page
 let _catalog: Exercise[] | null = null;
@@ -29,21 +33,46 @@ export async function getExercises(): Promise<Exercise[]> {
   return _loadPromise;
 }
 
-/** React hook: returns { exercises, isLoading } */
-export function useExercises(): { exercises: Exercise[]; isLoading: boolean } {
+/** React hook: returns { exercises, isLoading, reloadCustom } */
+export function useExercises(): {
+  exercises: Exercise[];
+  isLoading: boolean;
+  /** Reload custom exercises from IndexedDB (call after create/edit/delete) */
+  reloadCustom: () => void;
+} {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [customSeed, setCustomSeed] = useState(0);
 
-  useEffect(() => {
+  const loadAll = useCallback(async () => {
     let cancelled = false;
-    getExercises().then((data) => {
+    try {
+      const [catalog, custom] = await Promise.all([
+        getExercises(),
+        getAllCustomExercises().catch(() => [] as CustomExercise[]),
+      ]);
       if (!cancelled) {
-        setExercises(data);
+        // Custom exercises first (user-created, higher relevance)
+        setExercises([...custom, ...catalog]);
         setIsLoading(false);
       }
-    });
+    } catch {
+      if (!cancelled) {
+        setExercises([]);
+        setIsLoading(false);
+      }
+    }
     return () => { cancelled = true; };
   }, []);
 
-  return { exercises, isLoading };
+  useEffect(() => {
+    const cleanup = loadAll();
+    return () => { cleanup.then((fn) => fn?.()); };
+  }, [customSeed, loadAll]);
+
+  const reloadCustom = useCallback(() => {
+    setCustomSeed((s) => s + 1);
+  }, []);
+
+  return { exercises, isLoading, reloadCustom };
 }

@@ -17,9 +17,14 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   Info,
+  Plus,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { FitnessIcon } from '@/components/ui/fitness-icon';
 import { MUSCLES, MUSCLE_KEYS, muscleFitnessIcon, muscleLabel } from '@/lib/utils/muscles';
+import { CustomExerciseForm } from './custom-exercise-form';
+import { deleteCustomExercise, type CustomExercise } from '@/lib/db/custom-exercises-db';
 
 // ─── Constants ───
 
@@ -126,7 +131,11 @@ export function ExerciseCatalogScreen() {
     setShowSortMenu(false);
   };
 
-  const { exercises: catalog, isLoading } = useExercises();
+  const { exercises: catalog, isLoading, reloadCustom } = useExercises();
+
+  // Custom exercise form state
+  const [showForm, setShowForm] = React.useState(false);
+  const [editingExercise, setEditingExercise] = React.useState<CustomExercise | undefined>(undefined);
 
   const catalogEquipment = React.useMemo(() => {
     const eqSet = new Set(catalog.map((e) => e.equipment.toLowerCase()));
@@ -238,10 +247,17 @@ export function ExerciseCatalogScreen() {
             <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider">{filtered.length} ejercicios</p>
           </div>
         </div>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={() => setView('home')} aria-label={t('Cerrar catálogo')}
-          className="w-8 h-8 rounded-xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center hover:bg-white/[.08]">
-          <X size={16} />
-        </motion.button>
+        <div className="flex gap-1.5">
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => { setEditingExercise(undefined); setShowForm(true); }}
+            aria-label={t('Crear ejercicio')}
+            className="w-8 h-8 rounded-xl border border-[rgba(0,212,170,0.3)] bg-[rgba(0,212,170,0.08)] flex items-center justify-center hover:bg-[rgba(0,212,170,0.15)] transition-colors">
+            <Plus size={16} className="text-[#00D4AA]" />
+          </motion.button>
+          <motion.button whileTap={{ scale: 0.9 }} onClick={() => setView('home')} aria-label={t('Cerrar catálogo')}
+            className="w-8 h-8 rounded-xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center hover:bg-white/[.08]">
+            <X size={16} />
+          </motion.button>
+        </div>
       </div>
 
       {/* Search */}
@@ -378,21 +394,27 @@ export function ExerciseCatalogScreen() {
                     <button onClick={() => { closeMenus(); setExpandedId(isExpanded ? null : ex.id); }} className="w-full text-left">
                       <Card className={`p-3 transition-all duration-200 ${isExpanded ? 'border-[#ffb454] bg-[rgba(255,180,84,0.04)]' : 'hover:border-white/[.15] hover:bg-white/[.04]'}`}>
                         <div className="flex items-center gap-3">
-                           <div className="w-10 h-10 rounded-xl bg-[#151b2a] border border-white/[.07] flex items-center justify-center text-lg shrink-0 overflow-hidden">
-                             {getExerciseMediaUrls(ex) ? (
-                               <ExerciseMedia
-                                 {...getExerciseMediaUrls(ex)!}
-                                 alt={ex.name}
-                                 className="w-10 h-10 rounded-xl object-cover"
-                               />
-                             ) : (
-                               <ExerciseImage {...getExerciseVisual(ex)} size={20} />
-                             )}
-                           </div>
+                            <div className="w-10 h-10 rounded-xl bg-[#151b2a] border border-white/[.07] flex items-center justify-center text-lg shrink-0 overflow-hidden">
+                              {(() => {
+                                const mediaUrls = getExerciseMediaUrls(ex);
+                                return mediaUrls ? (
+                                  <ExerciseMedia
+                                    {...mediaUrls}
+                                    alt={ex.name}
+                                    className="w-10 h-10 rounded-xl object-cover"
+                                  />
+                                 ) : (
+                                  <ExerciseImage {...getExerciseVisual(ex)} size={20} />
+                                );
+                              })()}
+                            </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm font-bold truncate">{ex.name}</span>
                               {isSpanish && <span className="text-[9px] shrink-0">🇪🇸</span>}
+                              {'isCustom' in ex && (ex as CustomExercise).isCustom && (
+                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-[rgba(0,212,170,0.12)] text-[#00D4AA] border border-[rgba(0,212,170,0.25)] shrink-0">MÍO</span>
+                              )}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className="text-[10px] text-[var(--muted)] flex items-center gap-1">{getMuscleIcon(ex.muscle, 11)} {t(muscleLabel(ex.muscle))}</span>
@@ -458,6 +480,29 @@ export function ExerciseCatalogScreen() {
                                     </Badge>
                                   )}
                                 </div>
+                                {/* Custom exercise actions */}
+                                {'isCustom' in ex && (ex as CustomExercise).isCustom && (
+                                  <div className="flex gap-2 mt-2 pt-2 border-t border-white/[.07]">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setEditingExercise(ex as CustomExercise); setShowForm(true); }}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/[.05] border border-white/[.08] text-[var(--muted)] hover:text-[#ffb454] hover:border-[#ffb454]/30 transition-colors"
+                                    >
+                                      <Pencil size={10} /> {t('Editar')}
+                                    </button>
+                                    <button
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (confirm(t('¿Eliminar este ejercicio?'))) {
+                                          await deleteCustomExercise(ex.id);
+                                          reloadCustom();
+                                        }
+                                      }}
+                                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold bg-white/[.05] border border-white/[.08] text-[var(--muted)] hover:text-[#f87171] hover:border-[#f87171]/30 transition-colors"
+                                    >
+                                      <Trash2 size={10} /> {t('Eliminar')}
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             </motion.div>
                           )}
@@ -488,6 +533,21 @@ export function ExerciseCatalogScreen() {
       </div>
 
       <div className="h-2" />
+
+      {/* Custom exercise form */}
+      <AnimatePresence>
+        {showForm && (
+          <CustomExerciseForm
+            exercise={editingExercise}
+            onClose={() => { setShowForm(false); setEditingExercise(undefined); }}
+            onSaved={() => {
+              setShowForm(false);
+              setEditingExercise(undefined);
+              reloadCustom();
+            }}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

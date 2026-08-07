@@ -1,11 +1,13 @@
-# 🏋️ Guía de componentes: Iconos fitness v3.2.0
+# 🏋️ Guía de componentes: Iconos fitness v3.3.0
 
-Guía interna para desarrolladores. Describe dos sistemas de iconos SVG fitness:
+Guía interna para desarrolladores. Describe el sistema de iconos SVG fitness:
 
 1. **4 iconos de grupo muscular** (`muscle-icons.tsx`) — para el selector de grupo muscular
-2. **108+ iconos inline** en el grid "Toque para agregar" (`create-workout-screen.tsx`) — con resolución por ID exacto + fallback por músculo
+2. **8 iconos de patrón** (`pattern-visuals.ts`) — categoría alineada con la taxonomía de patrones del selector
+3. **Dominio muscular unificado** (`muscles.ts`) — una sola fuente de verdad (8 músculos) de la que derivan colores, marcas e iconos de todas las pantallas
+4. **Resolución visual del grid** — foto → icono por músculo → marca (nunca `null`)
 
-**Versión:** v3.2.0 — iconos HugeIcons + 4 iconos inline propios + mapeo expandido.
+**Versión:** v3.3.0 — iconos HugeIcons + patrones + dominio muscular unificado.
 
 ---
 
@@ -19,7 +21,7 @@ Guía interna para desarrolladores. Describe dos sistemas de iconos SVG fitness:
 6. [Accesibilidad](#6-accesibilidad)
 7. [Pruebas](#7-pruebas)
 8. [Arquitectura del SVG](#8-arquitectura-del-svg)
-9. [EXERCISE_ICON — Mapeo de 108 ejercicios](#9-exercise_icon--mapeo-de-108-ejercicios)
+9. [Resolución visual del grid — foto → músculo → marca](#9-resolución-visual-del-grid--foto--músculo--marca)
 10. [Fallback por músculo](#10-fallback-por-músculo)
 11. [Preguntas frecuentes](#11-preguntas-frecuentes)
 12. [FitnessIcon — Componente genérico de 24 iconos](#12-fitnessicon--componente-genérico-de-24-iconos)
@@ -44,14 +46,14 @@ Fuente: [HugeIcons](https://hugeicons.com) — iconos gratuitos stroke-rounded.
 | `LowerBodyIcon` | Tren inferior | `0 0 24 24` | 2px | 3 `<path>` | [body-part-leg](https://hugeicons.com/icon/body-part-leg) |
 | `CoreCardioIcon` | Core y cardio | `0 0 24 24` | 2px | 1 `<path>` | heart (stroke-rounded) |
 
-### Novedades v3.2
+### Novedades v3.3
 
 | Feature | Descripción |
 |---|---|
-| **4 iconos inline propios** | PushIcon, PullIcon, PressIcon, BridgeIcon para cubrir pecho, espalda, hombros y glúteos |
-| **108 ejercicios mapeados** | EXERCISE_ICON mapea 108 IDs exactos del catálogo a 16 variantes de SVG |
-| **Fallback por músculo** | Si un ejercicio no tiene icono exacto, se usa un icono genérico según su tipo muscular |
-| **IDs verificados contra el catálogo** | Todos los keys en EXERCISE_ICON existen realmente en `exercises.json` |
+| **Dominio muscular unificado** | `muscles.ts` — una sola fuente de verdad (8 músculos) de la que derivan `MUSCLE_ICONS`, `MUSCLE_COLOR`, `MUSCLE_FILTERS`, `MUSCLE_ICON`, `MUSCLE_GROUPS`, `MUSCLE_LABEL_EN` |
+| **Iconos de patrón** | `pattern-visuals.ts` — categoría alineada con la taxonomía real del selector (push/pull/squat/hinge/core/cardio/mobility/arms), no con músculos |
+| **Resolución photo-first** | El grid resuelve foto → `MUSCLES[muscle].fitnessIcon` → marca (mark + color); se elimina el mapeo EXERCICE_ICON que no existía en código |
+| **Marca por músculo** | Abreviatura de 3 letras (PIE, GLU, PEC…) + color del registro, en vez de la inicial sola |
 | **Grid responsive** | Iconos `w-7 h-7 sm:w-8 sm:h-8` (28px → 32px) |
 | **SvgIcon helper** | Función compartida que aplica viewBox 24×24, strokeWidth 2 y stroke-rounded |
 
@@ -369,9 +371,16 @@ permite renderizarlos en las mismas condiciones sin ajustes por icono.
 
 ---
 
-## 9. EXERCISE_ICON — Mapeo de 108 ejercicios
+## 9. Resolución visual del grid — foto → músculo → marca
 
-**Archivo fuente:** `src/components/training/create-workout-screen.tsx`
+**Archivo fuente:** `src/lib/utils/exercise-visuals.tsx` · `src/lib/utils/muscles.ts` · `src/lib/utils/pattern-visuals.ts`
+
+> **Actualización v3.3:** el grid real ya NO usa un mapeo `EXERCISE_ICON` de 108
+> ejercicios con fallback por músculo (ese sistema no existe en código). El
+> visual de cada ejercicio se resuelve en 3 niveles, sin huecos:
+> **foto** del dataset → **icono por músculo** (`MUSCLES[muscle].fitnessIcon`) →
+> **marca** (abreviatura + color del músculo). Los iconos de categoría están
+> alineados con la taxonomía de **patrones** (`PATTERN_ICON`), no con músculos.
 
 ### 9.1 SvgIcon helper
 
@@ -387,21 +396,31 @@ const SvgIcon = (paths: React.ReactNode) => (
 );
 ```
 
-### 9.2 Los 4 iconos de categoría
+### 9.2 Los 8 iconos de patrón (categoría)
 
-Diseñados inline para cubrir grupos musculares sin icono de HugeIcons específico:
+Iconos de categoría alineados con la taxonomía de **patrones de movimiento**
+del selector (`push / pull / squat / hinge / core / cardio / mobility / arms`),
+no con músculos. Viven en `src/lib/utils/pattern-visuals.ts` (`PATTERN_ICON` +
+`PATTERN_COLOR`) y se usan en chips de filtro, badges de patrón y el mapa de
+balance del selector.
 
-| Icono | SVG | Categoría | Descripción |
+| Patrón | Icono (lucide) | Color | Etiqueta |
 |---|---|---|---|
-| **PushIcon** | `circle cx=12 cy=4 r=2` + `M6 8c2 2 4 3 6 1/18 8c-2 2-4 3-6 1/12 6v6` | Pecho | Brazos extendiendo desde el pecho (press/pec fly) |
-| **PullIcon** | `circle cx=12 cy=3 r=2` + `M7 5c1 3 2 5 5 6/17 5c-1 3-2 5-5 6/12 5v6` | Espalda | Brazos tirando hacia abajo (row/lat pulldown) |
-| **PressIcon** | `circle cx=12 cy=5 r=2` + `M9 9c1-2 1-4 3-7/15 9c-1-2-1-4-3-7/12 7v5` | Hombros | Brazos elevándose sobre la cabeza (overhead press) |
-| **BridgeIcon** | `circle cx=12 cy=3 r=2` + `M12 5v3/M7 13c1 3 3 4 5 4...` | Glúteos | Figura en puente (hip thrust/glute bridge) |
+| `push` | ArrowUpRight | `#4CC9F0` | Empuje |
+| `pull` | ArrowDownLeft | `#a78bfa` | Tirón |
+| `squat` | ArrowDown | `#34d399` | Sentadilla |
+| `hinge` | MoveHorizontal | `#fbbf24` | Bisagra |
+| `core` | Circle | `#ffb454` | Core |
+| `cardio` | Activity | `#f87171` | Cardio |
+| `mobility` | PersonStanding | `#60a5fa` | Movilidad |
+| `arms` | Dumbbell | `#f472b6` | Brazo |
 
 ### 9.3 Los 12 iconos de ejercicio específico
 
-Diseños inline únicos que cubren los patrones de movimiento más comunes.
-Cada SVG se reutiliza en múltiples IDs del catálogo que comparten la misma mecánica.
+Diseños inline únicos que cubren los patrones de movimiento más comunes. Son
+referencia de diseño (playground `docs/page.tsx`); en producción el grid usa
+la resolución photo-first de §9.5 (foto → músculo → marca), y los iconos de
+patrón de §9.2 para chips y badges.
 
 | SVG ID | Descripción | Tags | Ejercicios de ejemplo |
 |---|---|---|---|
@@ -418,65 +437,62 @@ Cada SVG se reutiliza en múltiples IDs del catálogo que comparten la misma mec
 | **Bicep Curl** | Brazo curvo + mancuerna | `bíceps · curl` | `Alternate_Incline_Dumbbell_Curl`, `Barbell_Curl`, `Concentration_Curls` |
 | **Squat** | Círculo + piernas flexionadas | `piernas · sentadilla` | `Barbell_Full_Squat`, `Goblet_Squat` |
 
-### 9.4 Cobertura del catálogo
+### 9.4 Cobertura honesta
 
-Datos reales verificados contra el catálogo de 1,222 ejercicios (`exercises.json`):
+La métrica que importa no es "100% de ejercicios con algún icono" (que el
+fallback plano por músculo inflaba), sino la **cobertura distinguible**:
 
 | Métrica | Valor |
 |---|---|
 | Total ejercicios en catálogo | **1,222** |
-| Mapeo exacto en `EXERCISE_ICON` | **108 (8.8%)** |
-| Usan fallback por músculo | **1,114 (91.2%)** |
-| Cobertura total | **100%** |
+| Músculos canónicos en `MUSCLES` | **8** (una sola fuente de verdad) |
+| Resolución | foto → `MUSCLES[muscle].fitnessIcon` → marca (mark + color) |
+| Huecos | **0** (la marca es el respaldo final, nunca `null`) |
 
 ### 9.5 Sistema de resolución
 
 ```tsx
-function ExerciseIcon({ id, muscle }: { id: string; muscle: string }) {
-  const icon = EXERCISE_ICON[id] ?? MUSCLE_FALLBACK[muscle] ?? null;
-  return icon ? (
-    <span className="text-[#94a0b8]/70 group-hover:text-[#ffb454]
-                    transition-colors duration-200">
-      {icon}
-    </span>
-  ) : null;
-}
+// exercise-selector.tsx → ExercisePhoto
+if (hay foto)   → <img src={urls[angle]} />                 // foto del dataset
+else            → <MuscleMark />                             // marca: mark + color
+
+// quick-log / catálogo → ExerciseImage
+src ? <img /> : <FallbackIcon />   // fallback = MUSCLES[muscle].fitnessIcon
 ```
 
 El orden de resolución es:
-1. Buscar por ID exacto en `EXERCISE_ICON`
-2. Si no encuentra, usar el fallback por tipo de músculo
-3. Si no hay fallback, no renderizar icono (solo texto)
+1. Foto del dataset (free-exercise-db)
+2. Icono por músculo vía `MUSCLES` (o la marca tipográfica en el grid del selector)
+3. Marca (abreviatura + color del músculo) — nunca un hueco ni `null`
 
-## 10. Fallback por músculo
+## 10. Dominio muscular — una sola fuente de verdad
 
-Para los ejercicios que no tienen un ID mapeado en `EXERCISE_ICON`, se usa
-`MUSCLE_FALLBACK` que asigna un icono genérico según el tipo muscular:
+El dominio muscular vive en `src/lib/utils/muscles.ts` (`MUSCLES`). Antes de
+v3.3 el mismo concepto estaba duplicado en 5 sitios (exercise-visuals,
+exercise-selector, create-workout, exercise-catalog, quick-log) y podía
+divergir (¿`lower` o `piernas`? ¿dónde vive `gluteos`?). Ahora todos derivan
+de un único registro canónico:
 
 ```text
-EXERCISE_ICON[id]  →  MUSCLE_FALLBACK[muscle]  →  null
-   (exacto)            (por tipo muscular)        (sin icono)
+MUSCLES[muscle]  →  label · labelEn · color · mark · fitnessIcon
 ```
 
-| Tipo muscular | Icono fallback |
-|---|---|
-| `core` | Sit-Up |
-| `piernas` | Hamstring Stretch |
-| `brazos` | Bicep Curl |
-| `gluteos` | BridgeIcon |
-| `pecho` | PushIcon |
-| `espalda` | PullIcon |
-| `hombros` | PressIcon |
-| `cardio` | Air Bike |
+| Músculo canónico | label | mark | color | fitnessIcon |
+|---|---|---|---|---|
+| `piernas` | Piernas | PIE | `#34d399` | `lower-body` |
+| `gluteos` | Glúteos | GLU | `#34d399` | `lower-body` |
+| `pecho` | Pecho | PEC | `#4CC9F0` | `bench-press` |
+| `espalda` | Espalda | ESP | `#a78bfa` | `upper-body` |
+| `hombros` | Hombros | HOM | `#ffb454` | `upper-body` |
+| `brazos` | Brazos | BRA | `#f472b6` | `biceps` |
+| `core` | Core | COR | `#fbbf24` | `core` |
+| `cardio` | Cardio | CAR | `#f87171` | `running` |
 
-Esto asegura que **todo** ejercicio en el grid "Toque para agregar" tenga
-un icono visible, incluso si su ID no está en el mapeo exacto. La cobertura
-real del catálogo es:
-
-- **1,222** ejercicios totales
-- **108** con mapeo exacto (8.8%)
-- **1,114** usan fallback (91.2%)
-- **100%** cobertura total
+`MUSCLE_ALIASES` normaliza los nombres ES/EN del catálogo (incluidos los
+`primaryMuscles` de free-exercise-db) a la key canónica. `FOCUS_MUSCLES`
+mantiene la relación foco → músculos. Los `MUSCLE_*` de cada pantalla
+(`MUSCLE_ICONS`, `MUSCLE_COLOR`, `MUSCLE_FILTERS`, `MUSCLE_ICON`,
+`MUSCLE_GROUPS`, `MUSCLE_LABEL_EN`) se derivan de este registro.
 
 ## 11. Preguntas frecuentes
 
@@ -733,5 +749,5 @@ export function FitnessIcon({ name, size = 24, color = 'currentColor', className
 ---
 
 > **Última actualización:** Julio 2026
-> **Versión:** v3.2.0
+> **Versión:** v3.3.0
 > **Mantenedor:** Equipo frontend Chispa

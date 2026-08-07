@@ -153,7 +153,9 @@ describe('SessionScreen', () => {
     // Overlay should show three options
     expect(screen.getByText('Bien, sigo')).toBeInTheDocument();
     expect(screen.getByText(/cansado/i)).toBeInTheDocument();
-    expect(screen.getByText(/terminar aquí/i)).toBeInTheDocument();
+    // Overlay should show three options (scoped to full overlay text to avoid
+    // collision with session-screen's skip button "Terminar aquí")
+    expect(screen.getByText(/terminar aquí · guardamos lo hecho/i)).toBeInTheDocument();
   });
 
   it('shows time-based UI when exercise reps > 50', () => {
@@ -216,7 +218,7 @@ describe('SessionScreen', () => {
     fireEvent.click(screen.getByText('Pausa'));
 
     // Finish via pause
-    fireEvent.click(screen.getByText(/terminar aquí/i));
+    fireEvent.click(screen.getByText(/terminar aquí · guardamos lo hecho/i));
 
     // Should navigate to summary
     const state = useStore.getState();

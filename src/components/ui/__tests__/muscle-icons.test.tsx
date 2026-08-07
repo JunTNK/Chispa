@@ -4,7 +4,7 @@
  * Tests rendering, accessibility (dual mode), sizing, forwardRef,
  * animated draw-on, and viewBox correctness.
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
 import React from 'react';
 import {

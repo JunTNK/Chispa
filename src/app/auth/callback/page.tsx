@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/db/supabase';
+import { useT } from '@/lib/i18n/use-t';
 
 export default function AuthCallbackPage() {
+  const t = useT();
   const router = useRouter();
   const [status, setStatus] = useState<'processing' | 'error' | 'success'>('processing');
   const [error, setError] = useState<string>('');
@@ -48,10 +50,10 @@ export default function AuthCallbackPage() {
 
           if (errorCode === 'otp_expired') {
             setError(
-              'El enlace de verificación ha expirado. Regístrate de nuevo o inicia sesión si ya confirmaste tu correo electrónico previamente.'
+              t('El enlace de verificación ha expirado. Regístrate de nuevo o inicia sesión si ya confirmaste tu correo electrónico previamente.')
             );
           } else {
-            setError(errorDesc || errorCode || 'Error de autenticación.');
+            setError(errorDesc || errorCode || t('Error de autenticación.'));
           }
           setStatus('error');
           return;
@@ -84,7 +86,7 @@ export default function AuthCallbackPage() {
             setStatus('success');
             setTimeout(() => router.push('/'), 1500);
           } else {
-            setError('No se pudo establecer la sesión. Intenta iniciar sesión.');
+            setError(t('No se pudo establecer la sesión. Intenta iniciar sesión.'));
             setStatus('error');
           }
         } else {
@@ -96,19 +98,19 @@ export default function AuthCallbackPage() {
             setTimeout(() => router.push('/'), 800);
           } else {
             setError(
-              'No se encontró una sesión activa. Inicia sesión para continuar.'
+              t('No se encontró una sesión activa. Inicia sesión para continuar.')
             );
             setStatus('error');
           }
         }
       } catch (e) {
-        setError((e as Error).message || 'Error inesperado.');
+        setError((e as Error).message || t('Error inesperado.'));
         setStatus('error');
       }
     };
 
     handleCallback();
-  }, [router]);
+  }, [router, t]);
 
   return (
     <div className="min-h-dvh flex items-center justify-center bg-[#0a0d14] p-6">
@@ -146,9 +148,9 @@ export default function AuthCallbackPage() {
               />
             </div>
             <h1 className="text-xl font-black tracking-tight mb-2">
-              Verificando tu acceso
+              {t('Verificando tu acceso')}
             </h1>
-            <p className="text-sm text-[#94a0b8]">Un momento...</p>
+            <p className="text-sm text-[var(--muted)]">{t('Un momento...')}</p>
           </>
         )}
 
@@ -156,10 +158,10 @@ export default function AuthCallbackPage() {
           <>
             <div className="text-4xl mb-3">✅</div>
             <h1 className="text-xl font-black tracking-tight mb-2">
-              ¡Sesión iniciada!
+              {t('¡Sesión iniciada!')}
             </h1>
-            <p className="text-sm text-[#94a0b8]">
-              Redirigiendo a la app...
+            <p className="text-sm text-[var(--muted)]">
+              {t('Redirigiendo a la app...')}
             </p>
           </>
         )}
@@ -180,9 +182,9 @@ export default function AuthCallbackPage() {
               </svg>
             </div>
             <h1 className="text-xl font-black tracking-tight mb-2">
-              Error de autenticación
+              {t('Error de autenticación')}
             </h1>
-            <p className="text-sm text-[#94a0b8] mb-6 leading-relaxed">
+            <p className="text-sm text-[var(--muted)] mb-6 leading-relaxed">
               {error}
             </p>
             <div className="space-y-2.5">
@@ -190,13 +192,13 @@ export default function AuthCallbackPage() {
                 href="/register"
                 className="block w-full py-3 px-5 rounded-2xl font-semibold text-center text-sm bg-gradient-to-r from-[#f9c074] to-[#ef7a3c] text-[#2a1405]"
               >
-                Intentar de nuevo
+                {t('Intentar de nuevo')}
               </Link>
               <Link
                 href="/login"
                 className="block w-full py-3 px-5 rounded-2xl font-semibold text-center text-sm border border-white/[.12] text-[#f4efe8]"
               >
-                Ir a iniciar sesión
+                {t('Ir a iniciar sesión')}
               </Link>
             </div>
           </>

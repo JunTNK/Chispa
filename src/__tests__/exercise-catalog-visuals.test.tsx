@@ -37,7 +37,7 @@ beforeEach(() => {
     onboarded: true,
     profile: mockProfile,
     twin: {} as any,
-    prefs: { reduceMotion: false, highContrast: false, fontLarge: false },
+    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false },
     view: 'catalog',
     chat: [],
     checkins: {},
@@ -90,10 +90,10 @@ describe('ExerciseCatalogScreen — visuals', () => {
     // Should show "1 ejercicios" in header
     expect(screen.getByText('1 ejercicios')).toBeInTheDocument();
     // Should render an <img> tag for the exercise image
-    const img = document.querySelector('img[src*="Barbell_Squat/0.jpg"]');
+    const img = document.querySelector('img[src*="Barbell_Squat/animation.gif"]');
     expect(img).toBeInTheDocument();
     expect(img).toHaveAttribute('loading', 'lazy');
-    expect(img).toHaveAttribute('alt', '');
+    expect(img).toHaveAttribute('alt', expect.stringContaining('Sentadilla'));
   });
 
   it('shows fallback icon when exercise has no images', async () => {
@@ -226,7 +226,7 @@ describe('ExerciseCatalogScreen — visuals', () => {
     // One exercise should have an img, the other should not
     const imgs = document.querySelectorAll('img');
     expect(imgs.length).toBe(1);
-    expect(imgs[0]).toHaveAttribute('src', expect.stringContaining('Squat/0.jpg'));
+    expect(imgs[0]).toHaveAttribute('src', expect.stringContaining('Squat/animation.gif'));
 
     // Both should be visible
     expect(screen.getByText('Sentadilla')).toBeInTheDocument();

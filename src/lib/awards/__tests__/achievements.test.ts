@@ -106,9 +106,14 @@ describe('computeWorkoutXp', () => {
     expect(computeWorkoutXp(0.99, 5)).toBe(55);
   });
 
-  it('handles a very short workout (1 minute)', () => {
-    // 1 * 50 + 1 * 1 + 20 = 71
-    expect(computeWorkoutXp(1, 1)).toBe(71);
+  it('handles a very short workout (1 minute) without perfect bonus', () => {
+    // 1 * 50 + 1 * 1 + 0 = 51 (el bonus de sesión perfecta exige ≥ 5 min)
+    expect(computeWorkoutXp(1, 1)).toBe(51);
+  });
+
+  it('does not apply the perfect bonus to micro sessions (< 5 min)', () => {
+    expect(computeWorkoutXp(1, 4)).toBe(54); // 50 + 4 + 0
+    expect(computeWorkoutXp(1, 5)).toBe(75); // 50 + 5 + 20 (frontera)
   });
 
   it('handles a very long workout (90 minutes)', () => {
@@ -308,6 +313,79 @@ describe('computeAchievementContext', () => {
     expect(ctx.bossDefeated).toBe(3);
     expect(ctx.adaptationCount).toBe(7);
     expect(ctx.rpeJustoCount).toBe(2);
+  });
+
+  it('counts movement days as distinct workout dates (no streak required)', () => {
+    const workouts = [
+      mockWorkout({ id: 'w1', date: '2026-01-01', completed_rate: 1 }),
+      mockWorkout({ id: 'w2', date: '2026-01-01', completed_rate: 0.9 }), // mismo día → no suma
+      mockWorkout({ id: 'w3', date: '2026-01-03', completed_rate: 1 }),
+      mockWorkout({ id: 'w4', date: '2026-01-08', completed_rate: 1 }),
+    ];
+    const ctx = computeAchievementContext(workouts);
+    expect(ctx.movementDays).toBe(3); // 3 días distintos
+  });
+
+  it('counts focus variety as distinct routine types completed', () => {
+    const workouts = [
+      mockWorkout({ id: 'w1', date: '2026-01-01', focus: 'full', completed_rate: 1 }),
+      mockWorkout({ id: 'w2', date: '2026-01-02', focus: 'upper', completed_rate: 1 }),
+      mockWorkout({ id: 'w3', date: '2026-01-03', focus: 'full', completed_rate: 1 }),
+    ];
+    const ctx = computeAchievementContext(workouts);
+    expect(ctx.focusVariety).toBe(2); // full + upper
+  });
+
+  it('unlocks movement achievements with 7 distinct days and variety', () => {
+    const today = new Date();
+    const workouts = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      return mockWorkout({
+        id: `wo-${i}`,
+        date: d.toISOString().slice(0, 10),
+        focus: ['full', 'upper', 'lower', 'core'][i % 4] as Workout['focus'],
+        completed_rate: 1,
+      });
+    });
+    const ctx = computeAchievementContext(workouts);
+    expect(ctx.movementDays).toBe(7);
+    expect(ctx.focusVariety).toBe(4);
+    const result = evaluateAllAchievements(ctx, {});
+    expect(result.progress.movimiento_7.unlocked).toBe(true);
+    expect(result.progress.rutina_nueva.unlocked).toBe(true);
+    expect(result.newlyUnlocked).toContain('movimiento_7');
+    expect(result.newlyUnlocked).toContain('rutina_nueva');
+  });
+
+  it('counts mini victories (sessions of 1 minute or less)', () => {
+    const workouts = [
+      mockWorkout({ id: 'w1', date: '2026-01-01', actual_minutes: 1, completed_rate: 1 }),
+      mockWorkout({ id: 'w2', date: '2026-01-02', actual_minutes: 0.5, completed_rate: 0.3 }),
+      mockWorkout({ id: 'w3', date: '2026-01-03', actual_minutes: 20, completed_rate: 1 }),
+      mockWorkout({ id: 'w4', date: '2026-01-04', completed_rate: 1 }), // sin actual_minutes
+    ];
+    const ctx = computeAchievementContext(workouts);
+    expect(ctx.minSessions).toBe(2);
+  });
+
+  it('shows partial movement progress below the thresholds', () => {
+    const today = new Date();
+    const workouts = Array.from({ length: 3 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      return mockWorkout({
+        id: `wo-${i}`,
+        date: d.toISOString().slice(0, 10),
+        focus: ['full', 'upper', 'core'][i] as Workout['focus'],
+        completed_rate: 1,
+      });
+    });
+    const ctx = computeAchievementContext(workouts);
+    const result = evaluateAllAchievements(ctx, {});
+    expect(result.progress.movimiento_7.unlocked).toBe(false);
+    expect(result.progress.movimiento_7.progress_current).toBe(3);
+    expect(result.progress.rutina_nueva.unlocked).toBe(true); // 3 focuses probados
   });
 
   it('defaults extra counts to 0', () => {
@@ -540,6 +618,215 @@ describe('evaluateAchievement', () => {
     });
   });
 
+  // ── movement_days ──
+  describe('movement_days', () => {
+    it('unlocks when enough distinct movement days exist', () => {
+      const ach = makeAchievement({ condition_type: 'movement_days', condition_value: { min: 7 } });
+      const ctx = makeCtx({ movementDays: 7 });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 7, progressTarget: 7 });
+    });
+
+    it('shows partial progress below the min', () => {
+      const ach = makeAchievement({ condition_type: 'movement_days', condition_value: { min: 7 } });
+      const ctx = makeCtx({ movementDays: 3 });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 3, progressTarget: 7 });
+    });
+
+    it('defaults to 0 days', () => {
+      const ach = makeAchievement({ condition_type: 'movement_days', condition_value: { min: 7 } });
+      const ctx = makeCtx({});
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 0, progressTarget: 7 });
+    });
+  });
+
+  // ── focus_variety ──
+  describe('focus_variety', () => {
+    it('unlocks when enough routine types have been tried', () => {
+      const ach = makeAchievement({ condition_type: 'focus_variety', condition_value: { min: 3 } });
+      const ctx = makeCtx({ focusVariety: 3 });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 3, progressTarget: 3 });
+    });
+
+    it('shows partial progress below the min', () => {
+      const ach = makeAchievement({ condition_type: 'focus_variety', condition_value: { min: 3 } });
+      const ctx = makeCtx({ focusVariety: 1 });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 1, progressTarget: 3 });
+    });
+
+    it('defaults to 0 types tried', () => {
+      const ach = makeAchievement({ condition_type: 'focus_variety', condition_value: { min: 3 } });
+      const ctx = makeCtx({});
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 0, progressTarget: 3 });
+    });
+  });
+
+  // ── min_session ──
+  describe('min_session', () => {
+    it('unlocks with a 1-minute session (mini victoria)', () => {
+      const ach = makeAchievement({ condition_type: 'min_session', condition_value: { min: 1 } });
+      const ctx = makeCtx({ minSessions: 1 });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 1, progressTarget: 1 });
+    });
+
+    it('stays locked without mini sessions', () => {
+      const ach = makeAchievement({ condition_type: 'min_session', condition_value: { min: 1 } });
+      const ctx = makeCtx({});
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 0, progressTarget: 1 });
+    });
+  });
+
+  // ── windowed_days (cinco en movimiento) ──
+  describe('windowed_days (cinco en movimiento)', () => {
+    it('unlocks with 5 distinct movement days in a 7-day window', () => {
+      const ach = makeAchievement({
+        condition_type: 'windowed_days',
+        condition_value: { min_days: 5, window_days: 7 },
+      });
+      const today = new Date();
+      const dates: string[] = [];
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      const workouts = dates.map((d, i) =>
+        mockWorkout({ id: `w${i}`, date: d, completed_rate: 1 })
+      );
+      const ctx = makeCtx({ workouts });
+      const result = evaluateAchievement(ach, ctx);
+      expect(result.unlocked).toBe(true);
+      expect(result.progressTarget).toBe(5);
+    });
+
+    it('does NOT unlock when movement is only 3 days in the window', () => {
+      const ach = makeAchievement({
+        condition_type: 'windowed_days',
+        condition_value: { min_days: 5, window_days: 7 },
+      });
+      const today = new Date();
+      const dates: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      const workouts = dates.map((d, i) =>
+        mockWorkout({ id: `w${i}`, date: d, completed_rate: 1 })
+      );
+      const ctx = makeCtx({ workouts });
+      const result = evaluateAchievement(ach, ctx);
+      expect(result.unlocked).toBe(false);
+      expect(result.progressCurrent).toBe(3);
+    });
+
+    it('ignores days outside the 7-day window', () => {
+      const ach = makeAchievement({
+        condition_type: 'windowed_days',
+        condition_value: { min_days: 5, window_days: 7 },
+      });
+      const today = new Date();
+      const dates: string[] = [];
+      // 5 days in the window (last 7 days)
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      // Plus 3 old days outside the window
+      for (let i = 8; i < 11; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      const workouts = dates.map((d, i) =>
+        mockWorkout({ id: `w${i}`, date: d, completed_rate: 1 })
+      );
+      const ctx = makeCtx({ workouts });
+      const result = evaluateAchievement(ach, ctx);
+      expect(result.unlocked).toBe(true);
+      expect(result.progressCurrent).toBe(5); // only 5 inside window
+    });
+
+    it('cuenta solo 1 día aunque haya múltiples sesiones en la misma fecha', () => {
+      const ach = makeAchievement({
+        condition_type: 'windowed_days',
+        condition_value: { min_days: 5, window_days: 7 },
+      });
+      const today = new Date();
+      const todayStr = today.toISOString().slice(0, 10);
+      const dates: string[] = [];
+      // 5 días distintos: hoy + 4 días anteriores
+      for (let i = 0; i < 5; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().slice(0, 10));
+      }
+      // Dos sesiones en el mismo día (hoy)
+      const workouts = [
+        mockWorkout({ id: 'w1', date: dates[0], completed_rate: 1 }), // mañana
+        mockWorkout({ id: 'w2', date: dates[0], completed_rate: 1 }), // tarde (mismo día)
+        mockWorkout({ id: 'w3', date: dates[1], completed_rate: 1 }),
+        mockWorkout({ id: 'w4', date: dates[2], completed_rate: 1 }),
+        mockWorkout({ id: 'w5', date: dates[3], completed_rate: 1 }),
+        mockWorkout({ id: 'w6', date: dates[4], completed_rate: 1 }),
+      ];
+      const ctx = makeCtx({ workouts });
+      const result = evaluateAchievement(ach, ctx);
+      expect(result.progressCurrent).toBe(5); // 5 días distintos, no 6
+      expect(result.unlocked).toBe(true);
+    });
+  });
+
+  // ── intensities_in_days ──
+  describe('intensities_in_days', () => {
+    it('unlocks when all 4 intensities are tried within the window', () => {
+      const ach = makeAchievement({ condition_type: 'intensities_in_days', condition_value: { min_days: 14 } });
+      const workouts = [
+        mockWorkout({ id: 'w1', date: '2026-01-01', intensity: 'minimal', completed_rate: 1 }),
+        mockWorkout({ id: 'w2', date: '2026-01-05', intensity: 'light', completed_rate: 1 }),
+        mockWorkout({ id: 'w3', date: '2026-01-10', intensity: 'standard', completed_rate: 1 }),
+        mockWorkout({ id: 'w4', date: '2026-01-12', intensity: 'push', completed_rate: 1 }),
+      ];
+      const ctx = makeCtx({ workouts });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 4, progressTarget: 4 });
+    });
+
+    it('unlocks exactly at the 14-day boundary', () => {
+      const ach = makeAchievement({ condition_type: 'intensities_in_days', condition_value: { min_days: 14 } });
+      // Día 1 → día 15: exactamente 14 días de diferencia
+      const workouts = [
+        mockWorkout({ id: 'w1', date: '2026-01-01', intensity: 'minimal', completed_rate: 1 }),
+        mockWorkout({ id: 'w2', date: '2026-01-03', intensity: 'light', completed_rate: 1 }),
+        mockWorkout({ id: 'w3', date: '2026-01-08', intensity: 'standard', completed_rate: 1 }),
+        mockWorkout({ id: 'w4', date: '2026-01-15', intensity: 'push', completed_rate: 1 }),
+      ];
+      const ctx = makeCtx({ workouts });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 4, progressTarget: 4 });
+    });
+
+    it('stays locked when the span exceeds the window', () => {
+      const ach = makeAchievement({ condition_type: 'intensities_in_days', condition_value: { min_days: 14 } });
+      const workouts = [
+        mockWorkout({ id: 'w1', date: '2026-01-01', intensity: 'minimal', completed_rate: 1 }),
+        mockWorkout({ id: 'w2', date: '2026-01-05', intensity: 'light', completed_rate: 1 }),
+        mockWorkout({ id: 'w3', date: '2026-01-10', intensity: 'standard', completed_rate: 1 }),
+        mockWorkout({ id: 'w4', date: '2026-01-25', intensity: 'push', completed_rate: 1 }),
+      ];
+      const ctx = makeCtx({ workouts });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 4, progressTarget: 4 });
+    });
+
+    it('shows partial progress with some intensities tried', () => {
+      const ach = makeAchievement({ condition_type: 'intensities_in_days', condition_value: { min_days: 14 } });
+      const workouts = [
+        mockWorkout({ id: 'w1', date: '2026-01-01', intensity: 'minimal', completed_rate: 1 }),
+        mockWorkout({ id: 'w2', date: '2026-01-05', intensity: 'standard', completed_rate: 1 }),
+      ];
+      const ctx = makeCtx({ workouts });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 2, progressTarget: 4 });
+    });
+  });
+
   // ── unknown condition type ──
   describe('unknown condition type', () => {
     it('returns defaults (unlocked=false, progress=0)', () => {
@@ -564,10 +851,10 @@ describe('evaluateAllAchievements', () => {
     vi.useRealTimers();
   });
 
-  it('returns progress for all 28 achievements', () => {
+  it('returns progress for all 29 achievements', () => {
     const ctx = makeCtx({ totalWorkouts: 100 });
     const result = evaluateAllAchievements(ctx, {});
-    expect(Object.keys(result.progress).length).toBe(28);
+    expect(Object.keys(result.progress).length).toBe(29);
   });
 
   it('detects newly unlocked achievements', () => {
@@ -623,7 +910,7 @@ describe('evaluateAllAchievements', () => {
     expect(result.progress.first_workout.unlocked_at).toBeNull();
   });
 
-  it('evaluates all 28 achievements correctly with 0 workouts', () => {
+  it('evaluates all 29 achievements correctly with 0 workouts', () => {
     const ctx = makeCtx({});
     const result = evaluateAllAchievements(ctx, {});
 
@@ -634,6 +921,30 @@ describe('evaluateAllAchievements', () => {
       }
     }
     expect(result.newlyUnlocked).toEqual([]);
+  });
+
+  it('never revokes an unlocked achievement when conditions regress (monotonic)', () => {
+    const today = new Date();
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      return d.toISOString().slice(0, 10);
+    });
+    // 1. Usuario desbloquea movimiento_7 con 7 días distintos
+    const ctx7 = computeAchievementContext(
+      days.map((date, i) => mockWorkout({ id: `wo-${i}`, date, completed_rate: 1 }))
+    );
+    const unlocked = evaluateAllAchievements(ctx7, {});
+    expect(unlocked.progress.movimiento_7.unlocked).toBe(true);
+
+    // 2. Solo quedan 3 días (progreso baja, logro NO se revoca)
+    const ctx3 = computeAchievementContext(
+      days.slice(0, 3).map((date, i) => mockWorkout({ id: `wo-${i}`, date, completed_rate: 1 }))
+    );
+    const reEval = evaluateAllAchievements(ctx3, unlocked.progress);
+    expect(reEval.progress.movimiento_7.unlocked).toBe(true);
+    expect(reEval.progress.movimiento_7.progress_current).toBe(3);
+    expect(reEval.newlyUnlocked).not.toContain('movimiento_7');
   });
 
   it('updates progress_current for partial progress', () => {
@@ -647,14 +958,12 @@ describe('evaluateAllAchievements', () => {
     const ctx = computeAchievementContext(workouts);
     const result = evaluateAllAchievements(ctx, {});
 
-    // streak_3 should be unlocked (streak=3, min=3)
-    expect(result.progress.streak_3.unlocked).toBe(true);
-    expect(result.progress.streak_3.progress_current).toBe(3);
-    // streak_7 should not be unlocked, but show progress
-    expect(result.progress.streak_7.unlocked).toBe(false);
-    expect(result.progress.streak_7.progress_current).toBe(3);
+    // streak category is filtered out, so these don't exist in progress
     // first_workout should be unlocked
     expect(result.progress.first_workout.unlocked).toBe(true);
     expect(result.progress.first_workout.progress_current).toBe(3);
+    // five_workouts should show progress
+    expect(result.progress.five_workouts.unlocked).toBe(false);
+    expect(result.progress.five_workouts.progress_current).toBe(3);
   });
 });

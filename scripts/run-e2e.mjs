@@ -34,7 +34,7 @@ async function main() {
   try {
     await waitForServer(BASE, 25000);
     console.log('Server ready!');
-  } catch (e) {
+  } catch {
     console.error('Server start failed:', log.substring(0, 300));
     server.kill();
     process.exit(1);

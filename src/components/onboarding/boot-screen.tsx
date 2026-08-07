@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { Brain } from 'lucide-react';
 
 const BOOT_LINES = [
@@ -20,6 +21,7 @@ interface BootScreenProps {
 }
 
 export function BootScreen({ onComplete }: BootScreenProps) {
+  const t = useT();
   const profile = useStore((s) => s.profile);
   const name = profile?.name || 'atleta';
 
@@ -104,19 +106,19 @@ export function BootScreen({ onComplete }: BootScreenProps) {
         transition={{ delay: 0.15 }}
         className="relative z-10 text-[24px] font-black tracking-tight mb-1"
       >
-        Construyendo tu OS
+        {t('Construyendo tu OS')}
       </motion.h1>
       <motion.p
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
-        className="relative z-10 text-[12px] text-[#8B93A7] font-mono mb-6"
+        className="relative z-10 text-[12px] text-[var(--muted)] font-mono mb-6"
       >
-        personalizando agentes · cargando modelos
+        {t('personalizando agentes · cargando modelos')}
       </motion.p>
 
       {/* Boot Lines */}
-      <div className="relative z-10 w-full max-w-[320px] bg-[rgba(10,13,19,0.9)] border border-[#232A38] rounded-[16px] p-4 font-mono text-[10.5px] leading-[2.1] text-[#8B93A7] min-h-[190px] mb-4 overflow-hidden">
+      <div className="relative z-10 w-full max-w-[320px] bg-[rgba(10,13,19,0.9)] border border-[#232A38] rounded-[16px] p-4 font-mono text-[10.5px] leading-[2.1] text-[var(--muted)] min-h-[190px] mb-4 overflow-hidden">
         <AnimatePresence>
           {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
             <motion.div
@@ -148,7 +150,7 @@ export function BootScreen({ onComplete }: BootScreenProps) {
               transition={{ duration: 0.4 }}
               className="whitespace-nowrap text-[#00D4AA] font-bold mt-1"
             >
-              READY · bienvenid@, {name}.
+              {t('READY · bienvenid@, {name}.', { name })}
             </motion.div>
           )}
         </AnimatePresence>
@@ -163,6 +165,18 @@ export function BootScreen({ onComplete }: BootScreenProps) {
           className="h-full rounded-[5px] bg-gradient-to-r from-[#00D4AA] to-[#7C5CFC]"
         />
       </div>
+
+      {/* Skip button — neurodivergent-friendly: no forced wait */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.6 }}
+        whileHover={{ opacity: 1 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={onComplete}
+        className="relative z-10 mt-4 text-[11px] text-[var(--muted)] font-mono hover:text-[#ffb454] transition-colors"
+      >
+        {t('Saltar')}
+      </motion.button>
 
       <style jsx>{`
         @keyframes corePulse {

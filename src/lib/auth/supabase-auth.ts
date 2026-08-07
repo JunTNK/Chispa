@@ -10,7 +10,7 @@ export interface AuthError {
 /**
  * Sign in with email and password.
  * Returns { user, error } — error is null on success.
- * On success, pulls user data from Supabase.
+ * Does NOT auto-pull — caller should pull after navigation.
  */
 export async function signInWithEmail(email: string, password: string) {
   try {
@@ -19,14 +19,6 @@ export async function signInWithEmail(email: string, password: string) {
       password,
     });
     if (error) return { user: null, error: { message: error.message, code: error.code } };
-
-    // Pull data from Supabase in background — restaura TODO el estado del
-    // usuario (perfil, twin con ex_progress entrenado, workouts, checkins...)
-    supabaseSync
-      .pull()
-      .then(applyPulledPayload)
-      .catch(logError('auth:pull-on-signin'));
-
     return { user: data.user, error: null };
   } catch (e) {
     return { user: null, error: { message: (e as Error).message } };

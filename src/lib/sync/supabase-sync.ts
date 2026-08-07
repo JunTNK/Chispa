@@ -2,7 +2,8 @@
 
 import { supabase } from '@/lib/db/supabase';
 import { useStore } from '@/lib/store';
-import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessage, UserAchievement, QuestState } from '@/types';
+import { uid as genUid } from '@/lib/utils/helpers';
+import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessage, UserAchievement, QuestState, FriendEntry, WeightEntry } from '@/types';
 
 /* ─── Types ─── */
 
@@ -15,8 +16,15 @@ export interface SyncPayload {
   workouts?: Workout[];
   checkins?: Record<string, CheckIn>;
   chat?: ChatMessage[];
-  achievements?: Record<string, UserAchievement>;
+   achievements?: Record<string, UserAchievement>;
   questState?: QuestState;
+  /** Historial de peso (migration 010) — canónico en kg */
+  weightHistory?: WeightEntry[];
+  /** Fechas (YYYY-MM-DD) de entradas de peso borradas localmente — se borran en el servidor */
+  weightHistoryDeleted?: string[];
+  /** Social graph (local-first; synced when coopMode != 'none') */
+  friends?: FriendEntry[];
+  coopMode?: 'none' | 'friends' | 'public';
 }
 
 export interface SyncResult {
@@ -103,6 +111,13 @@ export class SupabaseSyncService {
             ...(payload.profile.chronotype && { chronotype: payload.profile.chronotype }),
             ...(payload.profile.medication && { medication: payload.profile.medication }),
             ...(payload.profile.medication_time && { medication_time: payload.profile.medication_time }),
+            // Body metrics (migration 009) — canónicas en métrico.
+            // Se envían SIEMPRE (null si vacío) para que borrar una medida
+            // también se propague al servidor y no quede un valor obsoleto.
+            sex: payload.profile.sex ?? null,
+            height_cm: payload.profile.height_cm ?? null,
+            weight_kg: payload.profile.weight_kg ?? null,
+            units: payload.profile.units ?? 'imperial',
             updated_at: new Date().toISOString(),
           });
         if (!error) pushed.push('profile');
@@ -127,7 +142,8 @@ export class SupabaseSyncService {
           .from('digital_twins')
           .upsert({
             user_id: uid,
-            preferred_duration: payload.twin.patterns.avg_duration,
+            // La columna es integer: el EMA de avg_duration puede ser decimal (15.5)
+            preferred_duration: Math.round(payload.twin.patterns.avg_duration),
             motivation_style: payload.twin.motivation_style,
             avoid_patterns: payload.twin.avoid ?? [],
             best_hours: payload.twin.patterns.best_hours,
@@ -155,21 +171,38 @@ export class SupabaseSyncService {
 
       // 4. Workouts (batch upsert - last 30)
       if (payload.workouts && payload.workouts.length > 0) {
-        const recent = payload.workouts.slice(-30).map((w) => ({
-          id: w.id || `workout_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-          user_id: uid,
-          date: w.date,
-          focus: w.focus,
-          intensity: w.intensity,
-          planned_minutes: w.duration,
-          actual_minutes: w.actual_minutes ?? w.duration,
-          completed_rate: w.completed_rate,
-          planned_sets: w.exercises?.reduce((a: number, e: WorkoutExercise) => a + (e.sets ?? 0), 0) ?? 0,
-          done_sets: w.exercises?.filter((e: WorkoutExercise) => e.status === 'done').length ?? 0,
-          rpe: w.rpe ?? null,
-          adapted: (w as Workout & { adapted?: boolean }).adapted ?? false,
-          exercises: w.exercises as unknown as Record<string, unknown>[],
-        }));
+        // Dedupe por id: summary manda [...currentWorkouts, w] donde w ya está
+        // en currentWorkouts tras addWorkout — un ON CONFLICT no puede tocar
+        // la misma fila dos veces en un mismo comando (error 21000).
+        const seen = new Set<string>();
+        const unique = payload.workouts.filter((w) => {
+          const key = w.id || w.date;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        const recent = unique.slice(-30).map((w) => {
+          // La columna workouts.id es uuid: los workouts locales antiguos
+          // (base36, pre-UUID) no caben — se les asigna un UUID nuevo para
+          // que el push no falle (no existen filas previas con esos ids).
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(w.id || '');
+          const id = isUuid ? w.id : (crypto?.randomUUID?.() ?? genUid());
+          return {
+            id,
+            user_id: uid,
+            date: w.date,
+            focus: w.focus,
+            intensity: w.intensity,
+            planned_minutes: w.duration,
+            actual_minutes: w.actual_minutes ?? w.duration,
+            completed_rate: w.completed_rate,
+            planned_sets: w.exercises?.reduce((a: number, e: WorkoutExercise) => a + (e.sets ?? 0), 0) ?? 0,
+            done_sets: w.exercises?.filter((e: WorkoutExercise) => e.status === 'done').length ?? 0,
+            rpe: w.rpe ?? null,
+            adapted: (w as Workout & { adapted?: boolean }).adapted ?? false,
+            exercises: w.exercises as unknown as Record<string, unknown>[],
+          };
+        });
 
         const { error } = await (supabase as any).from('workouts').upsert(recent, {
           onConflict: 'id',
@@ -231,6 +264,53 @@ export class SupabaseSyncService {
         if (!error) pushed.push(`checkins (${entries.length})`);
       }
 
+      // 8. Weight history (migration 010)
+      // Borrados primero: las fechas eliminadas localmente se borran en el servidor
+      // para que un pull posterior no las resucite (local-first, ver profile nulls).
+      if (payload.weightHistoryDeleted && payload.weightHistoryDeleted.length > 0) {
+        const { error } = await (supabase as any)
+          .from('weight_log')
+          .delete()
+          .eq('user_id', uid)
+          .in('date', payload.weightHistoryDeleted);
+        if (!error) pushed.push(`weight_log deleted (${payload.weightHistoryDeleted.length})`);
+      }
+      if (payload.weightHistory && payload.weightHistory.length > 0) {
+        const entries = payload.weightHistory.map((e) => ({
+          user_id: uid,
+          date: e.date,
+          weight_kg: e.weight_kg,
+        }));
+        const { error } = await (supabase as any).from('weight_log').upsert(entries, {
+          onConflict: 'user_id, date',
+          ignoreDuplicates: false,
+        });
+        if (!error) pushed.push(`weight_log (${entries.length})`);
+      }
+
+      // 9. Social graph (friends + coopMode)
+      if (payload.coopMode && payload.coopMode !== 'none') {
+        const { error: cErr } = await (supabase as any)
+          .from('user_profiles')
+          .update({ coop_mode: payload.coopMode })
+          .eq('user_id', uid);
+        if (!cErr) pushed.push('coop_mode');
+      }
+      if (payload.friends && payload.friends.length > 0) {
+        const entries = payload.friends.map((f) => ({
+          user_id: uid,
+          peer_code: f.id,
+          peer_name: f.name,
+          joined_at: f.joined_at,
+          status: f.status,
+        }));
+        const { error: fErr } = await (supabase as any).from('friends').upsert(entries, {
+          onConflict: 'user_id, peer_code',
+          ignoreDuplicates: true,
+        });
+        if (!fErr) pushed.push(`friends (${entries.length})`);
+      }
+
       this._status = 'synced';
       const result: SyncResult = { success: true, pushed };
       this._lastResult = result;
@@ -269,11 +349,13 @@ export class SupabaseSyncService {
       const payload: SyncPayload = {};
 
       // 1. Profile
+      // maybeSingle: si el usuario no tiene fila, devuelve null en vez del 406
+      // (PGRST116) que generaría ruido de consola en cada primer login.
       const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('*')
         .eq('user_id', uid)
-        .single();
+        .maybeSingle();
       if (profile) {
         const { data: { user } } = await supabase.auth.getUser();
         const name = user?.user_metadata?.full_name ?? user?.email?.split('@')[0] ?? '';
@@ -287,6 +369,11 @@ export class SupabaseSyncService {
           days_per_week: profile.days_per_week,
           neurotype: 'other', // neurotype is in neuro_profiles
           preferred_duration: 20,
+          // Body metrics (migration 009)
+          sex: profile.sex ?? undefined,
+          height_cm: profile.height_cm ?? undefined,
+          weight_kg: profile.weight_kg ?? undefined,
+          units: profile.units ?? 'imperial',
           created_at: profile.created_at,
           updated_at: profile.updated_at,
         };
@@ -298,7 +385,7 @@ export class SupabaseSyncService {
         .from('neuro_profiles')
         .select('*')
         .eq('user_id', uid)
-        .single();
+        .maybeSingle();
       if (neuro) {
         payload.neuro = { type: neuro.type, duration: neuro.duration_minutes };
         pushed.push('neuro_profile');
@@ -313,7 +400,7 @@ export class SupabaseSyncService {
         .from('digital_twins')
         .select('*')
         .eq('user_id', uid)
-        .single();
+        .maybeSingle();
       if (twin) {
         const p = twin.patterns as Record<string, unknown> | null;
         payload.twin = {
@@ -380,11 +467,11 @@ export class SupabaseSyncService {
         .from('quest_states')
         .select('*')
         .eq('user_id', uid)
-        .single();
+        .maybeSingle();
 
       if (questState) {
         payload.questState = {
-          selectedTheme: questState.selected_theme ?? 'one_piece',
+          selectedTheme: questState.selected_theme ?? 'fitness_iniciacion',
           vaultClaims: questState.vault_claims ?? {},
           bossDefeatedThisWeek: questState.boss_defeated_this_week ?? false,
           bossDefeatedCount: questState.boss_defeated_count ?? 0,
@@ -436,6 +523,21 @@ export class SupabaseSyncService {
         pushed.push(`checkins (${Object.keys(payload.checkins).length})`);
       }
 
+      // 8. Weight history (migration 010)
+      const { data: weightLog } = await (supabase as any)
+        .from('weight_log')
+        .select('*')
+        .eq('user_id', uid)
+        .order('date', { ascending: true });
+
+      if (weightLog && weightLog.length > 0) {
+        payload.weightHistory = weightLog.map((w: Record<string, unknown>) => ({
+          date: w.date as string,
+          weight_kg: Number(w.weight_kg),
+        }));
+        pushed.push(`weight_log (${payload.weightHistory!.length})`);
+      }
+
       this._status = 'synced';
       const result: SyncResult = { success: true, pushed, pulled: payload };
       this._lastResult = result;
@@ -466,6 +568,21 @@ export class SupabaseSyncService {
     this._status = 'idle';
     this._lastResult = null;
     this._notify();
+  }
+
+  /**
+   * Accept a 6-digit invite code via the backend RPC `friends_accept(code)`.
+   * Devuelve el perfil del peer si el código es válido, o `null` si falla
+   * (RPC no desplegada, code inválido, usuario no autenticado, etc.).
+   */
+  async acceptInvite(code: string): Promise<Partial<FriendEntry> | null> {
+    try {
+      const { data, error } = await (supabase as any).rpc('friends_accept', { code });
+      if (error) return null;
+      return data?.[0] ?? data ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /* ─── Merge helpers ─── */
@@ -553,6 +670,7 @@ export class SupabaseSyncService {
     twin: DigitalTwin | null;
     workouts: Workout[];
     checkins: Record<string, CheckIn>;
+    weightHistory: WeightEntry[];
   }): SyncPayload {
     const result: SyncPayload = {};
 
@@ -587,6 +705,16 @@ export class SupabaseSyncService {
     // (se configura una vez durante el onboarding)
     if (remote.neuro && !local.profile) {
       result.neuro = remote.neuro;
+    }
+
+    // Weight history: unión por fecha (una entrada por día) — remoto gana
+    if (remote.weightHistory || local.weightHistory.length > 0) {
+      const byDate = new Map<string, WeightEntry>();
+      for (const e of local.weightHistory) byDate.set(e.date, e);
+      for (const e of remote.weightHistory ?? []) byDate.set(e.date, e);
+      result.weightHistory = Array.from(byDate.values()).sort((a, b) =>
+        a.date < b.date ? -1 : 1
+      );
     }
 
     // Achievements: merge sync — gana remote si está unlocked, sino local
@@ -624,6 +752,7 @@ export function applyPulledPayload(result: SyncResult): void {
     twin: store.twin,
     workouts: store.workouts,
     checkins: store.checkins,
+    weightHistory: store.weightHistory,
   });
 
   if (mergedData.lang) {
@@ -640,6 +769,9 @@ export function applyPulledPayload(result: SyncResult): void {
   }
   if (mergedData.checkins && Object.keys(mergedData.checkins).length > 0) {
     useStore.setState({ checkins: mergedData.checkins });
+  }
+  if (mergedData.weightHistory && mergedData.weightHistory.length > 0) {
+    useStore.setState({ weightHistory: mergedData.weightHistory });
   }
   if (mergedData.neuro) {
     store.setNeuro(mergedData.neuro);

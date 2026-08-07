@@ -23,7 +23,10 @@ export function useAchievementEval() {
   const enqueueAchievement = useStore((s) => s.enqueueAchievement);
 
   const evaluate = useCallback(
-    (extra?: { adaptationCount?: number; rpeJustoCount?: number }) => {
+    (extra?: {
+      adaptationCount?: number;
+      rpeJustoCount?: number;
+    }) => {
       // Read fresh state to avoid stale closures
       const state = useStore.getState();
       const ctx = computeAchievementContext(state.workouts, extra);

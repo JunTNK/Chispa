@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useStore } from '@/lib/store';
+import { useT, useLocale } from '@/lib/i18n/use-t';
 import Image from 'next/image';
 import { cap } from '@/lib/utils/helpers';
 import { computeTotalXp, computeLevel } from '@/lib/awards/achievements';
@@ -10,8 +11,10 @@ export function Header() {
   const profile = useStore((s) => s.profile);
   const workouts = useStore((s) => s.workouts);
   const completionRate = useStore((s) => s.twin?.patterns?.completion_rate ?? 0);
+  const t = useT();
+  const locale = useLocale();
 
-  const date = new Date().toLocaleDateString('es-ES', {
+  const date = new Date().toLocaleDateString(locale, {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -27,12 +30,12 @@ export function Header() {
     <header className="flex items-center justify-between px-4 pt-5 pb-2">
       <div>
         <h1 className="font-black text-xl tracking-tight flex items-center gap-2">
-          Hola, {profile?.name || 'amigo'}
+          {t('Hola, {name}', { name: profile?.name || t('amigo') })}
           <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[rgba(167,139,250,0.16)] text-[#a78bfa] border border-[rgba(167,139,250,0.3)] float">
             Nv.{level}
           </span>
         </h1>
-        <p className="text-sm text-[#94a0b8] capitalize">{cap(date)}</p>
+        <p className="text-sm text-[var(--muted)] capitalize">{cap(date)}</p>
         {/* XP Bar */}
         <div className="mt-1.5 flex items-center gap-2 max-w-[200px]">
           <div className="flex-1 h-1.5 rounded-full bg-white/[.08] overflow-hidden">

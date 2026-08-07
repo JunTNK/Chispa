@@ -110,17 +110,28 @@ test.describe('🔥 Production Smoke', () => {
     console.log('✅ 3. Login + bundle — 0 chunk errors, 0 JS errors');
   });
 
-  test('4. API routes respond with GET', async ({ page }) => {
-    const routes = ['/api/analytics', '/api/decision', '/api/workout'] as const;
-    for (const route of routes) {
-      const res = await page.request.get(route);
+  test('4. API routes — public & middleware protection', async ({ page }) => {
+    // 1. Public analytics endpoint — should respond with GET
+    {
+      const res = await page.request.get('/api/analytics');
       expect(res.status()).toBe(200);
       const body = await res.json();
       expect(body.ok).toBe(true);
-      expect(body.route).toBe(route);
-      expect(body.methods).toContain('POST');
-      console.log(`  ${route} → 200 GET (POST available)`);
+      expect(body.route).toBe('/api/analytics');
+      console.log('  /api/analytics → 200 (public GET handler)');
     }
-    console.log('✅ 4. API routes — all respond with GET');
+
+    // 2. Protected routes — middleware should redirect to /login
+    for (const route of ['/api/decision', '/api/workout']) {
+      // Navigate in browser (follows redirects) to verify middleware protection
+      await page.goto(route, { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(300);
+      const url = page.url();
+      expect(url).toMatch(/\/login/);
+      expect(url).toContain('redirect=' + encodeURIComponent(route));
+      console.log(`  ${route} → 307 (middleware redirects to /login)`);
+    }
+
+    console.log('✅ 4. API routes — public works, protected block unauthenticated');
   });
 });

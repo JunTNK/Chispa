@@ -103,8 +103,13 @@ beforeAll(async () => {
   const { useStore } = await vi.importActual<typeof import('@/lib/store')>('@/lib/store');
   const initialState = {
     onboarded: false, user: null, profile: null, neuro: null, twin: null,
-    prefs: { reduceMotion: false, highContrast: false, fontLarge: false },
+    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false, showFAQs: true },
     checkins: {}, workouts: [], events: [], chat: [], plan: null, view: 'welcome',
+    skipStreak: 0,
+    suggestShortSession: false,
+    coopMode: 'none' as const,
+    friends: [],
+    myInviteCode: null,
   };
   resetStore = (s: Record<string, unknown>) => {
     useStore.setState({ ...initialState, ...s });

@@ -9,6 +9,9 @@ import {
 import type { MuscleGroupKey } from '@/components/ui/muscle-icons';
 import { FitnessIcon } from '@/components/ui/fitness-icon';
 import { ICONS_META, ICONS_BY_CATEGORY, type FitnessIconName } from '@/lib/utils/fitness-icons';
+import { PATTERN_ICON, PATTERN_COLOR } from '@/lib/utils/pattern-visuals';
+import { PATTERN_LABEL, type Pattern } from '@/lib/agents/selector-engine';
+import { MUSCLES, MUSCLE_KEYS } from '@/lib/utils/muscles';
 
 const COLOR_PRESETS = [
   { label: 'Ámbar', value: '#f5a623', class: 'bg-[#f5a623]' },
@@ -28,24 +31,9 @@ const ICONS: { name: MuscleGroupKey; label: string; viewBox: string; paths: numb
   { name: 'core', label: MUSCLE_GROUPS.core.label, viewBox: '0 0 24 24', paths: 1, source: 'icons/stroke-rounded?search=heart' },
 ];
 
-const CATEGORY_ICONS: { id: string; label: string; paths: number; svg: React.ReactNode }[] = [
-  {
-    id: 'PushIcon', label: 'Pecho (push)', paths: 4,
-    svg: <><circle cx="12" cy="4" r="2"/><path d="M6 8c2 2 4 3 6 1"/><path d="M18 8c-2 2-4 3-6 1"/><path d="M12 6v6"/></>,
-  },
-  {
-    id: 'PullIcon', label: 'Espalda (pull)', paths: 4,
-    svg: <><circle cx="12" cy="3" r="2"/><path d="M7 5c1 3 2 5 5 6"/><path d="M17 5c-1 3-2 5-5 6"/><path d="M12 5v6"/></>,
-  },
-  {
-    id: 'PressIcon', label: 'Hombros (press)', paths: 4,
-    svg: <><circle cx="12" cy="5" r="2"/><path d="M9 9c1-2 1-4 3-7"/><path d="M15 9c-1-2-1-4-3-7"/><path d="M12 7v5"/></>,
-  },
-  {
-    id: 'BridgeIcon', label: 'Glúteos (bridge)', paths: 5,
-    svg: <><circle cx="12" cy="3" r="2"/><path d="M12 5v3"/><path d="M7 13c1 3 3 4 5 4s4-1 5-4"/><path d="M7 8c0 2 1 3 2 5"/><path d="M17 8c0 2-1 3-2 5"/></>,
-  },
-];
+// Iconos de categoría ALINEADOS CON PATRONES (no con músculos): la taxonomía
+// real del selector (push/pull/hinge/squat/…), no PushIcon/PressIcon por músculo.
+const PATTERN_ORDER: Pattern[] = ['push', 'pull', 'squat', 'hinge', 'core', 'cardio', 'mobility', 'arms'];
 
 const SPECIFIC_ICONS: { id: string; label: string; desc: string; tags: string; svg: React.ReactNode }[] = [
   {
@@ -98,16 +86,13 @@ const SPECIFIC_ICONS: { id: string; label: string; desc: string; tags: string; s
   },
 ];
 
-const FALLBACK_TABLE: { muscle: string; icon: string }[] = [
-  { muscle: 'core', icon: 'Sit-Up' },
-  { muscle: 'piernas', icon: 'Hamstring Stretch' },
-  { muscle: 'brazos', icon: 'Bicep Curl' },
-  { muscle: 'gluteos', icon: 'BridgeIcon' },
-  { muscle: 'pecho', icon: 'PushIcon' },
-  { muscle: 'espalda', icon: 'PullIcon' },
-  { muscle: 'hombros', icon: 'PressIcon' },
-  { muscle: 'cardio', icon: 'Air Bike' },
-];
+// Marca por músculo (fallback final del grid): abreviatura + color del registry.
+const FALLBACK_TABLE = MUSCLE_KEYS.map((key) => ({
+  key,
+  label: MUSCLES[key].label,
+  mark: MUSCLES[key].mark,
+  color: MUSCLES[key].color,
+}));
 
 const SIZE_PRESETS = [20, 28, 48, 64, 96, 120];
 const STROKE_PRESETS = [1, 1.5, 2, 2.5, 3, 4, 5];
@@ -138,10 +123,10 @@ export default function DocsPage() {
           </Link>
           <h1 className="text-2xl font-black tracking-tight">
             <span className="text-[#f5a623]">Iconos</span> fitness{' '}
-            <span className="text-xs align-super text-[#5d646d] font-mono">v3.2</span>
+            <span className="text-xs align-super text-[#5d646d] font-mono">v3.3</span>
           </h1>
           <p className="text-sm text-[#8b929b] mt-1.5 max-w-lg">
-            Cuatro iconos SVG de grupo muscular + 4 iconos inline de categoría (PushIcon, PullIcon, PressIcon, BridgeIcon).
+            Cuatro iconos SVG de grupo muscular + 8 iconos de patrón (PATTERN_ICON) alineados con la taxonomía del selector.
             {' '}<a href="https://hugeicons.com" target="_blank" rel="noopener noreferrer" className="text-[#f5a623] hover:underline">HugeIcons</a>,
             accesibilidad dual, <code className="text-[#93c0a0] text-xs bg-white/[.06] px-1.5 py-0.5 rounded">forwardRef</code>,
             y draw-on animation opt-in.
@@ -292,42 +277,44 @@ export default function DocsPage() {
         </div>
       </section>
 
-      {/* ── Category Icons (EXERCISE_ICON) ── */}
+      {/* ── Category Icons (PATTERN_ICON) ── */}
       <section className="max-w-3xl mx-auto px-5 py-8 border-t border-white/[.09]">
         <h2 className="text-sm font-black tracking-tight mb-1">
-          Iconos de categoría{' '}
-          <span className="text-[10px] align-super text-[#5d646d] font-mono">EXERCISE_ICON</span>
+          Iconos de patrón{' '}
+          <span className="text-[10px] align-super text-[#5d646d] font-mono">PATTERN_ICON</span>
         </h2>
         <p className="text-xs text-[#8b929b] mb-5 max-w-lg">
-          4 iconos inline para el grid &ldquo;Toque para agregar&rdquo; de la pantalla Crear entrenamiento.
-          Resoluci&oacute;n: ID exacto &rarr; fallback por m&uacute;sculo &rarr; null.{' '}
-          <code className="text-[#f5a623] text-[10px] bg-white/[.06] px-1.5 py-0.5 rounded">108 ejercicios mapeados</code>
+          Iconos de categoría alineados con la taxonomía de{' '}
+          <strong className="text-[#f3ede1]">patrones de movimiento</strong> del selector
+          (push / pull / squat / hinge / core / cardio / mobility / arms), no con músculos.
+          Viven en <code className="text-[10px] text-[#93c0a0] bg-white/[.06] px-1.5 py-0.5 rounded">pattern-visuals.ts</code>{' '}
+          y se usan en chips de filtro, badges de patrón y el mapa de balance.
         </p>
         <div className="grid grid-cols-4 gap-3">
-          {CATEGORY_ICONS.map(({ id, label, paths, svg }) => (
-            <div key={id}
-              className="rounded-xl border border-white/[.07] bg-[#161b23] p-4 flex flex-col items-center gap-3
-                hover:border-[#f5a623]/20 transition-all duration-300"
-            >
-              <div className="flex items-center justify-center w-full min-h-[70px] rounded-lg bg-[#12161d]
-                border border-white/[.04]">
-                <div className="text-[#f5a623] transition-transform duration-300 hover:scale-110">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}
-                    strokeLinecap="round" strokeLinejoin="round" width={size > 36 ? size : 36}
-                    height={size > 36 ? size : 36}>
-                    {svg}
-                  </svg>
+          {PATTERN_ORDER.map((p) => {
+            const PIcon = PATTERN_ICON[p];
+            const color = PATTERN_COLOR[p];
+            return (
+              <div key={p}
+                className="rounded-xl border border-white/[.07] bg-[#161b23] p-4 flex flex-col items-center gap-3
+                  hover:border-[#f5a623]/20 transition-all duration-300"
+              >
+                <div className="flex items-center justify-center w-full min-h-[70px] rounded-lg bg-[#12161d]
+                  border border-white/[.04]">
+                  <div style={{ color }} className="transition-transform duration-300 hover:scale-110">
+                    <PIcon size={size > 36 ? size : 36} />
+                  </div>
+                </div>
+                <div className="text-center">
+                  <code className="text-[11px] text-[#6fb7d6] font-mono block">{p}</code>
+                  <span className="text-[10px] text-[#8b929b]">{PATTERN_LABEL[p]}</span>
+                  <span className="text-[9px] bg-[#232a38] text-[#8b929b] px-1.5 py-0.5 rounded font-mono block mt-1">
+                    {color}
+                  </span>
                 </div>
               </div>
-              <div className="text-center">
-                <code className="text-[11px] text-[#6fb7d6] font-mono block">{id}</code>
-                <span className="text-[10px] text-[#8b929b]">{label}</span>
-                <span className="text-[9px] bg-[#232a38] text-[#8b929b] px-1.5 py-0.5 rounded font-mono block mt-1">
-                  {paths} paths · viewBox 0 0 24 24
-                </span>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
@@ -369,64 +356,64 @@ export default function DocsPage() {
       <section className="max-w-3xl mx-auto px-5 py-8 border-t border-white/[.09]">
         <h2 className="text-sm font-black tracking-tight mb-1">
           Sistema de resolución{' '}
-          <span className="text-[10px] align-super text-[#5d646d] font-mono">fallback</span>
+          <span className="text-[10px] align-super text-[#5d646d] font-mono">visual</span>
         </h2>
         <p className="text-xs text-[#8b929b] mb-5 max-w-lg">
-          El grid &ldquo;Toque para agregar&rdquo; resuelve el icono en 3 pasos:
-          ID exacto en <code className="text-[10px] text-[#93c0a0] bg-white/[.06] px-1 rounded">EXERCISE_ICON</code> &rarr;
-          fallback por m&uacute;sculo en <code className="text-[10px] text-[#93c0a0] bg-white/[.06] px-1 rounded">MUSCLE_FALLBACK</code> &rarr;
-          <code className="text-[10px] text-[#5d646d] bg-white/[.06] px-1 rounded">null</code>.
+          El grid resuelve el visual de cada ejercicio en 3 niveles, sin huecos:
+          <strong className="text-[#f3ede1]"> foto</strong> del dataset (free-exercise-db) &rarr;
+          icono por músculo v&iacute;a{' '}
+          <code className="text-[10px] text-[#93c0a0] bg-white/[.06] px-1 rounded">MUSCLES</code> &rarr;
+          <strong className="text-[#f3ede1]">marca</strong> (abreviatura + color del músculo).
         </p>
 
         {/* Flow diagram */}
         <div className="flex items-center justify-center gap-2 mb-6 text-[10px] font-mono">
           <span className="px-3 py-1.5 rounded-lg bg-[rgba(245,166,35,0.1)] text-[#f5a623] border border-[rgba(245,166,35,0.2)]">
-            EXERCISE_ICON[id]
+            foto
           </span>
           <span className="text-[#5d646d]">→</span>
           <span className="px-3 py-1.5 rounded-lg bg-[rgba(79,217,160,0.1)] text-[#4fd9a0] border border-[rgba(79,217,160,0.2)]">
-            MUSCLE_FALLBACK[muscle]
+            MUSCLES[muscle].fitnessIcon
           </span>
           <span className="text-[#5d646d]">→</span>
           <span className="px-3 py-1.5 rounded-lg bg-[rgba(139,146,155,0.1)] text-[#8b929b] border border-[rgba(139,146,155,0.2)]">
-            null
+            marca (mark + color)
           </span>
         </div>
 
         {/* Fallback table */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
-          {FALLBACK_TABLE.map(({ muscle, icon }) => (
-            <div key={muscle}
+          {FALLBACK_TABLE.map(({ key, label, mark, color }) => (
+            <div key={key}
               className="flex items-center gap-2.5 rounded-xl border border-white/[.07] bg-[#161b23] p-3"
             >
-              <div className="w-[18px] h-[18px] rounded-full bg-[rgba(245,166,35,0.15)] flex items-center justify-center">
-                <div className="w-[6px] h-[6px] rounded-full bg-[#f5a623]" />
+              <div
+                className="w-[18px] h-[18px] rounded-full flex items-center justify-center text-[8px] font-black"
+                style={{ background: `${color}22`, color }}
+              >
+                {mark}
               </div>
               <div>
-                <div className="text-[10px] font-semibold capitalize">{muscle}</div>
-                <div className="text-[8px] text-[#5d646d] font-mono">{icon}</div>
+                <div className="text-[10px] font-semibold capitalize">{label}</div>
+                <div className="text-[8px] text-[#5d646d] font-mono">mark · {color}</div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* Cobertura stats */}
+        {/* Cobertura honesta */}
         <div className="rounded-xl border border-white/[.07] bg-[#161b23] p-4 flex flex-wrap gap-6">
           <div>
             <div className="text-[18px] font-black text-[#f5a623]">1,222</div>
             <div className="text-[9px] text-[#5d646d] font-mono">ejercicios en catálogo</div>
           </div>
           <div>
-            <div className="text-[18px] font-black text-[#4fd9a0]">108</div>
-            <div className="text-[9px] text-[#5d646d] font-mono">mapeo exacto (8.8%)</div>
+            <div className="text-[18px] font-black text-[#4fd9a0]">8</div>
+            <div className="text-[9px] text-[#5d646d] font-mono">músculos canónicos en MUSCLES</div>
           </div>
           <div>
-            <div className="text-[18px] font-black text-[#6fb7d6]">1,114</div>
-            <div className="text-[9px] text-[#5d646d] font-mono">usan fallback (91.2%)</div>
-          </div>
-          <div>
-            <div className="text-[18px] font-black text-[#a78bfa]">100%</div>
-            <div className="text-[9px] text-[#5d646d] font-mono">cobertura total</div>
+            <div className="text-[18px] font-black text-[#6fb7d6]">foto→icono→marca</div>
+            <div className="text-[9px] text-[#5d646d] font-mono">resolución sin null ni huecos</div>
           </div>
         </div>
       </section>
@@ -512,7 +499,7 @@ import {
 
       <footer className="border-t border-white/[.09] py-4">
         <p className="text-[10px] text-[#5d646d] text-center">
-          CHISPA · muscle-icons v3.2 + EXERCISE_ICON · Iconos de <a href="https://hugeicons.com" target="_blank" rel="noopener noreferrer" className="text-[#f5a623] hover:underline">HugeIcons</a> · <code className="text-[10px] text-[#5d646d]">docs/componentes-iconos-fitness.md</code> · Julio 2026
+          CHISPA · muscle-icons v3.3 + PATTERN_ICON · Iconos de <a href="https://hugeicons.com" target="_blank" rel="noopener noreferrer" className="text-[#f5a623] hover:underline">HugeIcons</a> · <code className="text-[10px] text-[#5d646d]">docs/componentes-iconos-fitness.md</code> · Julio 2026
         </p>
       </footer>
     </div>

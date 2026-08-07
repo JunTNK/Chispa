@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
+import { useStore } from '@/lib/store';
 
 /* ─── Audio Context singleton ─── */
 
@@ -161,6 +162,34 @@ const SOUNDS = {
       playNote(ctx, freq, now, 0.8, 'sine', 0.015);
     });
   },
+
+  /**
+   * Boss defeated: epic victory fanfare — heavy low impact hit with a
+   * noise burst, a rising power-chord arpeggio, and a held triumphant
+   * final chord. Distinct from levelUp (shorter, higher, bouncier).
+   */
+  bossDefeated: () => {
+    const ctx = getCtx();
+    const now = ctx.currentTime;
+
+    // Impact hit: low square thump (E2) + percussive noise burst
+    // rampDown avoids an abrupt stop-click on the sustained low note
+    playNote(ctx, 82.41, now, 0.35, 'square', 0.07, true); // E2 with fade
+    playNoiseBurst(ctx, now, 0.15, 0.05);
+
+    // Rising triumphant arpeggio (A3 → C4 → E4 → A4 → C5)
+    const arpeggio = [220, 261.63, 329.63, 440, 523.25];
+    arpeggio.forEach((freq, i) => {
+      const t = now + 0.18 + i * 0.09;
+      playNote(ctx, freq, t, 0.25, 'square', 0.055);
+    });
+
+    // Final held power chord (A3 + E4 + A4), triangle for warmth
+    const chordTime = now + 0.18 + arpeggio.length * 0.09;
+    [220, 329.63, 440].forEach((freq) => {
+      playNote(ctx, freq, chordTime, 0.7, 'triangle', 0.045);
+    });
+  },
 };
 
 /* ─── Hook ─── */
@@ -181,6 +210,12 @@ export function useSound() {
   const lastPlayRef = useRef<Record<string, number>>({});
 
   const play = useCallback((name: SoundName) => {
+    // Respect the user's sensory preference: in Quiet Mode
+    // ("Sin sonidos, solo hápticos") no sound effects are emitted.
+    // Optional chaining guards against persisted state that predates the
+    // sensory field (zustand persist rehydration can omit it).
+    if (useStore.getState().sensory?.quiet) return;
+
     // Throttle: prevent playing the same sound more than once per 500ms
     const now = Date.now();
     const last = lastPlayRef.current[name] ?? 0;

@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { decision, twin, profile, last_focus, client_last_focus } = result.data;
+    const { decision, twin, profile, last_focus, client_last_focus, goal, recent_exercise_ids, lang } = result.data;
 
     // If the decision says rest, return a rest message
     if (decision.action === 'restore') {
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         action: 'restore',
-        message: MotivationEngine.restMessage(style),
+        message: MotivationEngine.restMessage(style, lang),
         decision,
       });
     }
@@ -63,7 +63,8 @@ export async function POST(request: NextRequest) {
       twin as unknown as DigitalTwin,
       profile.equipment,
       last_focus,
-      client_last_focus
+      client_last_focus,
+      { goal, recentExerciseIds: recent_exercise_ids }
     );
 
     // Get the motivation message
@@ -72,7 +73,8 @@ export async function POST(request: NextRequest) {
       style,
       decision.recovery_score ?? 60,
       decision.consistency?.consistency_pct ?? 50,
-      decision.duration
+      decision.duration,
+      lang
     );
 
     return NextResponse.json({
