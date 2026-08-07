@@ -30,7 +30,6 @@ import {
   Sparkles,
   TrendingUp,
    Lightbulb,
-    PenLine,
     Plus,
     Calendar,
     Settings,
@@ -45,6 +44,43 @@ import { useExercises } from '@/lib/utils/use-exercises';
 import { ExerciseImage, getExerciseVisual } from '@/lib/utils/exercise-visuals';
 import { MyRoutines } from '@/components/training/my-routines';
 import { LiveNowCard } from '@/components/training/live-now-card';
+
+type ActionTint = 'orange' | 'green' | 'purple';
+
+const ACTION_TINT: Record<ActionTint, { icon: string; border: string }> = {
+  orange: { icon: 'text-[#ffb454]', border: 'hover:border-[#ffb454]/40' },
+  green: { icon: 'text-[#34d399]', border: 'hover:border-[#34d399]/40' },
+  purple: { icon: 'text-[#a78bfa]', border: 'hover:border-[#a78bfa]/40' },
+};
+
+/** Card de acción del grid de 3 (Crear rutina / Bitácora). Igual talla que Registro rápido. */
+function ActionCard({
+  icon: Icon,
+  tint,
+  title,
+  subtitle,
+  onClick,
+}: {
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  tint: ActionTint;
+  title: string;
+  subtitle: string;
+  onClick: () => void;
+}) {
+  const tintClasses = ACTION_TINT[tint];
+  return (
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className={`h-full w-full rounded-xl border border-white/[.07] bg-[#151b2a] p-3 flex flex-col gap-2 text-left min-h-[84px] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14] ${tintClasses.border}`}
+    >
+      <Icon size={18} className={tintClasses.icon} />
+      <span className="block text-xs font-bold">{title}</span>
+      <span className="block text-[10px] text-[var(--muted)] leading-tight">{subtitle}</span>
+    </motion.button>
+  );
+}
 
 function CheckInCard() {
   const t = useT();
@@ -408,6 +444,11 @@ function GreetingHeader() {
   const prefs = useStore((s) => s.prefs);
   const name = profile?.name ?? '';
 
+  // El nombre puede venir como uid crudo (ej. y54657687989) tras registrarse
+  // con Google. No mostramos un identificador como si fuera un nombre.
+  const looksLikeId = (s: string) => /^\d{6,}$/.test(s) || s.length > 16;
+  const displayName = name && !looksLikeId(name) ? name.split(' ')[0] : null;
+
   const hour = new Date().getHours();
   let greeting = t('Buenas');
   if (hour < 12) greeting = t('Buenos días');
@@ -446,7 +487,7 @@ function GreetingHeader() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-black tracking-tight flex items-center gap-2">
-            {greeting}{name ? `, ${name.split(' ')[0]}` : ''}
+            {greeting}{displayName ? `, ${displayName}` : ''}
             <motion.span
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
@@ -455,7 +496,8 @@ function GreetingHeader() {
             >
               {t('Nv.{n}', { n: level })}
             </motion.span>
-          </h1>            <p className="text-sm text-[var(--muted)] mt-0.5 capitalize">{dayName} · {dateStr}</p>
+          </h1>
+            <p className="text-sm text-[var(--muted)] mt-0.5"><span className="capitalize">{dayName}</span> · {dateStr}</p>
         </div>
         {/* Weekly activity badge (data, not streak) */}
         {weekSessions > 0 && (
@@ -778,36 +820,29 @@ export function HomeScreen() {
         </motion.div>
       )}
 
-      {/* ─── Hoy: acción primaria (LiveNow) ─── */}
+      {/* ─── 3 acciones iguales: Crear rutina / Registro rápido / Bitácora ─── */}
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.08 }}
+        className="grid grid-cols-3 gap-2.5"
       >
-        <LiveNowCard />
-      </motion.div>
-
-      {/* ─── Herramientas secundarias ─── */}
-      <div className="flex gap-2 mt-2">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+        <ActionCard
+          icon={Plus}
+          tint="orange"
+          title={t('Crear rutina')}
+          subtitle={t('Arma tu propia sesión')}
           onClick={() => setView('create-workout')}
-          className="flex-1 py-2 rounded-xl border border-white/[.07] bg-[#151b2a] hover:border-[#ffb454]/30 transition-all text-center"
-        >
-          <Plus size={16} className="text-[#ffb454] mb-1" />
-          <span className="block text-xs font-semibold">{t('Crear rutina')}</span>
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.97 }}
+        />
+        <LiveNowCard variant="card" />
+        <ActionCard
+          icon={BookMarked}
+          tint="purple"
+          title={t('Bitácora')}
+          subtitle={t('Tu historial de movimiento')}
           onClick={() => setView('journal')}
-          className="flex-1 py-2 rounded-xl border border-white/[.07] bg-[#151b2a] hover:border-[#a78bfa]/30 transition-all text-center"
-        >
-          <BookMarked size={16} className="text-[#a78bfa] mb-1" />
-          <span className="block text-xs font-semibold">{t('Bitácora')}</span>
-        </motion.button>
-      </div>
+        />
+      </motion.div>
 
       {/* ─── Mis rutinas: plantillas guardadas con balance y dopamina ─── */}
       <MyRoutines />
