@@ -24,15 +24,16 @@ import {
   Move,
 } from 'lucide-react';
 import { FitnessIcon } from '@/components/ui/fitness-icon';
+import { useStore } from '@/lib/store';
+import { MUSCLE_ALIASES, type MuscleKey } from '@/lib/utils/muscles';
 import type { Exercise } from '@/types';
 
 // ═══════════════════════════════════════════════════════════════
 //  Constants
 // ═══════════════════════════════════════════════════════════════
 
-/** Base URL for exercise images on free-exercise-db */
-const IMAGE_BASE_URL =
-  'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+/** Base URL — local public folder since we vendored free-exercise-db locally */
+const IMAGE_BASE_URL = '/exercises/';
 
 /**
  * Wrappers para que FitnessIcon (que requiere `name`) cumpla con la firma
@@ -55,41 +56,27 @@ CardioFallback.displayName = 'CardioFallback';
 export const GlutesFallback = (p: { size?: number; className?: string }) => <FitnessIcon name="lower-body" {...p} />;
 GlutesFallback.displayName = 'GlutesFallback';
 
-/** Mapping: muscle → custom SVG icon component */
-const MUSCLE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
-  quadriceps: LegsFallback,
-  'quadriceps femoris': LegsFallback,
+/** Músculo canónico → fallback (derivado del registry, una sola fuente de verdad). */
+const FALLBACK_BY_MUSCLE: Record<MuscleKey, React.ComponentType<{ size?: number; className?: string }>> = {
   piernas: LegsFallback,
-  isquiotibiales: LegsFallback,
-  hamstrings: LegsFallback,
-  gemelos: LegsFallback,
-  calves: LegsFallback,
-  glutes: GlutesFallback,
   gluteos: GlutesFallback,
-  pectoral: ChestFallback,
-  pectorals: ChestFallback,
   pecho: ChestFallback,
-  chest: ChestFallback,
   espalda: BackFallback,
-  back: BackFallback,
-  dorsales: BackFallback,
   hombros: ShouldersFallback,
-  shoulders: ShouldersFallback,
-  deltoids: ShouldersFallback,
-  bíceps: ArmsFallback,
-  biceps: ArmsFallback,
-  tríceps: ArmsFallback,
-  triceps: ArmsFallback,
   brazos: ArmsFallback,
-  forearms: ArmsFallback,
-  antebrazos: ArmsFallback,
-  abdominales: CoreFallback,
-  abdominals: CoreFallback,
   core: CoreFallback,
-  oblicuos: CoreFallback,
-  obliques: CoreFallback,
   cardio: CardioFallback,
 };
+
+/**
+ * Mapping: alias de músculo (ES/EN, case-insensitive) → fallback icon.
+ * Se deriva de MUSCLE_ALIASES (muscles.ts) — si se añade un alias ahí,
+ * este mapa lo recoge automáticamente.
+ */
+const MUSCLE_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> =
+  Object.fromEntries(
+    Object.entries(MUSCLE_ALIASES).map(([alias, key]) => [alias, FALLBACK_BY_MUSCLE[key]]),
+  );
 
 /** Mapping: category → Lucide icon */
 const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
@@ -151,6 +138,25 @@ export function getExerciseImageUrls(exercise: Exercise): string[] {
 }
 
 /**
+ * Resolve local GIF and static-JPG URLs for an exercise.
+ * The free-exercise-db repo stores animations as `animation.gif` and
+ * static previews as `0.jpg` in each exercise folder.
+ *
+ * Returns `null` if no image data is available.
+ */
+export function getExerciseMediaUrls(exercise: Exercise): { gifUrl: string; staticUrl: string } | null {
+  if (!exercise.images || exercise.images.length === 0) return null;
+
+  const basePath = exercise.images[0].replace(/\d+\.jpg$/, '');
+  const exName = basePath.replace(/\/$/, '');
+
+  return {
+    gifUrl: `${IMAGE_BASE_URL}${exName}/animation.gif`,
+    staticUrl: `${IMAGE_BASE_URL}${exName}/0.jpg`,
+  };
+}
+
+/**
  * Choose the best fallback icon component based on exercise metadata.
  *
  * Priority order:
@@ -205,17 +211,134 @@ export function getExerciseFallbackIcon(
  *
  * Example usage in a component:
  * ```tsx
- * const { src, FallbackIcon } = getExerciseVisual(ex);
+ * const { src, fallbackIcon: FallbackIcon } = getExerciseVisual(ex);
  * if (src) return <img src={src} onError={...} />;
  * return <FallbackIcon size={18} />;
  * ```
  */
 export function getExerciseVisual(exercise: Exercise): {
   src: string | null;
-  FallbackIcon: React.ComponentType<{ size?: number; className?: string }>;
+  fallbackIcon: React.ComponentType<{ size?: number; className?: string }>;
 } {
   return {
     src: getExerciseImageUrl(exercise),
-    FallbackIcon: getExerciseFallbackIcon(exercise),
+    fallbackIcon: getExerciseFallbackIcon(exercise),
   };
 }
+
+/**
+ * ExerciseImage — shared <img> with icon fallback.
+ *
+ * Fills its parent container (w-full h-full). When there is no image or it
+ * fails to load, renders the fallback icon instead — never a broken-image
+ * flash (important for predictability). Reset its internal error state
+ * whenever `src` changes so reusing the component across exercises works.
+ *
+ * Wrap it in a fixed-size, overflow-hidden container:
+ * ```tsx
+ * <div className="w-10 h-10 rounded-xl overflow-hidden">
+ *   <ExerciseImage src={visual.src} fallbackIcon={visual.fallbackIcon} />
+ * </div>
+ * ```
+ */
+export const ExerciseImage = React.memo(function ExerciseImage({
+  src,
+  fallbackIcon: FallbackIcon,
+  alt = '',
+  size = 22,
+  className = '',
+  imgClassName = '',
+}: {
+  src: string | null;
+  fallbackIcon: React.ComponentType<{ size?: number; className?: string }>;
+  alt?: string;
+  size?: number;
+  className?: string;
+  imgClassName?: string;
+}) {
+  const [error, setError] = React.useState(false);
+
+  // Reset error state when the exercise image changes
+  React.useEffect(() => {
+    setError(false);
+  }, [src]);
+
+  if (!src || error) {
+    return (
+      <div className={`w-full h-full flex items-center justify-center ${className}`}>
+        <FallbackIcon size={size} className="text-[var(--muted)]" />
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      className={`w-full h-full object-cover ${imgClassName}`}
+      onError={() => setError(true)}
+    />
+  );
+});
+
+/**
+ * ExerciseMedia — renders GIF or static JPG based on reduceMotion preference.
+ *
+ * Uses the same error/fallback pattern as ExerciseImage but respects the
+ * user's accessibility setting (`prefs.reduceMotion`). When reduceMotion is
+ * true, it shows the static JPG (first frame) instead of the animated GIF.
+ *
+ * @example
+ * <div className="w-16 h-16 rounded-xl overflow-hidden">
+ *   <ExerciseMedia
+ *     gifUrl="/exercises/Ab_Crunch/animation.gif"
+ *     staticUrl="/exercises/Ab_Crunch/0.jpg"
+ *     alt="Abdominal Crunch"
+ *   />
+ * </div>
+ */
+export const ExerciseMedia = React.memo(function ExerciseMedia({
+  gifUrl,
+  staticUrl,
+  alt,
+  className = '',
+  priority = false,
+}: {
+  gifUrl: string;
+  staticUrl: string;
+  alt: string;
+  className?: string;
+  priority?: boolean;
+}) {
+  const [error, setError] = React.useState(false);
+  const reduceMotion = useStore((s) => s.prefs.reduceMotion);
+
+  const src = reduceMotion ? staticUrl : gifUrl;
+  const altText = reduceMotion ? alt : `${alt} en movimiento`;
+
+  // Reset error state when src changes (e.g. reduceMotion toggled)
+  React.useEffect(() => {
+    setError(false);
+  }, [src]);
+
+  if (error) {
+    return (
+      <div className={`w-full h-full flex items-center justify-center bg-[var(--card-bg)] ${className}`}>
+        <Dumbbell size={20} className="text-[var(--muted)]" />
+      </div>
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={altText}
+      loading={priority ? 'eager' : 'lazy'}
+      className={`w-full h-full object-cover ${className}`}
+      onError={() => setError(true)}
+    />
+  );
+});

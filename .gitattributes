@@ -1,0 +1,5 @@
+# Git LFS — track large binary assets
+public/exercises/*/*.jpg filter=lfs diff=lfs merge=lfs -text
+public/exercises/*/*.jpeg filter=lfs diff=lfs merge=lfs -text
+public/exercises/*/*.gif filter=lfs diff=lfs merge=lfs -text
+public/exercises/*/*.webp filter=lfs diff=lfs merge=lfs -text

@@ -57,12 +57,10 @@ describe('getExerciseImageUrl', () => {
     expect(getExerciseImageUrl(ex)).toBeNull();
   });
 
-  it('returns full GitHub raw URL from relative image path', () => {
+  it('returns local public URL from relative image path', () => {
     const ex = makeEx({ images: ['Barbell_Squat/0.jpg'] });
     const url = getExerciseImageUrl(ex);
-    expect(url).toBe(
-      'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg'
-    );
+    expect(url).toBe('/exercises/Barbell_Squat/0.jpg');
   });
 
   it('uses first image when multiple are available', () => {
@@ -76,7 +74,7 @@ describe('getExerciseImageUrl', () => {
     const ex = makeEx({ images: ['Bench_Press_-_Medium_Grip/0.jpg'] });
     const url = getExerciseImageUrl(ex);
     expect(url).toBe(
-      'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bench_Press_-_Medium_Grip/0.jpg'
+      '/exercises/Bench_Press_-_Medium_Grip/0.jpg'
     );
   });
 });
@@ -184,13 +182,13 @@ describe('getExerciseVisual', () => {
     const visual = getExerciseVisual(ex);
     expect(visual.src).toBeTruthy();
     expect(visual.src).toContain('Squat/0.jpg');
-    expect(visual.FallbackIcon).toBe(LegsFallback);
+    expect(visual.fallbackIcon).toBe(LegsFallback);
   });
 
   it('returns null src + fallback when exercise has no images', () => {
     const ex = makeEx({ muscle: 'pecho' });
     const visual = getExerciseVisual(ex);
     expect(visual.src).toBeNull();
-    expect(visual.FallbackIcon).toBe(ChestFallback);
+    expect(visual.fallbackIcon).toBe(ChestFallback);
   });
 });

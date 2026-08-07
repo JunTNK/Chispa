@@ -3,8 +3,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useExercises } from '@/lib/utils/use-exercises';
-import { getExerciseImageUrl, getExerciseFallbackIcon } from '@/lib/utils/exercise-visuals';
+import { ExerciseImage, ExerciseMedia, getExerciseVisual, getExerciseMediaUrls } from '@/lib/utils/exercise-visuals';
 import { useStore } from '@/lib/store';
+import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,20 +19,21 @@ import {
   Info,
 } from 'lucide-react';
 import { FitnessIcon } from '@/components/ui/fitness-icon';
+import { MUSCLES, MUSCLE_KEYS, muscleFitnessIcon, muscleLabel } from '@/lib/utils/muscles';
 
 // ─── Constants ───
 
+// Derivado del registry (muscles.ts): los 8 músculos canónicos + el caso
+// especial `full_body` (filtro del catálogo, no un músculo del dataset).
 const MUSCLE_GROUPS = [
-  { key: 'piernas', label: 'Piernas', fitnessName: 'lower-body' },
-  { key: 'gluteos', label: 'Glúteos', fitnessName: 'lower-body' },
-  { key: 'pecho', label: 'Pecho', fitnessName: 'bench-press' },
-  { key: 'espalda', label: 'Espalda', fitnessName: 'upper-body' },
-  { key: 'hombros', label: 'Hombros', fitnessName: 'upper-body' },
-  { key: 'brazos', label: 'Brazos', fitnessName: 'biceps' },
-  { key: 'core', label: 'Core', fitnessName: 'core' },
-  { key: 'cardio', label: 'Cardio', fitnessName: 'running' },
-  { key: 'full_body', label: 'Cuerpo completo', fitnessName: 'full-body' },
+  ...MUSCLE_KEYS.map((key) => ({
+    key,
+    label: MUSCLES[key].label,
+    fitnessName: MUSCLES[key].fitnessIcon,
+  })),
+  { key: 'full_body', label: 'Cuerpo completo', fitnessName: 'full-body' as const },
 ];
+
 
 const EQUIPMENT_OPTIONS = [
   { key: 'ninguno', label: 'Sin equipo' },
@@ -89,11 +91,10 @@ type SortKey = (typeof SORT_OPTIONS)[number]['key'];
 // ─── Helpers ───
 
 function getMuscleIcon(muscle: string, size = 18) {
-  const group = MUSCLE_GROUPS.find((g) => g.key === muscle);
-  if (group) {
-    return <FitnessIcon name={group.fitnessName} size={size} />;
-  }
-  return <Dumbbell size={size} />;
+  // full_body es un filtro del catálogo, no un músculo del registry → icono propio.
+  if (muscle === 'full_body') return <FitnessIcon name="full-body" size={size} />;
+  // O(1) vía el registry (muscles.ts) — cubre aliases ES/EN; dumbbell si no existe.
+  return <FitnessIcon name={muscleFitnessIcon(muscle)} size={size} />;
 }
 
 function equipmentMatches(filterKey: string, exerciseEq: string): boolean {
@@ -102,39 +103,10 @@ function equipmentMatches(filterKey: string, exerciseEq: string): boolean {
   return aliases.includes(exerciseEq.toLowerCase());
 }
 
-const ExerciseImage = React.memo(function ExerciseImage({
-  src,
-  fallbackIcon: FallbackIcon,
-}: {
-  src: string | null;
-  fallbackIcon: React.ComponentType<{ size?: number; className?: string }>;
-}) {
-  const [error, setError] = React.useState(false);
-
-  // No image URL or image failed to load → show fallback icon
-  if (!src || error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        <FallbackIcon size={22} className="text-[#94a0b8]" />
-      </div>
-    );
-  }
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt=""
-      className="w-full h-full object-cover"
-      loading="lazy"
-      onError={() => setError(true)}
-    />
-  );
-});
-
 // ─── Component ───
 
 export function ExerciseCatalogScreen() {
+  const t = useT();
   const setView = useStore((s) => s.setView);
 
   // Filters
@@ -263,10 +235,10 @@ export function ExerciseCatalogScreen() {
           </span>
           <div>
             <h1 className="text-lg font-black tracking-tight">CATÁLOGO</h1>
-            <p className="text-[10px] text-[#94a0b8] uppercase tracking-wider">{filtered.length} ejercicios</p>
+            <p className="text-[10px] text-[var(--muted)] uppercase tracking-wider">{filtered.length} ejercicios</p>
           </div>
         </div>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={() => setView('home')} aria-label="Cerrar catálogo"
+        <motion.button whileTap={{ scale: 0.9 }} onClick={() => setView('home')} aria-label={t('Cerrar catálogo')}
           className="w-8 h-8 rounded-xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center hover:bg-white/[.08]">
           <X size={16} />
         </motion.button>
@@ -274,13 +246,13 @@ export function ExerciseCatalogScreen() {
 
       {/* Search */}
       <div className="relative">
-        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#5c6577]" />
+        <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--muted)]" />
         <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar ejercicios..."
+          placeholder={t('Buscar ejercicios...')}
           className="w-full bg-[#151b2a] border border-white/[.10] rounded-xl pl-9 pr-10 py-3 text-sm text-white placeholder-[#5c6577] outline-none focus:border-[#ffb454] transition-colors"
           autoFocus />
         {search && (
-          <button onClick={() => setSearch('')} aria-label="Limpiar búsqueda" className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5c6577] hover:text-white"><X size={14} /></button>
+          <button onClick={() => setSearch('')} aria-label={t('Limpiar búsqueda')} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--muted)] hover:text-white"><X size={14} /></button>
         )}
       </div>
 
@@ -288,9 +260,9 @@ export function ExerciseCatalogScreen() {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <button onClick={() => { setShowMuscleMenu(v => !v); setShowEquipmentMenu(false); setShowSortMenu(false); }}
-            className={`w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${selectedMuscle ? 'bg-[rgba(255,180,84,0.1)] border-[#ffb454] text-[#ffb454]' : 'bg-[#151b2a] border-white/[.07] text-[#94a0b8] hover:border-white/[.15]'}`}>
+            className={`w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${selectedMuscle ? 'bg-[rgba(255,180,84,0.1)] border-[#ffb454] text-[#ffb454]' : 'bg-[#151b2a] border-white/[.07] text-[var(--muted)] hover:border-white/[.15]'}`}>
             <SlidersHorizontal size={13} />
-            <span className="flex-1 text-left truncate">{selectedMuscle ? MUSCLE_GROUPS.find((g) => g.key === selectedMuscle)?.label || selectedMuscle : 'Músculo'}</span>
+            <span className="flex-1 text-left truncate">{selectedMuscle ? t(muscleLabel(selectedMuscle)) : t('Músculo')}</span>
             <ChevronDown size={12} />
           </button>
           <AnimatePresence>
@@ -298,13 +270,13 @@ export function ExerciseCatalogScreen() {
               <motion.div initial={{ opacity: 0, y: -5, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -5, scale: 0.97 }} transition={{ duration: 0.12 }}
                 className="absolute top-full mt-1 left-0 right-0 z-20 rounded-xl border border-white/[.10] bg-[rgba(13,17,27,0.98)] backdrop-blur-xl p-2 shadow-2xl max-h-64 overflow-y-auto">
                 <button onClick={() => { setSelectedMuscle(null); setShowMuscleMenu(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${!selectedMuscle ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[#94a0b8] hover:bg-white/[.06]'}`}>
-                  <X size={12} /> Todos
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${!selectedMuscle ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[var(--muted)] hover:bg-white/[.06]'}`}>
+                  <X size={12} /> {t('Todos')}
                 </button>
                 {MUSCLE_GROUPS.map((g) => (
                   <button key={g.key} onClick={() => { setSelectedMuscle(g.key); setShowMuscleMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${selectedMuscle === g.key ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[#94a0b8] hover:bg-white/[.06]'}`}>
-                    <FitnessIcon name={g.fitnessName} size={14} /> {g.label}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${selectedMuscle === g.key ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[var(--muted)] hover:bg-white/[.06]'}`}>
+                    <FitnessIcon name={g.fitnessName} size={14} /> {t(g.label)}
                   </button>
                 ))}
               </motion.div>
@@ -314,9 +286,9 @@ export function ExerciseCatalogScreen() {
 
         <div className="relative flex-1">
           <button onClick={() => { setShowEquipmentMenu(v => !v); setShowMuscleMenu(false); setShowSortMenu(false); }}
-            className={`w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${selectedEquipment ? 'bg-[rgba(0,212,170,0.1)] border-[#00D4AA] text-[#00D4AA]' : 'bg-[#151b2a] border-white/[.07] text-[#94a0b8] hover:border-white/[.15]'}`}>
+            className={`w-full flex items-center justify-between gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${selectedEquipment ? 'bg-[rgba(0,212,170,0.1)] border-[#00D4AA] text-[#00D4AA]' : 'bg-[#151b2a] border-white/[.07] text-[var(--muted)] hover:border-white/[.15]'}`}>
             <Dumbbell size={13} />
-            <span className="flex-1 text-left truncate">{selectedEquipment ? EQUIPMENT_OPTIONS.find((o) => o.key === selectedEquipment)?.label || selectedEquipment : 'Equipo'}</span>
+            <span className="flex-1 text-left truncate">{selectedEquipment ? t(EQUIPMENT_OPTIONS.find((o) => o.key === selectedEquipment)?.label || selectedEquipment) : t('Equipo')}</span>
             <ChevronDown size={12} />
           </button>
           <AnimatePresence>
@@ -324,13 +296,13 @@ export function ExerciseCatalogScreen() {
               <motion.div initial={{ opacity: 0, y: -5, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -5, scale: 0.97 }} transition={{ duration: 0.12 }}
                 className="absolute top-full mt-1 left-0 right-0 z-20 rounded-xl border border-white/[.10] bg-[rgba(13,17,27,0.98)] backdrop-blur-xl p-2 shadow-2xl max-h-64 overflow-y-auto">
                 <button onClick={() => { setSelectedEquipment(null); setShowEquipmentMenu(false); }}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${!selectedEquipment ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[#94a0b8] hover:bg-white/[.06]'}`}>
-                  <X size={12} /> Todos
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${!selectedEquipment ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[var(--muted)] hover:bg-white/[.06]'}`}>
+                  <X size={12} /> {t('Todos')}
                 </button>
                 {catalogEquipment.map((opt) => (
                   <button key={opt.key} onClick={() => { setSelectedEquipment(opt.key); setShowEquipmentMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${selectedEquipment === opt.key ? 'text-[#00D4AA] bg-[rgba(0,212,170,0.08)]' : 'text-[#94a0b8] hover:bg-white/[.06]'}`}>
-                    <Dumbbell size={14} /> {opt.label}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${selectedEquipment === opt.key ? 'text-[#00D4AA] bg-[rgba(0,212,170,0.08)]' : 'text-[var(--muted)] hover:bg-white/[.06]'}`}>
+                    <Dumbbell size={14} /> {t(opt.label)}
                   </button>
                 ))}
               </motion.div>
@@ -339,8 +311,8 @@ export function ExerciseCatalogScreen() {
         </div>
 
         <div className="relative">
-          <button onClick={() => { setShowSortMenu(v => !v); setShowMuscleMenu(false); setShowEquipmentMenu(false); }} aria-label="Ordenar ejercicios"
-            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border border-white/[.07] bg-[#151b2a] text-[#94a0b8] hover:border-white/[.15] transition-all">
+          <button onClick={() => { setShowSortMenu(v => !v); setShowMuscleMenu(false); setShowEquipmentMenu(false); }} aria-label={t('Ordenar ejercicios')}
+            className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border border-white/[.07] bg-[#151b2a] text-[var(--muted)] hover:border-white/[.15] transition-all">
             <ArrowUpDown size={13} />
           </button>
           <AnimatePresence>
@@ -349,8 +321,8 @@ export function ExerciseCatalogScreen() {
                 className="absolute top-full mt-1 right-0 z-20 rounded-xl border border-white/[.10] bg-[rgba(13,17,27,0.98)] backdrop-blur-xl p-2 shadow-2xl min-w-[160px]">
                 {SORT_OPTIONS.map((opt) => (
                   <button key={opt.key} onClick={() => { setSort(opt.key); setShowSortMenu(false); }}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${sort === opt.key ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[#94a0b8] hover:bg-white/[.06]'}`}>
-                    {opt.label}
+                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${sort === opt.key ? 'text-[#ffb454] bg-[rgba(255,180,84,0.08)]' : 'text-[var(--muted)] hover:bg-white/[.06]'}`}>
+                    {t(opt.label)}
                   </button>
                 ))}
               </motion.div>
@@ -365,30 +337,30 @@ export function ExerciseCatalogScreen() {
           {selectedMuscle && (
             <Badge variant="warning" className="flex items-center gap-1 px-2 py-1">
               {getMuscleIcon(selectedMuscle, 11)}
-              <span className="text-[10px]">{MUSCLE_GROUPS.find((g) => g.key === selectedMuscle)?.label || selectedMuscle}</span>
+              <span className="text-[10px]">{t(muscleLabel(selectedMuscle))}</span>
               <button onClick={() => setSelectedMuscle(null)} className="ml-0.5 hover:text-white"><X size={10} /></button>
             </Badge>
           )}
           {selectedEquipment && (
             <Badge variant="info" className="flex items-center gap-1 px-2 py-1">
               <Dumbbell size={10} />
-              <span className="text-[10px]">{EQUIPMENT_OPTIONS.find((o) => o.key === selectedEquipment)?.label || selectedEquipment}</span>
+              <span className="text-[10px]">{t(EQUIPMENT_OPTIONS.find((o) => o.key === selectedEquipment)?.label || selectedEquipment)}</span>
               <button onClick={() => setSelectedEquipment(null)} className="ml-0.5 hover:text-white"><X size={10} /></button>
             </Badge>
           )}
-          <button onClick={() => { setSelectedMuscle(null); setSelectedEquipment(null); setSearch(''); }} className="text-[10px] text-[#5c6577] hover:text-[#94a0b8] underline underline-offset-2">Limpiar</button>
+          <button onClick={() => { setSelectedMuscle(null); setSelectedEquipment(null); setSearch(''); }} className="text-[10px] text-[var(--muted)] hover:text-[var(--muted)] underline underline-offset-2">{t('Limpiar')}</button>
         </div>
       )}
 
-      {noFilter && <p className="text-[11px] text-[#5c6577] text-center">Toca un ejercicio para ver instrucciones y detalles</p>}
+      {noFilter && <p className="text-[11px] text-[var(--muted)] text-center">{t('Toca un ejercicio para ver instrucciones y detalles')}</p>}
 
       {/* Results */}
       <div className="space-y-1.5 pb-4">
         {filtered.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#151b2a] border border-white/[.07] flex items-center justify-center mb-4"><Search size={24} className="text-[#5c6577]" /></div>
-            <p className="text-sm font-bold text-[#94a0b8] mb-1">Sin resultados</p>
-            <p className="text-xs text-[#5c6577]">Prueba con otros filtros o cambia la búsqueda</p>
+            <div className="w-14 h-14 rounded-2xl bg-[#151b2a] border border-white/[.07] flex items-center justify-center mb-4"><Search size={24} className="text-[var(--muted)]" /></div>
+            <p className="text-sm font-bold text-[var(--muted)] mb-1">{t('Sin resultados')}</p>
+            <p className="text-xs text-[var(--muted)]">{t('Prueba con otros filtros o cambia la búsqueda')}</p>
           </motion.div>
         ) : (
           <>
@@ -406,18 +378,26 @@ export function ExerciseCatalogScreen() {
                     <button onClick={() => { closeMenus(); setExpandedId(isExpanded ? null : ex.id); }} className="w-full text-left">
                       <Card className={`p-3 transition-all duration-200 ${isExpanded ? 'border-[#ffb454] bg-[rgba(255,180,84,0.04)]' : 'hover:border-white/[.15] hover:bg-white/[.04]'}`}>
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#151b2a] border border-white/[.07] flex items-center justify-center text-lg shrink-0 overflow-hidden">
-                            <ExerciseImage src={getExerciseImageUrl(ex)} fallbackIcon={getExerciseFallbackIcon(ex)} />
-                          </div>
+                           <div className="w-10 h-10 rounded-xl bg-[#151b2a] border border-white/[.07] flex items-center justify-center text-lg shrink-0 overflow-hidden">
+                             {getExerciseMediaUrls(ex) ? (
+                               <ExerciseMedia
+                                 {...getExerciseMediaUrls(ex)!}
+                                 alt={ex.name}
+                                 className="w-10 h-10 rounded-xl object-cover"
+                               />
+                             ) : (
+                               <ExerciseImage {...getExerciseVisual(ex)} size={20} />
+                             )}
+                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5">
                               <span className="text-sm font-bold truncate">{ex.name}</span>
                               {isSpanish && <span className="text-[9px] shrink-0">🇪🇸</span>}
                             </div>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-[10px] text-[#94a0b8] flex items-center gap-1">{getMuscleIcon(ex.muscle, 11)} {MUSCLE_GROUPS.find((g) => g.key === ex.muscle)?.label || ex.muscle}</span>
-                              <span className="text-[#5c6577]">·</span>
-                              <span className="text-[10px] text-[#94a0b8] truncate">{ex.equipment === 'ninguno' ? 'Sin equipo' : ex.equipment}</span>
+                              <span className="text-[10px] text-[var(--muted)] flex items-center gap-1">{getMuscleIcon(ex.muscle, 11)} {t(muscleLabel(ex.muscle))}</span>
+                              <span className="text-[var(--muted)]">·</span>
+                              <span className="text-[10px] text-[var(--muted)] truncate">{ex.equipment === 'ninguno' ? t('Sin equipo') : ex.equipment}</span>
                             </div>
                           </div>
                           <div className="flex flex-col items-center gap-0.5 shrink-0">
@@ -426,11 +406,11 @@ export function ExerciseCatalogScreen() {
                               {difficulty}
                             </div>
                             <span className="text-[7px] font-semibold uppercase tracking-wider" style={{ color: DIFFICULTY_COLORS[difficulty] }}>
-                              {DIFFICULTY_LABELS[difficulty].slice(0, 4)}
+                               {t(DIFFICULTY_LABELS[difficulty]).slice(0, 4)}
                             </span>
                           </div>
                           <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.15 }} className="shrink-0">
-                            <ChevronRight size={14} className="text-[#5c6577]" />
+                            <ChevronRight size={14} className="text-[var(--muted)]" />
                           </motion.div>
                         </div>
 
@@ -440,7 +420,7 @@ export function ExerciseCatalogScreen() {
                               <div className="mt-3 pt-3 border-t border-white/[.07] space-y-3">
                                 {ex.primaryMuscles && ex.primaryMuscles.length > 0 && (
                                   <div>
-                                    <span className="text-[10px] font-semibold text-[#94a0b8] uppercase tracking-wider">Músculos principales</span>
+                                    <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">{t('Músculos principales')}</span>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                       {ex.primaryMuscles.map((m) => <Badge key={m} variant="info" className="text-[9px] px-2 py-0.5">{m}</Badge>)}
                                     </div>
@@ -448,7 +428,7 @@ export function ExerciseCatalogScreen() {
                                 )}
                                 {ex.secondaryMuscles && ex.secondaryMuscles.length > 0 && (
                                   <div>
-                                    <span className="text-[10px] font-semibold text-[#94a0b8] uppercase tracking-wider">Secundarios</span>
+                                    <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">{t('Secundarios')}</span>
                                     <div className="flex flex-wrap gap-1 mt-1">
                                       {ex.secondaryMuscles.map((m) => <Badge key={m} variant="ghost" className="text-[9px] px-2 py-0.5">{m}</Badge>)}
                                     </div>
@@ -456,25 +436,25 @@ export function ExerciseCatalogScreen() {
                                 )}
                                 {ex.instructions && (
                                   <div>
-                                    <span className="text-[10px] font-semibold text-[#94a0b8] uppercase tracking-wider">Instrucciones</span>
-                                    <p className="text-[11px] text-[#94a0b8] leading-relaxed mt-1">{ex.cue || ex.instructions.slice(0, 200)}{(ex.instructions || '').length > 200 ? '...' : ''}</p>
+                                    <span className="text-[10px] font-semibold text-[var(--muted)] uppercase tracking-wider">{t('Instrucciones')}</span>
+                                    <p className="text-[11px] text-[var(--muted)] leading-relaxed mt-1">{ex.cue || ex.instructions.slice(0, 200)}{(ex.instructions || '').length > 200 ? '...' : ''}</p>
                                     {ex.instructionsSteps && ex.instructionsSteps.length > 1 && (
                                       <ol className="list-decimal list-inside mt-1.5 space-y-0.5">
                                         {ex.instructionsSteps.slice(0, 5).map((step, si) => (
-                                          <li key={si} className="text-[10px] text-[#94a0b8] leading-relaxed">{step}</li>
+                                          <li key={si} className="text-[10px] text-[var(--muted)] leading-relaxed">{step}</li>
                                         ))}
                                       </ol>
                                     )}
                                   </div>
                                 )}
                                 <div className="flex flex-wrap gap-1.5">
-                                  {ex.load_type && <Badge variant="info" className="text-[9px] px-2 py-0.5">{ex.load_type === 'reps' ? '🔁 Repeticiones' : '⏱ Tiempo'}</Badge>}
+                                  {ex.load_type && <Badge variant="info" className="text-[9px] px-2 py-0.5">{ex.load_type === 'reps' ? t('🔁 Repeticiones') : t('⏱ Tiempo')}</Badge>}
                                   {ex.category && <Badge variant="ghost" className="text-[9px] px-2 py-0.5">{ex.category}</Badge>}
-                                  {ex.force && <Badge variant="ghost" className="text-[9px] px-2 py-0.5">{ex.force === 'push' ? 'Empuje' : ex.force === 'pull' ? 'Tracción' : 'Estático'}</Badge>}
-                                  {ex.mechanic && <Badge variant="ghost" className="text-[9px] px-2 py-0.5">{ex.mechanic === 'compound' ? 'Compuesto' : 'Aislamiento'}</Badge>}
+                                  {ex.force && <Badge variant="ghost" className="text-[9px] px-2 py-0.5">{ex.force === 'push' ? t('Empuje') : ex.force === 'pull' ? t('Tracción') : t('Estático')}</Badge>}
+                                  {ex.mechanic && <Badge variant="ghost" className="text-[9px] px-2 py-0.5">{ex.mechanic === 'compound' ? t('Compuesto') : t('Aislamiento')}</Badge>}
                                   {ex.cognitive_load && ex.cognitive_load !== 'low' && (
                                     <Badge variant={ex.cognitive_load === 'high' ? 'danger' : 'warning'} className="text-[9px] px-2 py-0.5">
-                                      <Info size={8} className="mr-0.5" /> Carga {ex.cognitive_load === 'high' ? 'alta' : 'media'}
+                                      <Info size={8} className="mr-0.5" /> {t('Carga {nivel}', { nivel: ex.cognitive_load === 'high' ? t('alta') : t('media') })}
                                     </Badge>
                                   )}
                                 </div>
@@ -493,15 +473,15 @@ export function ExerciseCatalogScreen() {
             {hasMore && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pt-2 pb-4">
                 <button onClick={() => setPage(p => p + 1)}
-                  className="w-full py-3 rounded-xl border border-dashed border-white/[.12] bg-[#151b2a] text-xs font-semibold text-[#94a0b8] hover:border-white/[.25] hover:text-white transition-all">
-                  Mostrar más ({filtered.length - pageExs.length} restantes)
+                  className="w-full py-3 rounded-xl border border-dashed border-white/[.12] bg-[#151b2a] text-xs font-semibold text-[var(--muted)] hover:border-white/[.25] hover:text-white transition-all">
+                  {t('Mostrar más ({n} restantes)', { n: filtered.length - pageExs.length })}
                 </button>
-                <p className="text-[10px] text-[#5c6577] text-center mt-1.5">Mostrando {pageExs.length} de {filtered.length}</p>
+                <p className="text-[10px] text-[var(--muted)] text-center mt-1.5">{t('Mostrando {a} de {b}', { a: pageExs.length, b: filtered.length })}</p>
               </motion.div>
             )}
 
             {!hasMore && filtered.length > PAGE_SIZE && (
-              <p className="text-[10px] text-[#5c6577] text-center pt-1">Mostrando todos los {filtered.length} ejercicios</p>
+              <p className="text-[10px] text-[var(--muted)] text-center pt-1">{t('Mostrando todos los {n} ejercicios', { n: filtered.length })}</p>
             )}
           </>
         )}
