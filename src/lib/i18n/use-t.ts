@@ -23,6 +23,9 @@ export function useT(): (text: string, vars?: Record<string, string | number>) =
   return useCallback(
     (text: string, vars?: Record<string, string | number>): string => {
       let out = lang === 'en' ? (EN[text] ?? text) : text;
+      if (lang === 'en' && !(text in EN) && process.env.NODE_ENV === 'development') {
+        console.warn(`[i18n] falta traducción EN: "${text}"`);
+      }
       if (vars) {
         for (const [k, v] of Object.entries(vars)) {
           out = out.split(`{${k}}`).join(String(v));

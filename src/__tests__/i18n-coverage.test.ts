@@ -52,6 +52,15 @@ function extractKeys(file: string): Set<string> {
   return keys;
 }
 
+/**
+ * Keys "semánticas" (clave anidada `ns.name` o camelCase) — prohibidas.
+ * El modelo es plano: el literal DEBE ser la frase ES (el fallback ES la pinta).
+ * Si alguien introduce una key de máquina, en lang ES se ve la key cruda en
+ * pantalla (bug clase 'live.start' / 'session.skipRestHint').
+ */
+const NESTED_KEY = /^[a-z][a-zA-Z0-9_]*\.[a-zA-Z0-9_]+$/;
+const CAMEL_KEY = /^[a-z][a-zA-Z0-9]*[A-Z][a-zA-Z0-9]*$/;
+
 describe('i18n · cobertura de claves t() en EN', () => {
   const files = walk(SRC_ROOT, []);
   const missing = new Map<string, string[]>(); // key → files where it's used
@@ -70,5 +79,22 @@ describe('i18n · cobertura de claves t() en EN', () => {
   it('toda clave ES usada como literal resuelve en el diccionario EN mergeado', () => {
     const msg = [...missing.entries()].map(([k, files]) => `  • "${k}" → ${files.join(', ')}`).join('\n');
     expect(missing.size, `Faltan ${missing.size} traducciones EN:\n${msg}`).toBe(0);
+  });
+
+  it('ninguna t() usa keys semánticas (clave cruda en pantalla en lang ES)', () => {
+    const offenders = new Map<string, string[]>();
+    for (const f of files) {
+      for (const key of extractKeys(f)) {
+        if (NESTED_KEY.test(key) || CAMEL_KEY.test(key)) {
+          const abs = f.replace(process.cwd() + '/', '');
+          const arr = offenders.get(key) ?? [];
+          if (!arr.includes(abs)) arr.push(abs);
+          offenders.set(key, arr);
+        }
+      }
+    }
+    const msg = [...offenders.entries()]
+      .map(([k, files]) => `  • "${k}" → ${files.join(', ')} (usa una frase ES como literal)`).join('\n');
+    expect(offenders.size, `Keys semánticas detectadas:\n${msg}`).toBe(0);
   });
 });

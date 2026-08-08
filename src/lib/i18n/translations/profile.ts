@@ -149,8 +149,6 @@ export const enProfile: Record<string, string> = {
   'Patrón de dopamina': 'Dopamine pattern',
   'Tu hora pico de movimiento': 'Your peak movement hour',
   'Programa sesiones en esta ventana para máxima adherencia': 'Schedule sessions in this window for maximum adherence',
-  // Session hints
-  'session.skipRestHint': 'Skip straight to the next set.',
   // Retention dashboard
   'Regresaste al día 1': 'Returned on day 1',
   'Regresaste a la semana': 'Returned within 7 days',

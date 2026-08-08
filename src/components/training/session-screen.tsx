@@ -467,7 +467,7 @@ setPlan({
       >
         <Button variant="ghost" className="mt-4 flex flex-col items-start" onClick={advance}>
           <span>{t('Saltar descanso')}</span>
-          <span className="text-xs text-[var(--muted)]">{t('session.skipRestHint')}</span>
+          <span className="text-xs text-[var(--muted)]">{t('Pasa directo a la siguiente serie, sin esperar.')}</span>
         </Button>
       </motion.div>
     </motion.div>

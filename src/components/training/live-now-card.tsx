@@ -97,7 +97,7 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
           onClick={handleFinish}
           className="w-full py-2 rounded-xl bg-gradient-to-r from-[#34d399] to-[#10b981] text-[#0a0d14] font-bold text-sm transition-all hover:brightness-110"
         >
-          {t('live.finish')}
+          {t('Terminar y guardar')}
         </button>
       </>
     );
@@ -136,7 +136,7 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
           onClick={() => setView('quick-log')}
           className="w-full text-center text-[9px] text-[var(--muted)] hover:text-[var(--text)] underline underline-offset-1"
         >
-          {t('live.manual')}
+          {t('Registrar algo que ya hice')}
         </button>
       </div>
     );
@@ -155,16 +155,16 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
         className="w-full py-4 rounded-2xl border border-white/[.07] bg-gradient-to-b from-[#0a0d14] to-[#151b2a] text-left px-4 flex flex-col gap-1 transition-all hover:border-[#34d399]/30 focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]"
       >
         <span className="text-base font-bold flex items-center gap-2">
-          <span>▶</span>{t('live.start')}
+          <span>▶</span>{t('Estoy entrenando ahora')}
         </span>
-        <span className="text-xs text-[var(--muted)]">{t('live.hint')}</span>
+        <span className="text-xs text-[var(--muted)]">{t('Un toque y cuenta el tiempo por ti')}</span>
       </motion.button>
 
       <button
         onClick={() => setView('quick-log')}
         className="mt-2 w-full text-center text-xs text-[var(--muted)] hover:text-[var(--text)] underline underline-offset-1"
       >
-        {t('live.manual')}
+        {t('Registrar algo que ya hice')}
       </button>
     </motion.div>
   );
