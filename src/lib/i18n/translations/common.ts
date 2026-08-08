@@ -111,4 +111,17 @@ export const enCommon: Record<string, string> = {
   'Sonido guía': 'Audio guide',
   'Voz que anuncia ejercicios y descansos en el modo audio. Se apaga en un toque.':
     'Voice that announces exercises and rests in audio mode. One tap to mute.',
+  // ── Voz del coach (neural) ──
+  'Voz del coach': 'Coach voice',
+  'Tu sesión también se escucha. La voz neural es una descarga única opt-in; se queda en tu dispositivo.':
+    'Your session speaks too. The neural voice is a one-time opt-in download; it stays on your device.',
+  'Voz del sistema': 'System voice',
+  'Instantánea, sin descarga': 'Instant, no download',
+  'Voz neural': 'Neural voice',
+  'Más humana · descarga única · vive en tu dispositivo':
+    'More human · one-time download · stays on your device',
+  'Descargando voz neural...': 'Downloading neural voice...',
+  'se queda en tu dispositivo': 'stays on your device',
+  'No se pudo descargar la voz neural. Puedes seguir con la voz del sistema.':
+    'Could not download the neural voice. You can keep using the system voice.',
 };

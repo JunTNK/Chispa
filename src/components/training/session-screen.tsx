@@ -14,7 +14,7 @@ import { useExercises } from '@/lib/utils/use-exercises';
 import { ExerciseImage, ExerciseMedia, getExerciseVisual, getExerciseMediaUrls } from '@/lib/utils/exercise-visuals';
 import type { Exercise, WorkoutExercise } from '@/types';
 import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen, Droplets, Volume2, VolumeX } from 'lucide-react';
-import { speak, stopSpeak } from '@/lib/utils/speech';
+import { speak, stopSpeak } from '@/lib/audio/speak';
 import {
   exerciseIntro,
   restIntro,

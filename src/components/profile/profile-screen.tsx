@@ -28,6 +28,8 @@ import {
   anchorLabel,
   anchorWindowLabel,
 } from '@/lib/utils/anchor-utils';
+import { loadNeuralVoice } from '@/lib/audio/neural-voice';
+import { Progress } from '@/components/ui/progress';
 import { LanguageSwitcher } from '@/components/settings/language-switcher';
 import {
   SilverMedalIcon,
@@ -59,7 +61,29 @@ export function ProfileScreen() {
   const leaderboard = useStore((s) => s.leaderboard);
   const anchorRoutine = useStore((s) => s.anchorRoutine);
   const setAnchorRoutine = useStore((s) => s.setAnchorRoutine);
+  const voice = useStore((s) => s.prefs.voice);
+  const setVoice = useStore((s) => s.setVoice);
   const [showConfirm, setShowConfirm] = React.useState(false);
+
+  // ─── Voz neural (opt-in): descarga única con progreso visible ───
+  const [voiceLoading, setVoiceLoading] = React.useState(false);
+  const [voiceProgress, setVoiceProgress] = React.useState<{ loaded: number; total: number } | null>(null);
+  const [voiceError, setVoiceError] = React.useState(false);
+
+  const enableNeural = React.useCallback(async () => {
+    if (voice === 'neural' || voiceLoading) return;
+    setVoiceError(false);
+    setVoiceLoading(true);
+    setVoiceProgress(null);
+    try {
+      await loadNeuralVoice(lang, (loaded, total) => setVoiceProgress({ loaded, total }));
+      setVoice('neural');
+    } catch {
+      setVoiceError(true);
+    } finally {
+      setVoiceLoading(false);
+    }
+  }, [voice, voiceLoading, lang, setVoice]);
 
   // ─── Ancla de rutina (habit stacking): selección local → guardado explícito ───
   const [anchorSel, setAnchorSel] = React.useState('');
@@ -670,6 +694,67 @@ export function ProfileScreen() {
               {t('Guardar ancla')}
             </Button>
           </>
+        )}
+      </Card>
+
+      {/* Voz del coach (neural opt-in: descarga única, vive en el dispositivo) */}
+      <Card>
+        <h2 className="font-bold text-sm mb-1 block">{t('Voz del coach')}</h2>
+        <p className="text-xs text-[var(--muted)] mb-4 leading-relaxed">
+          {t('Tu sesión también se escucha. La voz neural es una descarga única opt-in; se queda en tu dispositivo.')}
+        </p>
+
+        {voiceLoading ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold">{t('Descargando voz neural...')}</p>
+            <Progress
+              value={voiceProgress ? Math.round((voiceProgress.loaded / voiceProgress.total) * 100) : 0}
+            />
+            <p className="text-xs text-[var(--muted)]">
+              ≈{voiceProgress ? Math.round(voiceProgress.total / 1e6) : 0} MB · {t('se queda en tu dispositivo')}
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('Voz del coach')}>
+            <button
+              role="radio"
+              aria-checked={voice === 'system'}
+              onClick={() => setVoice('system')}
+              className={cn(
+                'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]',
+                voice === 'system'
+                  ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.10)]'
+                  : 'border-[var(--line)] hover:bg-[var(--card2)]',
+              )}
+            >
+              <span className="block text-sm font-semibold">{t('Voz del sistema')}</span>
+              <span className="block text-[11px] text-[var(--muted)] mt-0.5 leading-tight">
+                {t('Instantánea, sin descarga')}
+              </span>
+            </button>
+            <button
+              role="radio"
+              aria-checked={voice === 'neural'}
+              onClick={enableNeural}
+              className={cn(
+                'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]',
+                voice === 'neural'
+                  ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.10)]'
+                  : 'border-[var(--line)] hover:bg-[var(--card2)]',
+              )}
+            >
+              <span className="block text-sm font-semibold">{t('Voz neural')}</span>
+              <span className="block text-[11px] text-[var(--muted)] mt-0.5 leading-tight">
+                {t('Más humana · descarga única · vive en tu dispositivo')}
+              </span>
+            </button>
+          </div>
+        )}
+
+        {voiceError && (
+          <p className="text-xs text-[#f87171] mt-3">
+            {t('No se pudo descargar la voz neural. Puedes seguir con la voz del sistema.')}
+          </p>
         )}
       </Card>
 
