@@ -253,4 +253,64 @@ describe('SessionScreen', () => {
 
     vi.useRealTimers();
   });
+
+  it('modo manual: sin countdown, muestra "Listo, siguiente serie"', () => {
+    vi.useFakeTimers();
+    useStore.setState({
+      prefs: { ...useStore.getState().prefs, restPref: 'manual' },
+      plan: makePlan({
+        workout: {
+          title: 'Test', focus: 'full', duration: 20,
+          exercises: [
+            { exercise_id: 'ex1', name: 'Sentadilla', muscle: 'cuadriceps', sets: 2, reps: 12, rest: 60 },
+            { exercise_id: 'ex2', name: 'Flexiones', muscle: 'pecho', sets: 3, reps: 10, rest: 45 },
+          ],
+        },
+      }),
+    });
+    render(<SessionScreen />);
+
+    // Complete first set, then last set → descanso manual
+    fireEvent.click(screen.getByRole('button', { name: 'Serie hecha' }));
+    act(() => { vi.advanceTimersByTime(500); });
+    fireEvent.click(screen.getByRole('button', { name: 'Terminar ejercicio' }));
+    act(() => { vi.advanceTimersByTime(500); });
+
+    expect(screen.getByText('Descanso')).toBeInTheDocument();
+    expect(screen.getByText('Descansa lo que necesites')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Listo, siguiente serie' })).toBeInTheDocument();
+    // Sin countdown: no anillo con segundos
+    expect(screen.queryByText('seg')).not.toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+
+  it('botón "+15 s" extiende el countdown', () => {
+    vi.useFakeTimers();
+    useStore.setState({
+      plan: makePlan({
+        workout: {
+          title: 'Test', focus: 'full', duration: 20,
+          exercises: [
+            { exercise_id: 'ex1', name: 'Sentadilla', muscle: 'cuadriceps', sets: 2, reps: 12, rest: 60 },
+            { exercise_id: 'ex2', name: 'Flexiones', muscle: 'pecho', sets: 3, reps: 10, rest: 45 },
+          ],
+        },
+      }),
+    });
+    render(<SessionScreen />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Serie hecha' }));
+    act(() => { vi.advanceTimersByTime(500); });
+    fireEvent.click(screen.getByRole('button', { name: 'Terminar ejercicio' }));
+    act(() => { vi.advanceTimersByTime(500); });
+
+    // Countdown en 60 (rest auto del ejercicio)
+    expect(screen.getByText('60')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Añadir 15 s' }));
+    // Extendido a 75
+    expect(screen.getByText('75')).toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
 });

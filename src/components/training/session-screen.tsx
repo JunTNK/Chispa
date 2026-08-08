@@ -15,6 +15,7 @@ import { ExerciseImage, ExerciseMedia, getExerciseVisual, getExerciseMediaUrls }
 import type { Exercise, WorkoutExercise } from '@/types';
 import { Dumbbell, Zap, Wind, StopCircle, Camera, BookOpen, Droplets, Volume2, VolumeX } from 'lucide-react';
 import { speak, stopSpeak } from '@/lib/audio/speak';
+import { resolveRestSeconds } from '@/lib/utils/rest';
 import {
   exerciseIntro,
   restIntro,
@@ -88,6 +89,7 @@ export function SessionScreen() {
   const [hyperfocusDismissed, setHyperfocusDismissed] = React.useState(false);
   const [restLeft, setRestLeft] = React.useState(0);
   const [restTotal, setRestTotal] = React.useState(0);
+  const [resting, setResting] = React.useState(false);
   const [paused, setPaused] = React.useState(false);
   const [timeRun, setTimeRun] = React.useState(false);
   const [timeLeft, setTimeLeft] = React.useState(0);
@@ -256,6 +258,7 @@ export function SessionScreen() {
   const advance = useCallback(() => {
     const currentExs = exsRef.current;
     const currentIdx = idxRef.current;
+    setResting(false);
     if (!currentExs[currentIdx]) {
       finishSessionRef.current();
       return;
@@ -321,8 +324,10 @@ export function SessionScreen() {
         finishSessionRef.current();
         return;
       }
-      setRestTotal(currentEx.rest);
-      setRestLeft(currentEx.rest);
+      const restSecs = resolveRestSeconds(useStore.getState().prefs.restPref ?? 'auto', currentEx.rest);
+      setRestTotal(restSecs ?? 0);
+      setRestLeft(restSecs ?? 0);
+      setResting(true);
     } else {
       setSetNum((s) => s + 1);
       setRepsCur(currentEx.reps);
@@ -427,51 +432,85 @@ setPlan({
 
   const isTime = ex.load_type === 'time';
 
-  const renderRest = () => (
-    <motion.div
-      key="rest"
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.25 }}
-      className="flex flex-col items-center py-8"
-    >
-      <motion.p
-        initial={{ opacity: 0, y: -8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-xs text-[var(--muted)] uppercase tracking-widest mb-4"
-      >
-        {t('Descanso')}
-      </motion.p>
+  const renderRest = () => {
+    const isManual = restTotal <= 0;
+    return (
       <motion.div
-        animate={restLeft <= 5 ? { scale: [1, 1.05, 1] } : {}}
-        transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+        key="rest"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ duration: 0.25 }}
+        className="flex flex-col items-center py-8"
       >
-        <RecRing pct={restTotal > 0 ? ((restTotal - restLeft) / restTotal) * 100 : 0} size={140} strokeWidth={10}>
-          <span className={`text-4xl font-bold transition-colors ${restLeft <= 5 ? 'text-[#ffb454]' : ''}`}>{restLeft}</span>
-          <span className="text-xs text-[var(--muted)]">{t('seg')}</span>
-        </RecRing>
+        <motion.p
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-xs text-[var(--muted)] uppercase tracking-widest mb-4"
+        >
+          {t('Descanso')}
+        </motion.p>
+
+        {isManual ? (
+          <>
+            <motion.h3
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-2xl font-bold"
+            >
+              {t('Descansa lo que necesites')}
+            </motion.h3>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.15 }}
+              className="text-sm text-[var(--muted)] mt-2"
+            >
+              {t('El descanso es parte del entrenamiento.')}
+            </motion.p>
+          </>
+        ) : (
+          <>
+            <motion.div
+              animate={restLeft <= 5 ? { scale: [1, 1.05, 1] } : {}}
+              transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+            >
+              <RecRing pct={restTotal > 0 ? ((restTotal - restLeft) / restTotal) * 100 : 0} size={140} strokeWidth={10}>
+                <span className={`text-4xl font-bold transition-colors ${restLeft <= 5 ? 'text-[#ffb454]' : ''}`}>{restLeft}</span>
+                <span className="text-xs text-[var(--muted)]">{t('seg')}</span>
+              </RecRing>
+            </motion.div>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="text-sm text-[var(--muted)] mt-4"
+            >
+              {t('Siguiente: {name}', { name: ex.name })}
+            </motion.p>
+          </>
+        )}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="flex flex-col items-center gap-3 mt-4"
+        >
+          <Button variant="primary" size="large" className="w-full min-w-[220px]" onClick={advance}>
+            {t(isManual ? 'Listo, siguiente serie' : 'Saltar descanso')}
+          </Button>
+          {!isManual && (
+            <Button variant="ghost" onClick={() => {
+              setRestLeft((r) => r + 15);
+              setRestTotal((r) => r + 15);
+            }}>
+              {t('Añadir 15 s')}
+            </Button>
+          )}
+        </motion.div>
       </motion.div>
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="text-sm text-[var(--muted)] mt-4"
-      >
-        {t('Siguiente: {name}', { name: ex.name })}
-      </motion.p>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Button variant="ghost" className="mt-4 flex flex-col items-start" onClick={advance}>
-          <span>{t('Saltar descanso')}</span>
-          <span className="text-xs text-[var(--muted)]">{t('Pasa directo a la siguiente serie, sin esperar.')}</span>
-        </Button>
-      </motion.div>
-    </motion.div>
-  );
+    );
+  };
 
   const renderExercise = () => {
     return (
@@ -813,7 +852,7 @@ setPlan({
       <div className="flex-1 px-4 pb-4">
         <Card className="min-h-[340px]">
           <AnimatePresence mode="wait">
-            {restLeft > 0 ? renderRest() : renderExercise()}
+            {resting ? renderRest() : renderExercise()}
           </AnimatePresence>
         </Card>
       </div>

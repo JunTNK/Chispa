@@ -63,6 +63,8 @@ export function ProfileScreen() {
   const setAnchorRoutine = useStore((s) => s.setAnchorRoutine);
   const voice = useStore((s) => s.prefs.voice);
   const setVoice = useStore((s) => s.setVoice);
+  const restPref = useStore((s) => s.prefs.restPref);
+  const setRestPref = useStore((s) => s.setRestPref);
   const [showConfirm, setShowConfirm] = React.useState(false);
 
   // ─── Voz neural (opt-in): descarga única con progreso visible ───
@@ -756,6 +758,45 @@ export function ProfileScreen() {
             {t('No se pudo descargar la voz neural. Puedes seguir con la voz del sistema.')}
           </p>
         )}
+      </Card>
+
+      {/* Descanso entre series (auto / fijo / manual) */}
+      <Card>
+        <h2 className="font-bold text-sm mb-1 block">{t('Descanso entre series')}</h2>
+        <p className="text-xs text-[var(--muted)] mb-4 leading-relaxed">
+          {t('Elige cuánto descansar entre series. Auto ajusta según la intensidad; manual no usa cronómetro.')}
+        </p>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label={t('Descanso entre series')}>
+          {[
+            { value: 'auto', label: t('Auto'), desc: t('El motor ajusta según intensidad') },
+            { value: 30, label: '30 s' },
+            { value: 60, label: '60 s' },
+            { value: 90, label: '90 s' },
+            { value: 120, label: '2 min' },
+            { value: 'manual', label: t('Manual'), desc: t('Sin cronómetro: continúa cuando estés listo') },
+          ].map((opt) => {
+            const selected = String(restPref) === String(opt.value);
+            return (
+              <button
+                key={String(opt.value)}
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setRestPref(opt.value as any)}
+                className={cn(
+                  'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]',
+                  selected
+                    ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.10)]'
+                    : 'border-[var(--line)] hover:bg-[var(--card2)]',
+                )}
+              >
+                <span className="block text-sm font-semibold">{opt.label}</span>
+                {opt.desc && (
+                  <span className="block text-[11px] text-[var(--muted)] mt-0.5 leading-tight">{opt.desc}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </Card>
 
       {/* Social / Cooperativo (local-first MVP, zero-blame) */}

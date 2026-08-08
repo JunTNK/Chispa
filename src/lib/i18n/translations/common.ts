@@ -28,6 +28,8 @@ export const enCommon: Record<string, string> = {
   'Sin resultados': 'No results',
   'Sistema': 'System',
   'SISTEMA': 'SYSTEM',
+  'Auto': 'Auto',
+  'Manual': 'Manual',
   'Perfil': 'Profile',
   'Ranking': 'Ranking',
   'Progreso': 'Progress',
