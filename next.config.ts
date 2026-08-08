@@ -82,6 +82,12 @@ const nextConfig: NextConfig = {
         { key: 'Cache-Control', value: 'public, max-age=0' },
       ],
     },
+    {
+      source: '/sw.js',
+      headers: [
+        { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+      ],
+    },
   ],
 };
 

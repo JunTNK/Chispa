@@ -1,4 +1,4 @@
-const CACHE = 'chispa-v1';
+const CACHE = 'chispa-v2';
 const ASSETS = [
   '/',
   '/manifest.json',
@@ -26,12 +26,31 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  // Navegaciones (HTML): network-first para que el usuario siempre vea la
+  // versión más reciente. Cache como fallback offline.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Resto (JS/CSS/imágenes): cache-first + revalidación en segundo plano.
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      const fetchPromise = fetch(event.request).then((response) => {
+    caches.match(request).then((cached) => {
+      const fetchPromise = fetch(request).then((response) => {
         if (response && response.status === 200) {
           const clone = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+          caches.open(CACHE).then((cache) => cache.put(request, clone));
         }
         return response;
       }).catch(() => cached);
