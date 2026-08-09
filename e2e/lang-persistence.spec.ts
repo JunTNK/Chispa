@@ -149,7 +149,9 @@ test.describe('Idioma persistido en el Digital Twin', () => {
       }
       if (isTwin) {
         // Upsert del push del perfil: captura el lang persistido
-        const body = route.request().postDataJSON() as { lang?: 'es' | 'en' } | null;
+        // (supabase-js manda el upsert como array con 1 fila)
+        const raw = route.request().postDataJSON() as { lang?: 'es' | 'en' } | Array<{ lang?: 'es' | 'en' }> | null;
+        const body = Array.isArray(raw) ? raw[0] : raw;
         if (body?.lang === 'en' || body?.lang === 'es') server.lang = body.lang;
         await route.fulfill({ status: 201, headers: CORS, contentType: 'application/json', body: '[]' });
         return;
@@ -172,7 +174,7 @@ test.describe('Idioma persistido en el Digital Twin', () => {
 
     // ── 2. Cambiar a EN en el perfil → push escribe digital_twins.lang='en' ──
     await openExtraMenu(page, 'Perfil');
-    await page.locator('button').filter({ hasText: 'English' }).click();
+    await page.getByRole('group', { name: 'Idioma' }).getByRole('button', { name: /^en$/i }).click();
     await expect
       .poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 8000 })
       .toBe('en');
@@ -194,9 +196,10 @@ test.describe('Idioma persistido en el Digital Twin', () => {
       .poll(() => page.evaluate(() => document.documentElement.lang), { timeout: 15000 })
       .toBe('en');
 
-    // ── 5. La UI del welcome confirma el idioma restaurado (no el 'es' local) ──
-    await expect(page.locator('#cta-btn')).toContainText('Create my profile');
-    await expect(page.getByText('Log in', { exact: true })).toBeVisible();
+    // ── 5. La UI (perfil, destino tras restaurar sesión) confirma el idioma ──
+    // restaurado, no el 'es' forzado en localStorage.
+    await expect(page.locator('text=Your Digital Twin')).toBeVisible();
+    await expect(page.locator('text=Session preferences')).toBeVisible();
 
     expect(pageErrors).toEqual([]);
   });

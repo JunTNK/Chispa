@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/ui/icons';
-import { cn, todayKey, calculateBmi, type BmiResult } from '@/lib/utils/helpers';
+import { cn, todayKey, calculateBmi } from '@/lib/utils/helpers';
 import { STYLE_LABELS, GOAL_LABELS, NEURO_LABELS, SEX_LABELS, UNITS_LABELS } from '@/lib/utils/constants';
 import {
   kgToLbs,
@@ -48,7 +48,6 @@ export function ProfileScreen() {
   const neuro = useStore((s) => s.neuro);
   const prefs = useStore((s) => s.prefs);
   const setPref = useStore((s) => s.setPref);
-  const setLang = useStore((s) => s.setLang);
   const lang = useStore((s) => s.lang);
   const setNeuro = useStore((s) => s.setNeuro);
   const setTwin = useStore((s) => s.setTwin);
@@ -264,17 +263,17 @@ export function ProfileScreen() {
             <Badge variant="ghost">{t('vivo')}</Badge>
           </div>
           <div className="space-y-3">
-            <div className="flex justify-between gap-3 py-2.5 border-b border-white/[.07] text-sm">
+            <div className="flex justify-between gap-3 py-2.5 border-b border-[var(--line)] text-sm">
               <span className="text-[var(--muted)]">{t('Estilo de entrenamiento')}</span>
               <span className="font-semibold text-right">
                 {t('Sesiones de ~{n} min', { n: Math.round(twin.patterns.avg_duration) })}
               </span>
             </div>
-            <div className="flex justify-between gap-3 py-2.5 border-b border-white/[.07] text-sm">
+            <div className="flex justify-between gap-3 py-2.5 border-b border-[var(--line)] text-sm">
               <span className="text-[var(--muted)]">{t('Motivación que te funciona')}</span>
               <span className="font-semibold text-right">{t(STYLE_LABELS[twin.motivation_style])}</span>
             </div>
-            <div className="flex justify-between gap-3 py-2.5 border-b border-white/[.07] text-sm">
+            <div className="flex justify-between gap-3 py-2.5 border-b border-[var(--line)] text-sm">
               <span className="text-[var(--muted)]">{t('Mejor franja horaria')}</span>
               <span className="font-semibold text-right">
                 {bestHour ? t('Sobre las {n}:00', { n: bestHour[0] }) : '—'}
@@ -303,7 +302,7 @@ export function ProfileScreen() {
               className={`flex flex-col items-center justify-center min-h-[56px] rounded-2xl border-2 py-3 text-center transition-all ${
                 (neuro?.duration || 20) === d
                   ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                  : 'border-white/[.07] bg-[#151b2a]'
+                  : 'border-[var(--line)] bg-[var(--card)]'
               }`}
             >
               <span className="font-semibold text-sm">{t('{n} min', { n: d })}</span>
@@ -337,8 +336,8 @@ export function ProfileScreen() {
             aria-pressed={draftUnits === 'imperial'}
             className={`flex flex-col items-center justify-center min-h-[54px] rounded-2xl border-2 text-center transition-all ${
               draftUnits === 'imperial'
-                ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                : 'border-white/[.07] bg-[#151b2a] hover:bg-white/[.06]'
+                ? 'border-[var(--accent)] bg-[rgba(255,180,84,0.08)]'
+                : 'border-[var(--line)] bg-[var(--card)] hover:bg-[var(--card2)]'
             }`}
           >
             <span className="font-bold text-xs">🇺🇸 {t(UNITS_LABELS.imperial)}</span>
@@ -349,8 +348,8 @@ export function ProfileScreen() {
             aria-pressed={draftUnits === 'metric'}
             className={`flex flex-col items-center justify-center min-h-[54px] rounded-2xl border-2 text-center transition-all ${
               draftUnits === 'metric'
-                ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                : 'border-white/[.07] bg-[#151b2a] hover:bg-white/[.06]'
+                ? 'border-[var(--accent)] bg-[rgba(255,180,84,0.08)]'
+                : 'border-[var(--line)] bg-[var(--card)] hover:bg-[var(--card2)]'
             }`}
           >
             <span className="font-bold text-xs">🌐 {t(UNITS_LABELS.metric)}</span>
@@ -366,8 +365,8 @@ export function ProfileScreen() {
             aria-pressed={draftSex === 'masculino'}
             className={`min-h-[46px] rounded-2xl border-2 text-sm font-semibold transition-all ${
               draftSex === 'masculino'
-                ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                : 'border-white/[.07] bg-[#151b2a] text-[var(--muted)] hover:bg-white/[.06]'
+                ? 'border-[var(--accent)] bg-[rgba(255,180,84,0.08)]'
+                : 'border-[var(--line)] bg-[var(--card)] text-[var(--muted)] hover:bg-[var(--card2)]'
             }`}
           >
             {SEX_LABELS[lang].masculine}
@@ -377,8 +376,8 @@ export function ProfileScreen() {
             aria-pressed={draftSex === 'femenino'}
             className={`min-h-[46px] rounded-2xl border-2 text-sm font-semibold transition-all ${
               draftSex === 'femenino'
-                ? 'border-[#ffb454] bg-[rgba(255,180,84,0.08)]'
-                : 'border-white/[.07] bg-[#151b2a] text-[var(--muted)] hover:bg-white/[.06]'
+                ? 'border-[var(--accent)] bg-[rgba(255,180,84,0.08)]'
+                : 'border-[var(--line)] bg-[var(--card)] text-[var(--muted)] hover:bg-[var(--card2)]'
             }`}
           >
             {SEX_LABELS[lang].feminine}
@@ -398,7 +397,7 @@ export function ProfileScreen() {
                 placeholder={draftUnits === 'imperial' ? '185' : '84'}
                 value={wInput}
                 onChange={(e) => setWInput(e.target.value.replace(/[^0-9.,]/g, ''))}
-                className="flex-1 min-w-0 bg-[#151b2a] border border-white/[.07] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[#ffb454] transition-colors"
+                className="flex-1 min-w-0 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
               />
               <span className="text-xs font-bold text-[var(--muted)] shrink-0">
                 {draftUnits === 'imperial' ? 'lb' : 'kg'}
@@ -417,7 +416,7 @@ export function ProfileScreen() {
                   placeholder="5"
                   value={hFt}
                   onChange={(e) => setHFt(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="w-full min-w-0 bg-[#151b2a] border border-white/[.07] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[#ffb454] transition-colors"
+                  className="w-full min-w-0 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                 />
                 <span className="text-xs font-bold text-[var(--muted)] shrink-0">ft</span>
                 <input
@@ -426,7 +425,7 @@ export function ProfileScreen() {
                   placeholder="10"
                   value={hIn}
                   onChange={(e) => setHIn(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="w-full min-w-0 bg-[#151b2a] border border-white/[.07] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[#ffb454] transition-colors"
+                  className="w-full min-w-0 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                 />
                 <span className="text-xs font-bold text-[var(--muted)] shrink-0">in</span>
               </div>
@@ -438,7 +437,7 @@ export function ProfileScreen() {
                   placeholder="178"
                   value={hCm}
                   onChange={(e) => setHCm(e.target.value.replace(/[^0-9.,]/g, ''))}
-                  className="flex-1 min-w-0 bg-[#151b2a] border border-white/[.07] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[#ffb454] transition-colors"
+                  className="flex-1 min-w-0 bg-[var(--card)] border border-[var(--line)] rounded-xl px-3 py-2.5 text-base font-semibold text-[var(--text)] placeholder-[var(--muted)] focus:outline-none focus:border-[var(--accent)] transition-colors"
                 />
                 <span className="text-xs font-bold text-[var(--muted)] shrink-0">cm</span>
 </div>
@@ -448,7 +447,7 @@ export function ProfileScreen() {
 
         {/* IMC — opt-in, solo referencia neutra */}
         {draftWeightKg() != null && draftHeightCm() != null && (
-          <details className="mt-4 pt-3 border-t border-white/[.07]">
+          <details className="mt-4 pt-3 border-t border-[var(--line)]">
             <summary className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-[var(--muted)] list-none select-none">
               <span className="w-5 h-5 flex items-center justify-center text-[var(--accent)]">
                 <Icons.Chart size={16} />
@@ -723,7 +722,7 @@ export function ProfileScreen() {
               aria-checked={voice === 'system'}
               onClick={() => setVoice('system')}
               className={cn(
-                'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]',
+                'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]',
                 voice === 'system'
                   ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.10)]'
                   : 'border-[var(--line)] hover:bg-[var(--card2)]',
@@ -739,7 +738,7 @@ export function ProfileScreen() {
               aria-checked={voice === 'neural'}
               onClick={enableNeural}
               className={cn(
-                'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]',
+                'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]',
                 voice === 'neural'
                   ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.10)]'
                   : 'border-[var(--line)] hover:bg-[var(--card2)]',
@@ -783,7 +782,7 @@ export function ProfileScreen() {
                 aria-checked={selected}
                 onClick={() => setRestPref(opt.value as any)}
                 className={cn(
-                  'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]',
+                  'text-left rounded-xl border p-3 transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]',
                   selected
                     ? 'border-[rgba(52,211,153,0.5)] bg-[rgba(52,211,153,0.10)]'
                     : 'border-[var(--line)] hover:bg-[var(--card2)]',
@@ -942,7 +941,7 @@ export function ProfileScreen() {
 
       {/* Reset confirmation */}
       {showConfirm && (
-        <div className="fixed inset-0 bg-[rgba(5,8,14,0.72)] backdrop-blur-md z-50 flex items-center justify-center p-6">
+        <div className="fixed inset-0 bg-[rgba(5,8,14,0.72)] backdrop-blur-md z-50 flex items-center justify-center p-6" style={{ backgroundColor: 'rgba(5,8,14,0.72)' }}>
           <Card className="w-full max-w-sm text-center">
             <h3 className="text-xl font-black mb-2">{t('¿Reiniciar CHISPA?')}</h3>
             <p className="text-sm text-[var(--muted)] mb-5">

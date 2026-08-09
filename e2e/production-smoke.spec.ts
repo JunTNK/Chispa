@@ -16,6 +16,10 @@ function captureErrors(page: import('@playwright/test').Page): string[] {
 }
 
 test.describe('🔥 Production Smoke', () => {
+  test.skip(
+    !(process.env.BASE_URL ?? '').startsWith('https://'),
+    'production-smoke solo corre contra un despliegue HTTPS (ej: BASE_URL=https://chispa-fit.netlify.app)',
+  );
 
   test('1. HTTPS + security headers + welcome page', async ({ page }) => {
     const errors = captureErrors(page);

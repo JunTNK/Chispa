@@ -75,7 +75,7 @@ export async function navigateOnboarding(page: Page, targetStep: number) {
   if (targetStep <= 8) return;
 
   // Step 9: Theme (hiperfijación)
-  await page.locator('text=One Piece').click();
+  await page.locator('text=Iniciación').click();
   await page.locator('button', { hasText: 'Continuar' }).click();
   await page.waitForTimeout(300);
   if (targetStep <= 9) return;

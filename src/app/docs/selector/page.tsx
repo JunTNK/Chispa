@@ -61,6 +61,8 @@ import {
 import { getExercises } from '@/lib/utils/use-exercises';
 import { FOCUS_LABELS } from '@/lib/utils/constants';
 import { useStore } from '@/lib/store';
+import { supabaseSync } from '@/lib/sync/supabase-sync';
+import { logError } from '@/lib/utils/logger';
 
 // ─── Paleta y tipografía ───────────────────────────────────────────────────
 
@@ -806,7 +808,11 @@ export default function SelectorSpecPage() {
           </span>
           <div className="flex-1" />
           <button
-            onClick={() => setLang(lang === 'en' ? 'es' : 'en')}
+            onClick={() => {
+              const next = lang === 'en' ? 'es' : 'en';
+              setLang(next);
+              supabaseSync.push({ lang: next }).catch(logError('lang:push'));
+            }}
             aria-label={lang === 'en' ? 'Ver en español' : 'View in English'}
             className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-2 rounded-lg border border-white/[.12] text-[var(--muted)] hover:text-white hover:border-white/[.25] transition-all active:scale-95"
           >

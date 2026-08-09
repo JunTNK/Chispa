@@ -3,7 +3,7 @@
  *
  * Uses fake-indexeddb to simulate IndexedDB in the test environment.
  */
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // Mock IndexedDB with fake-indexeddb polyfill
 import 'fake-indexeddb/auto';

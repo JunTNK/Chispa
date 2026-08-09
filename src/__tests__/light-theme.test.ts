@@ -11,7 +11,7 @@ describe('Light theme · foundation (Fase 5, dark-first)', () => {
     expect(block).toBeTruthy();
     expect(block).toContain('--bg: #f2f5fc');
     expect(block).toContain('--text: #0f1424');
-    expect(block).toContain('--muted: #5a6373');
+    expect(block).toContain('--muted: #374151');
   });
 
   it('page.tsx persiste prefs.light en el body class', () => {

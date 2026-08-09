@@ -2,6 +2,8 @@
 
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
+import { supabaseSync } from '@/lib/sync/supabase-sync';
+import { logError } from '@/lib/utils/logger';
 import { Languages } from 'lucide-react';
 
 export function LanguageSwitcher() {
@@ -21,7 +23,12 @@ export function LanguageSwitcher() {
         {(['es', 'en'] as const).map((l) => (
           <button
             key={l}
-            onClick={() => setLang(l)}
+            onClick={() => {
+              setLang(l);
+              // El idioma vive en el Digital Twin: se pushea para seguir al
+              // usuario entre dispositivos (push mínimo si no hay twin local).
+              supabaseSync.push({ lang: l }).catch(logError('lang:push'));
+            }}
             aria-pressed={lang === l}
             className={`rounded-full px-3 py-1 text-xs font-bold uppercase transition-colors ${
               lang === l

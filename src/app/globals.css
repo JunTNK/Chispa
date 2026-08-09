@@ -61,10 +61,18 @@ body.light {
   --card2: #f2f5fc;
   --line: rgba(15, 20, 36, 0.18);
   --text: #0f1424;
-  --muted: #5a6373;
-  --muted-soft: #5a6373;
-  --accent: #b96012;
-  --accent2: #b85820;
+  --muted: #374151;
+  --muted-soft: #374151;
+  --accent: #9a500e;
+  --accent2: #9a4818;
+  --good: #15803d;
+  --warn: #a16207;
+  --bad: #b91c1c;
+  --rpg-common: #4a5568;
+  --rpg-uncommon: #15803d;
+  --rpg-rare: #0369a1;
+  --rpg-epic: #5b4cbf;
+  --rpg-legendary: #a16207;
 }
 
 ::selection {
@@ -683,9 +691,124 @@ input[type="number"] {
   mix-blend-mode: overlay;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
 
 /* FAQ TDAH — details chevron rotation (accesible, sin JS) */
 .faq-details > summary { list-style: none; }
 .faq-details > summary svg { transition: transform 0.2s ease; }
 .faq-details[open] > summary svg { transform: rotate(180deg); }
+
+/* FAQ light-mode overrides — asegura contraste WCAG AA incluso si
+   body.light se aplica después del render (Zustand hydrate async). */
+body.light .faq-details {
+  background: var(--card);
+  border-color: var(--line);
 }
+body.light .faq-details > summary,
+body.light .faq-details > p {
+  color: var(--muted);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIGHT-MODE HARD-COLOR OVERRIDES
+   Many Tailwind arbitrary values (bg-[#151b2a], text-[#ffb454],
+   etc.) don't respond to CSS variables. Override them here so
+   they meet WCAG AA contrast on the light background (#f2f5fc).
+   ══════════════════════════════════════════════════════════════ */
+
+body.light .bg-\[\#0a0d14\] { background-color: var(--bg) !important; }
+
+/* Dark card backgrounds → light card */
+body.light .bg-\[\#151b2a\] { background-color: var(--card) !important; }
+body.light .bg-\[\#1a2234\] { background-color: var(--card2) !important; }
+body.light .bg-\[\#0f1420\] { background-color: var(--card2) !important; }
+body.light .bg-\[\#161b23\] { background-color: var(--card2) !important; }
+
+/* Dark borders → light borders */
+body.light .border-white\/\[\.07\] { border-color: var(--line) !important; }
+body.light .border-white\/\[\.08\] { border-color: var(--line) !important; }
+body.light .border-white\/\[\.06\] { border-color: var(--line) !important; }
+
+/* Dark hover states → light hover states */
+body.light .bg-white\/\[\.03\] { background-color: var(--card2) !important; }
+body.light .bg-white\/\[\.04\] { background-color: var(--card2) !important; }
+body.light .bg-white\/\[\.05\] { background-color: var(--card2) !important; }
+body.light .bg-white\/\[\.06\] { background-color: var(--card2) !important; }
+body.light .bg-white\/\[\.08\] { background-color: var(--card2) !important; }
+body.light .bg-white\/\[\.13\] { background-color: var(--line) !important; }
+
+/* Skeleton in light mode */
+body.light .skeleton { background: rgba(15, 20, 36, 0.06) !important; }
+
+/* Amber accent (#ffb454) — only override text/border, NOT bg.
+   bg-[#ffb454] is used with dark text (#2a1405) on buttons where
+   the original amber already passes WCAG AA (9.55:1). */
+body.light .text-\[\#ffb454\] { color: #7a4010 !important; }
+body.light .border-\[\#ffb454\] { border-color: #7a4010 !important; }
+body.light .bg-\[rgba\(255\,180\,84\,0\.08\)\] { background-color: rgba(122, 64, 16, 0.10) !important; }
+body.light .bg-\[rgba\(255\,180\,84\,0\.14\)\] { background-color: rgba(122, 64, 16, 0.12) !important; }
+body.light .border-\[rgba\(255\,180\,84\,0\.25\)\] { border-color: rgba(122, 64, 16, 0.3) !important; }
+body.light .bg-\[rgba\(255\,180\,84\,0\.06\)\] { background-color: rgba(122, 64, 16, 0.08) !important; }
+body.light .border-\[\#ffb454\]\/40 { --tw-border-opacity: 1 !important; border-color: rgba(122, 64, 16, 0.4) !important; }
+
+/* Green accent (#34d399) — only override text/border, NOT bg.
+   bg-[#34d399] is used with dark text (#06221b) on buttons where
+   the original green already passes WCAG AA (7.15:1). */
+body.light .text-\[\#34d399\] { color: #15803d !important; }
+body.light .border-\[\#34d399\] { border-color: #15803d !important; }
+body.light .bg-\[rgba\(52\,211\,153\,0\.06\)\] { background-color: rgba(21, 128, 61, 0.08) !important; }
+body.light .bg-\[rgba\(52\,211\,153\,0\.10\)\] { background-color: rgba(21, 128, 61, 0.10) !important; }
+body.light .bg-\[rgba\(52\,211\,153\,0\.12\)\] { background-color: rgba(21, 128, 61, 0.12) !important; }
+body.light .bg-\[rgba\(52\,211\,153\,0\.16\)\] { background-color: rgba(21, 128, 61, 0.14) !important; }
+body.light .border-\[rgba\(52\,211\,153\,0\.25\)\] { border-color: rgba(21, 128, 61, 0.3) !important; }
+body.light .border-\[rgba\(52\,211\,153\,0\.3\)\] { border-color: rgba(21, 128, 61, 0.35) !important; }
+body.light .border-\[rgba\(52\,211\,153\,0\.45\)\] { border-color: rgba(21, 128, 61, 0.45) !important; }
+body.light .bg-\[rgba\(52\,211\,153\,0\.1\)\] { background-color: rgba(21, 128, 61, 0.10) !important; }
+body.light .border-\[\#34d399\]\/40 { --tw-border-opacity: 1 !important; border-color: rgba(21, 128, 61, 0.4) !important; }
+
+/* Purple accent (#a78bfa) — darken for light bg contrast */
+body.light .text-\[\#a78bfa\] { color: #5b4cbf !important; }
+body.light .bg-\[\#a78bfa\] { background-color: #5b4cbf !important; }
+body.light .bg-\[rgba\(167\,139\,250\,0\.16\)\] { background-color: rgba(91, 76, 191, 0.12) !important; }
+body.light .bg-\[rgba\(167\,139\,250\,0\.12\)\] { background-color: rgba(91, 76, 191, 0.12) !important; }
+body.light .border-\[rgba\(167\,139\,250\,0\.3\)\] { border-color: rgba(91, 76, 191, 0.35) !important; }
+body.light .border-\[\#a78bfa\]\/40 { --tw-border-opacity: 1 !important; border-color: rgba(91, 76, 191, 0.4) !important; }
+
+/* Amber badge (#fbbf24) */
+body.light .text-\[\#fbbf24\] { color: #a16207 !important; }
+body.light .bg-\[rgba\(251\,191\,36\,0\.12\)\] { background-color: rgba(161, 98, 7, 0.10) !important; }
+body.light .border-\[rgba\(251\,191\,36\,0\.3\)\] { border-color: rgba(161, 98, 7, 0.35) !important; }
+body.light .bg-\[rgba\(251\,191\,36\,0\.15\)\] { background-color: rgba(161, 98, 7, 0.12) !important; }
+body.light .border-\[rgba\(251\,191\,36\,0\.5\)\] { border-color: rgba(161, 98, 7, 0.45) !important; }
+
+/* Red accent (#f87171) */
+body.light .text-\[\#f87171\] { color: #b91c1c !important; }
+body.light .bg-\[rgba\(248\,113\,113\,0\.1\)\] { background-color: rgba(185, 28, 28, 0.08) !important; }
+
+/* Blue accent (#4CC9F0) */
+body.light .text-\[\#4CC9F0\] { color: #0369a1 !important; }
+body.light .bg-\[rgba\(76\,201\,240\,0\.12\)\] { background-color: rgba(3, 105, 161, 0.10) !important; }
+body.light .border-\[rgba\(76\,201\,240\,0\.3\)\] { border-color: rgba(3, 105, 161, 0.35) !important; }
+
+/* Gold (#00D4AA) */
+body.light .text-\[\#00D4AA\] { color: #0d7c5f !important; }
+
+/* Warm amber (#f7b65f) — used for footer numbers, chevrons, emphasis.
+   #f7b65f = 1.62:1 on #f2f5fc (fails). Use #7a4010 = 7.49:1. */
+body.light .text-\[\#f7b65f\] { color: #7a4010 !important; }
+body.light .hover\:text-\[\#f7b65f\] { --tw-text-opacity: 1 !important; color: rgba(122, 64, 16, 1) !important; }
+body.light .hover\:text-\[\#f7b65f\]:hover { color: #7a4010 !important; }
+
+/* Light description text (#e5e0d8) — too light on light bg */
+body.light .text-\[\#e5e0d8\] { color: var(--text) !important; }
+
+/* Muted border decoration color */
+body.light .decoration-\[\#94a0b8\]\/40 { text-decoration-color: rgba(74, 85, 104, 0.4) !important; }
+body.light .decoration-\[\#7a8499\]\/40 { text-decoration-color: rgba(74, 85, 104, 0.4) !important; }
+
+/* Green button text on green bg */
+body.light .bg-\[\#34d399\] .text-\[\#06221b\] { color: #ffffff !important; }
+
+/* Purple link (#a78bfa) */
+body.light .text-\[#a78bfa\] { color: #5b4cbf !important; }
+body.light .text-\[#a78bfa\]\/80 { color: rgba(91, 76, 191, 0.8) !important; }

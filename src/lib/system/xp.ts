@@ -1,4 +1,4 @@
-import { RANK_THRESHOLDS, RANK_ORDER, Rank } from './types';
+import type { Rank } from './types';
 
 export function levelFromTotalXp(xp: number): { level: number; xp: number } {
   if (xp <= 0) return { level: 1, xp: 0 };

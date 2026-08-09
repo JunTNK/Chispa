@@ -16,7 +16,6 @@
  *
  * @see https://nextjs.org/docs/app/building-your-application/routing/error-handling
  */
-import * as Sentry from '@sentry/nextjs';
 import { useEffect } from 'react';
 import { useT } from '@/lib/i18n/use-t';
 import { ErrorLayout } from '@/components/ui/error-layout';
@@ -32,18 +31,16 @@ export default function PageError({
   const digest = error?.digest;
 
   useEffect(() => {
-    try {
-      if (
-        process.env.NEXT_PUBLIC_SENTRY_DSN &&
-        typeof Sentry?.captureException === 'function'
-      ) {
-        Sentry.captureException(error ?? new Error('Unknown page error'), {
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    import('@sentry/nextjs').then(({ captureException }) => {
+      try {
+        captureException(error ?? new Error('Unknown page error'), {
           tags: { digest: digest ?? 'unknown', source: 'segment-error-boundary' },
         });
+      } catch {
+        // nunca romper la página de error
       }
-    } catch {
-      // nunca romper la página de error
-    }
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 

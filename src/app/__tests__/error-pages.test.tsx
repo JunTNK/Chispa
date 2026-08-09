@@ -100,13 +100,15 @@ describe('GlobalError', () => {
     expect(screen.queryByText(/contacta a soporte/)).not.toBeInTheDocument();
   });
 
-  it('captures the error to Sentry when configured', () => {
+  it('captures the error to Sentry when configured', async () => {
     vi.stubEnv('NEXT_PUBLIC_SENTRY_DSN', 'https://test@sentry.io/123');
     render(<GlobalError error={makeError('kaboom', 'd1')} reset={vi.fn()} />);
-    expect(mockedCapture).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'kaboom' }),
-      expect.objectContaining({ tags: expect.objectContaining({ source: 'global-error-boundary', digest: 'd1' }) })
-    );
+    await waitFor(() => {
+      expect(mockedCapture).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'kaboom' }),
+        expect.objectContaining({ tags: expect.objectContaining({ source: 'global-error-boundary', digest: 'd1' }) })
+      );
+    });
   });
 
   it('never crashes when localStorage is corrupted (crash-proof i18n)', () => {
@@ -147,13 +149,15 @@ describe('ErrorPage (error.tsx)', () => {
     });
   });
 
-  it('captures the error to Sentry when configured', () => {
+  it('captures the error to Sentry when configured', async () => {
     vi.stubEnv('NEXT_PUBLIC_SENTRY_DSN', 'https://test@sentry.io/123');
     render(<ErrorPage error={makeError('boom', 'd2')} reset={vi.fn()} />);
-    expect(mockedCapture).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'boom' }),
-      expect.objectContaining({ tags: expect.objectContaining({ source: 'segment-error-boundary', digest: 'd2' }) })
-    );
+    await waitFor(() => {
+      expect(mockedCapture).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'boom' }),
+        expect.objectContaining({ tags: expect.objectContaining({ source: 'segment-error-boundary', digest: 'd2' }) })
+      );
+    });
   });
 });
 

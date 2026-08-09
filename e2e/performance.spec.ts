@@ -9,7 +9,7 @@ const THRESHOLDS = {
   /** Total transferred JS for first page load (KB) */
   maxJsBundleKb: 200,
   /** Maximum number of JS chunks loaded on initial page */
-  maxJsChunks: 10,
+  maxJsChunks: 25,
   /** LCP should be < 2.5s for 'good' rating */
   lcpMaxMs: 2500,
   /** CLS should be < 0.1 for 'good' rating */

@@ -24,7 +24,6 @@
  *
  * @see https://nextjs.org/docs/app/building-your-application/routing/error-handling
  */
-import * as Sentry from '@sentry/nextjs';
 import { useEffect, useState } from 'react';
 import { ErrorLayout } from '@/components/ui/error-layout';
 import { enErrors } from '@/lib/i18n/translations/errors';
@@ -97,18 +96,16 @@ export default function GlobalError({
 
   // Sentry — guardado: un fallo aquí nunca debe romper la página de error
   useEffect(() => {
-    try {
-      if (
-        process.env.NEXT_PUBLIC_SENTRY_DSN &&
-        typeof Sentry?.captureException === 'function'
-      ) {
-        Sentry.captureException(error ?? new Error('Unknown global error'), {
+    if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
+    import('@sentry/nextjs').then(({ captureException }) => {
+      try {
+        captureException(error ?? new Error('Unknown global error'), {
           tags: { digest: digest ?? 'unknown', source: 'global-error-boundary' },
         });
+      } catch {
+        // nunca romper la página de error
       }
-    } catch {
-      // nunca romper la página de error
-    }
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
@@ -116,31 +113,32 @@ export default function GlobalError({
   // la página de error está visible — para diagnóstico en Sentry.
   useEffect(() => {
     if (!process.env.NEXT_PUBLIC_SENTRY_DSN) return;
-    const onError = (e: ErrorEvent) => {
-      try {
-        Sentry.captureException(e.error ?? new Error(e.message), {
-          tags: { source: 'global-error-window' },
-        });
-      } catch {
-        // noop
-      }
-    };
-    const onRejection = (e: PromiseRejectionEvent) => {
-      try {
-        Sentry.captureException(
-          e.reason instanceof Error ? e.reason : new Error(String(e.reason)),
-          { tags: { source: 'global-error-unhandledrejection' } }
-        );
-      } catch {
-        // noop
-      }
-    };
-    window.addEventListener('error', onError);
-    window.addEventListener('unhandledrejection', onRejection);
-    return () => {
-      window.removeEventListener('error', onError);
-      window.removeEventListener('unhandledrejection', onRejection);
-    };
+    let disposed = false;
+    import('@sentry/nextjs').then(({ captureException }) => {
+      if (disposed) return;
+      const onError = (e: ErrorEvent) => {
+        try {
+          captureException(e.error ?? new Error(e.message), {
+            tags: { source: 'global-error-window' },
+          });
+        } catch {
+          // noop
+        }
+      };
+      const onRejection = (e: PromiseRejectionEvent) => {
+        try {
+          captureException(
+            e.reason instanceof Error ? e.reason : new Error(String(e.reason)),
+            { tags: { source: 'global-error-unhandledrejection' } }
+          );
+        } catch {
+          // noop
+        }
+      };
+      window.addEventListener('error', onError);
+      window.addEventListener('unhandledrejection', onRejection);
+    }).catch(() => {});
+    return () => { disposed = true; };
   }, []);
 
   const handleReset = () => {

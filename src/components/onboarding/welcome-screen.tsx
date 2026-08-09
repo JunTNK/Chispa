@@ -146,7 +146,7 @@ function FaqItem({ q, a, openDefault }: { q: string; a: string; openDefault: boo
     <details
       open={open}
       onToggle={(e) => setOpen(e.currentTarget.open)}
-      className="faq-details bg-[#151b2a] rounded-[18px] border border-white/[.07] p-[16px]"
+      className="faq-details bg-[var(--card)] rounded-[18px] border border-[var(--line)] p-[16px]"
     >
       <summary className="cursor-pointer text-left font-semibold text-[var(--muted)] list-none mb-[10px] flex items-center gap-[10px]">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-[15px] h-[15px] shrink-0 text-[#f7b65f]"><path d="M6 9l6 6 6-6" /></svg>

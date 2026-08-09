@@ -8,7 +8,7 @@
  * - Cronotipo nocturno (lobo)
  * - Sin equipo, empezando desde cero
  * - Necesita modo silencio (sensory quiet)
- * - Hiperfijación: One Piece
+ * - Hiperfijación: Iniciación (tema Fitness)
  * - Prefiere sesiones cortas (10 min)
  * - Se abruma con interfaces recargadas
  * 
@@ -62,9 +62,9 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await expect(page.locator('text=se adapta a tu cerebro')).toBeVisible();
 
     // ✅ Propuesta de valor visible de un vistazo (3 pills)
-    await expect(page.locator('text=Menos decisiones')).toBeVisible();
-    await expect(page.locator('text=Más movimiento')).toBeVisible();
-    await expect(page.locator('text=Cero culpa')).toBeVisible();
+    await expect(page.getByText('Menos decisiones', { exact: true })).toBeVisible();
+    await expect(page.getByText('Más movimiento', { exact: true })).toBeVisible();
+    await expect(page.getByText('Cero culpa', { exact: true })).toBeVisible();
 
     // ✅ El usuario distingue las 2 acciones principales
     const cta = page.locator('#cta-btn');
@@ -79,7 +79,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await expect(page.locator('text=Tus datos viven en tu dispositivo')).toBeVisible();
 
     // ✅ Los stats no compiten por atención (están al final)
-    await expect(page.locator('text=algoritmos')).toBeVisible();
+    await expect(page.getByText('algoritmos', { exact: true })).toBeVisible();
 
     console.log('✅ Landing page supera primera impresión: clara, acogedora, sin ruido visual');
   });
@@ -180,7 +180,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     // Imperial es el default
     await expect(page.locator('button', { hasText: 'Imperial (lb · ft)' })).toHaveAttribute('aria-pressed', 'true');
     // El usuario registra sexo, peso y estatura
-    await page.locator('button', { hasText: 'Femenino' }).click();
+    await page.locator('button', { hasText: 'Mujer' }).click();
     await page.locator('input[id="onboarding-weight"]').fill('130');
     await page.locator('input[id="onboarding-height-ft"]').fill('5');
     await page.locator('input[id="onboarding-height-in"]').fill('6');
@@ -189,8 +189,8 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
 
     // ──── STEP 9: Hiperfijación ────
     await expect(page.locator('text=Tu hiperfijación')).toBeVisible();
-    await expect(page.locator('text=Pop culture')).toBeVisible();
-    await page.locator('button').filter({ hasText: 'One Piece' }).click();
+    await expect(page.locator('text=Fitness')).toBeVisible();
+    await page.locator('button').filter({ hasText: 'Iniciación' }).click();
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
 
@@ -243,13 +243,12 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     // ✅ Saludo personalizado con el nombre del usuario
     await expect(page.locator('text=Test')).toBeVisible();
 
-    // ✅ Check-in diario visible — primera acción del día
-    await expect(page.locator('text=Check-in diario')).toBeVisible();
-    await expect(page.locator('text=¿Cómo llegas hoy?')).toBeVisible();
+    // ✅ El plan generado tras el onboarding es la siguiente acción obvia
+    await expect(page.locator('text=Empezar ahora')).toBeVisible();
 
     // ✅ Botón "Crear rutina" visible y claro
     await expect(page.locator('text=Crear rutina')).toBeVisible();
-    await expect(page.locator('text=Arma tu propio entrenamiento')).toBeVisible();
+    await expect(page.locator('text=Arma tu propia sesión')).toBeVisible();
 
     console.log('✅ Home: saludo personalizado, check-in visible, crear rutina accesible');
   });
@@ -370,7 +369,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
 
     // ✅ Home cargó correctamente
     await expect(page.locator('text=Crear rutina')).toBeVisible();
-    await expect(page.locator('text=Check-in diario')).toBeVisible();
+    await expect(page.locator('text=Tu Digital Twin')).toBeVisible();
 
     // ✅ Saludo personalizado visible
     await expect(page.locator('text=Test')).toBeVisible();
@@ -420,7 +419,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
 
-    await page.locator('button').filter({ hasText: 'One Piece' }).click();
+    await page.locator('button').filter({ hasText: 'Iniciación' }).click();
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page);
 
@@ -444,7 +443,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
 
     // ✅ El sistema cargó sin errores con preferencias sensoriales activas
     await expect(page.locator('text=Crear rutina')).toBeVisible();
-    await expect(page.locator('text=Check-in diario')).toBeVisible();
+    await expect(page.locator('text=Tu Digital Twin')).toBeVisible();
 
     console.log('✅ Preferencias sensoriales activadas sin errores. App estable.');
   });
@@ -534,7 +533,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await userPause(page, 200);
 
     // Step 9 → 10: Hyperfixation
-    await page.locator('button').filter({ hasText: 'One Piece' }).click();
+    await page.locator('button').filter({ hasText: 'Iniciación' }).click();
     await userPause(page, 150);
     await page.locator('button', { hasText: 'Continuar' }).click();
     await userPause(page, 200);
@@ -583,7 +582,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
 
     // ✅ Home cargó sin errores
     await expect(page.locator('text=Crear rutina')).toBeVisible();
-    await expect(page.locator('text=Check-in diario')).toBeVisible();
+    await expect(page.locator('text=Tu Digital Twin')).toBeVisible();
 
     console.log('✅ Onboarding accesible: CTA aria-busy, back button por paso, sensory toggles bidireccionales OK');
   });

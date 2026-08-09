@@ -79,7 +79,7 @@ function ActionCard({
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.97 }}
       onClick={onClick}
-      className={`h-full w-full rounded-xl border border-white/[.07] bg-[#151b2a] p-3 flex flex-col gap-2 text-left min-h-[84px] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14] ${tintClasses.border}`}
+      className={`h-full w-full rounded-xl border border-[var(--line)] bg-[var(--card)] p-3 flex flex-col gap-2 text-left min-h-[84px] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)] ${tintClasses.border}`}
     >
       <Icon size={18} className={tintClasses.icon} />
       <span className="block text-xs font-bold">{title}</span>
@@ -177,7 +177,7 @@ function CheckInCard() {
           <Badge variant="ghost">30s</Badge>
         </div>
         <div className="text-right">
-          <span key={rec.score} className="text-2xl font-black text-[#ffb454] counter-pop inline-block">{rec.score}</span>
+          <span key={rec.score} className="text-2xl font-black text-[var(--accent)] counter-pop inline-block">{rec.score}</span>
           <div className="text-[10px] text-[var(--muted)] -mt-1">recovery</div>
         </div>
       </div>
@@ -188,22 +188,19 @@ function CheckInCard() {
       <div className="space-y-4">
         <div>
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="flex items-center gap-1.5"><Moon size={16} /> {t('Sueño')}</span>
-            <span className="font-bold text-[#ffb454]">{sleep}h</span>
+            <span className="flex items-center gap-1.5"><Moon size={16} /> {t('Sueño')}</span>              <span className="font-bold text-[var(--accent)]">{sleep}h</span>
           </div>
           <Slider value={[sleep]} onValueChange={([v]) => setSleep(v)} min={3} max={10} step={0.5} />
         </div>
         <div>
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="flex items-center gap-1.5"><Zap size={16} /> {t('Energía')}</span>
-            <span className="font-bold text-[#ffb454]">{energy}/10</span>
+            <span className="flex items-center gap-1.5"><Zap size={16} /> {t('Energía')}</span>              <span className="font-bold text-[var(--accent)]">{energy}/10</span>
           </div>
           <Slider value={[energy]} onValueChange={([v]) => setEnergy(v)} min={1} max={10} step={1} />
         </div>
         <div>
           <div className="flex justify-between text-sm mb-1.5">
-            <span className="flex items-center gap-1.5"><Frown size={16} /> {t('Estrés')}</span>
-            <span className="font-bold text-[#ffb454]">{stress}/10</span>
+            <span className="flex items-center gap-1.5"><Frown size={16} /> {t('Estrés')}</span>              <span className="font-bold text-[var(--accent)]">{stress}/10</span>
           </div>
           <Slider value={[stress]} onValueChange={([v]) => setStress(v)} min={1} max={10} step={1} />
         </div>
@@ -231,13 +228,12 @@ function ExerciseItem({
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.04 }}
-      className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-white/[.04] border border-white/[.06]"
+      transition={{ delay: index * 0.04 }}              className="flex items-center gap-3 py-2.5 px-3 rounded-xl bg-[var(--card2)] border border-[var(--line)]"
     >
       <span className="flex items-center justify-center text-xs font-bold text-[var(--muted)] shrink-0 w-5">
         {index + 1}
       </span>
-      <span className="w-9 h-9 rounded-lg overflow-hidden bg-[#0f1420] border border-white/[.06] shrink-0">
+      <span className="w-9 h-9 rounded-lg overflow-hidden bg-[var(--card2)] border border-[var(--line)] shrink-0">
         {visual ? (
           <ExerciseImage src={visual.src} fallbackIcon={visual.fallbackIcon} size={16} />
         ) : (
@@ -298,7 +294,7 @@ function PlanCard() {
         </p>
         <div className="flex flex-wrap gap-1.5 mb-5">
           {plan.reasons.map((r: string, i: number) => (
-            <span key={i} className="text-xs px-2.5 py-1 rounded-lg bg-white/[.05] border border-white/[.07] text-[var(--muted)]">
+            <span key={i} className="text-xs px-2.5 py-1 rounded-lg bg-[var(--card2)] border border-[var(--line)] text-[var(--muted)]">
               {r}
             </span>
           ))}
@@ -356,7 +352,7 @@ function RestCard() {
         </p>
         <div className="flex flex-wrap gap-1.5 mb-5">
           {plan.reasons.map((r: string, i: number) => (
-            <span key={i} className="text-xs px-2.5 py-1 rounded-lg bg-white/[.05] border border-white/[.07] text-[var(--muted)]">
+            <span key={i} className="text-xs px-2.5 py-1 rounded-lg bg-[var(--card2)] border border-[var(--line)] text-[var(--muted)]">
               {r}
             </span>
           ))}
@@ -370,9 +366,9 @@ function RestCard() {
               onClick={() => {
                 logEvent('rest_activity', {});
               }}
-              className="flex items-center gap-3 w-full min-h-[56px] p-4 rounded-2xl border border-white/[.07] bg-[#1a2234] text-left transition-colors"
+              className="flex items-center gap-3 w-full min-h-[56px] p-4 rounded-2xl border border-[var(--line)] bg-[var(--card2)] text-left transition-colors"
             >
-              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/[.06] text-[#ffb454]">
+              <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--card2)] text-[var(--accent)]">
                 <s.icon size={20} />
               </span>
               <div>
@@ -430,7 +426,7 @@ function DoneCard() {
 
 function SkeletonCard({ lines = 2 }: { lines?: number }) {
   return (
-    <div className="rounded-2xl border border-white/[.07] bg-[#151b2a] p-5 space-y-4">
+    <div className="rounded-2xl border border-[var(--line)] bg-[var(--card)] p-5 space-y-4">
       <div className="skeleton h-5 w-28" />
       <div className="skeleton h-4 w-48" />
       {Array.from({ length: lines }).map((_, i) => (
@@ -498,7 +494,7 @@ function GreetingHeader() {
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.2, type: 'spring', stiffness: 300, damping: 12 }}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[rgba(167,139,250,0.16)] text-[#a78bfa] border border-[rgba(167,139,250,0.3)]"
+              className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[rgba(167,139,250,0.16)] text-[var(--rpg-epic)] border border-[rgba(167,139,250,0.3)]"
             >
               {t('Nv.{n}', { n: level })}
             </motion.span>
@@ -511,10 +507,10 @@ function GreetingHeader() {
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3, type: 'spring', stiffness: 200, damping: 15 }}
-            className="flex items-center gap-1.5 bg-white/[.06] rounded-full pl-2 pr-3 py-0.5"
+            className="flex items-center gap-1.5 bg-[var(--card2)] rounded-full pl-2 pr-3 py-0.5"
           >
             <Calendar size={14} className="text-[#ffb454]" />
-            <span className="text-[10px] font-bold text-[#ffb454] tabular-nums">
+            <span              className="text-[10px] font-bold text-[var(--accent)] tabular-nums">
               {weekSessions} {t('esta semana')}
             </span>
           </motion.div>
@@ -524,10 +520,10 @@ function GreetingHeader() {
           onClick={() => setView('sistema')}
           aria-label={t('Ajustes')}
           title={t('Acceso rápido a sensorial y gamificación')}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center text-[var(--muted)] hover:bg-white/[.08] transition-colors shrink-0 ${
+          className={`w-9 h-9 rounded-xl border flex items-center justify-center text-[var(--muted)] hover:bg-[var(--card2)] transition-colors shrink-0 ${
             prefs.hideStreaks
               ? 'bg-[rgba(0,212,170,0.08)] border-[#00D4AA]'
-              : 'bg-white/[.05] border-white/[.08]'
+              : 'bg-[var(--card2)] border-[var(--line)]'
           }`}
         >
           <Settings size={17} />
@@ -540,7 +536,7 @@ function GreetingHeader() {
         transition={{ delay: 0.15, duration: 0.5 }}
         className="mt-2 flex items-center gap-2"
       >
-        <div className="flex-1 h-2 rounded-full bg-white/[.08] overflow-hidden">
+        <div className="flex-1 h-2 rounded-full bg-[var(--card2)] overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${xpPct}%` }}
@@ -551,8 +547,7 @@ function GreetingHeader() {
         <motion.span
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-          className="text-[10px] text-[#a78bfa] font-semibold tabular-nums"
+          transition={{ delay: 0.6 }}            className="text-[10px] text-[var(--rpg-epic)] font-semibold tabular-nums"
         >
           {xpInLevel}/{xpForNext} XP
         </motion.span>

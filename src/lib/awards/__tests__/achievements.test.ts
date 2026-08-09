@@ -753,7 +753,6 @@ describe('evaluateAchievement', () => {
         condition_value: { min_days: 5, window_days: 7 },
       });
       const today = new Date();
-      const todayStr = today.toISOString().slice(0, 10);
       const dates: string[] = [];
       // 5 días distintos: hoy + 4 días anteriores
       for (let i = 0; i < 5; i++) {

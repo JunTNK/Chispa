@@ -126,7 +126,7 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={startLive}
-          className="flex-1 rounded-xl border border-white/[.07] bg-[#151b2a] hover:border-[#34d399]/40 p-3 flex flex-col gap-2 text-left min-h-[84px] transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]"
+          className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--card)] hover:border-[#34d399]/40 p-3 flex flex-col gap-2 text-left min-h-[84px] transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
         >
           <PenLine size={18} className="text-[#34d399]" />
           <span className="block text-xs font-bold">{t('Registro rápido')}</span>
@@ -152,7 +152,7 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
       <motion.button
         whileTap={{ scale: 0.97 }}
         onClick={startLive}
-        className="w-full py-4 rounded-2xl border border-white/[.07] bg-gradient-to-b from-[#0a0d14] to-[#151b2a] text-left px-4 flex flex-col gap-1 transition-all hover:border-[#34d399]/30 focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0d14]"
+        className="w-full py-4 rounded-2xl border border-[var(--line)] bg-[var(--card)] text-left px-4 flex flex-col gap-1 transition-all hover:border-[#34d399]/30 focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
       >
         <span className="text-base font-bold flex items-center gap-2">
           <span>▶</span>{t('Estoy entrenando ahora')}
