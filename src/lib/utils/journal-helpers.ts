@@ -4,8 +4,10 @@
  */
 import type { Workout } from '@/types';
 import type { Lang } from '@/lib/i18n/use-t';
-import { format, startOfWeek } from 'date-fns';
-import { es, enUS } from 'date-fns/locale';
+import { format } from 'date-fns/format';
+import { startOfWeek } from 'date-fns/startOfWeek';
+import { es } from 'date-fns/locale/es';
+import { enUS } from 'date-fns/locale/en-US';
 import type { Locale } from 'date-fns';
 import { INTENSITY_COLORS } from './constants';
 
