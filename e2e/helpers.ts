@@ -1,4 +1,8 @@
-import { type Page } from '@playwright/test';
+import { type Page, type Locator } from '@playwright/test';
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ONBOARDING HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
 
 /**
  * Navigate through onboarding steps making all required selections
@@ -104,7 +108,127 @@ export async function completeOnboarding(page: Page, timeout = 20000) {
   );
 }
 
-// ── Screen Audit Helpers ──
+// ══════════════════════════════════════════════════════════════════════════════
+// NAVIGATION HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+
+/** Get the main navigation bar locator */
+export function getNav(page: Page): Locator {
+  return page.locator('nav[aria-label="Navegación principal"]');
+}
+
+/** Screen names that map to navbar buttons */
+type NavScreen = 'Inicio' | 'Quest' | 'Coach' | 'Sistema' | 'Crear rutina';
+
+/**
+ * Navigate to a screen via the main navbar.
+ * Use this for: Inicio, Quest, Coach, Sistema
+ */
+export async function navigateToNavScreen(page: Page, screen: NavScreen, waitMs = 500) {
+  const nav = getNav(page);
+  await nav.locator('button').filter({ hasText: screen }).click();
+  await page.waitForTimeout(waitMs);
+}
+
+/**
+ * Navigate to a screen via the "Más" (extra) menu.
+ * Use this for: Perfil, Progreso, Logros, Ranking, Ejercicios, Dopamina, Bitácora
+ */
+export async function openExtraMenu(page: Page, label: string) {
+  const nav = getNav(page);
+  await nav.locator('button', { hasText: 'Más' }).click();
+  await page.waitForTimeout(200);
+  await nav.locator('button', { hasText: label }).click();
+  await page.waitForTimeout(400);
+}
+
+/**
+ * Navigate to a screen by clicking a text link on the home screen.
+ * Use this for: Crear rutina, Registro rápido, Bitácora
+ */
+export async function navigateFromHome(page: Page, text: string, waitMs = 500) {
+  await page.locator('text=' + text).first().click();
+  await page.waitForTimeout(waitMs);
+}
+
+/**
+ * Click the back button and wait.
+ */
+export async function goBack(page: Page, waitMs = 500) {
+  await page.locator('button[aria-label="Volver"]').click();
+  await page.waitForTimeout(waitMs);
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// WAIT HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Wait for home screen to be visible (checks for "Crear rutina" button).
+ */
+export async function waitForHome(page: Page, timeout = 10000) {
+  await page.locator('text=Crear rutina').first().waitFor({ state: 'visible', timeout });
+}
+
+/**
+ * Wait for any text to appear on screen.
+ */
+export async function waitForText(page: Page, text: string, timeout = 5000) {
+  await page.locator('text=' + text).first().waitFor({ state: 'visible', timeout });
+}
+
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COMMON TEST PATTERNS
+// ══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Run a complete session flow: check-in → plan → session.
+ * Returns the startBtn locator if a session is available, or null if rest day.
+ */
+export async function runCheckIn(page: Page) {
+  await dismissPortal(page);
+  await page.locator('button').filter({ hasText: 'Calcular mi día' }).click();
+
+  const startBtn = page.locator('button').filter({ hasText: 'Empezar ahora' });
+  try {
+    await startBtn.waitFor({ state: 'visible', timeout: 8000 });
+    return startBtn;
+  } catch {
+    return null; // Rest day
+  }
+}
+
+/**
+ * Complete all sets in a session until summary appears.
+ * Returns true if summary was reached, false otherwise.
+ */
+export async function completeAllSets(page: Page, maxSets = 10): Promise<boolean> {
+  for (let i = 0; i < maxSets; i++) {
+    const setBtn = page.getByRole('button', { name: /Serie hecha|Terminar ejercicio/ }).first();
+    if (await setBtn.isVisible().catch(() => false)) {
+      await setBtn.click();
+      await page.waitForTimeout(700);
+    } else {
+      break;
+    }
+  }
+
+  const saveBtn = page.locator('button').filter({ hasText: 'Guardar entrenamiento' });
+  try {
+    await saveBtn.waitFor({ state: 'visible', timeout: 10000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SCREEN AUDIT HELPERS (unchanged)
+// ══════════════════════════════════════════════════════════════════════════════
 
 /** Error accumulator for screen audit tests */
 const allErrors: { screen: string; errors: string[] }[] = [];
@@ -131,15 +255,6 @@ export function startCapture(page: Page) {
 export async function checkErrors(page: Page, screen: string) {
   allErrors.push({ screen, errors: [] });
   await page.waitForTimeout(150);
-}
-
-/** Click "Más" menu item by label */
-export async function openExtraMenu(page: Page, label: string) {
-  const nav = page.locator('nav[aria-label="Navegación principal"]');
-  await nav.locator('button', { hasText: 'Más' }).click();
-  await page.waitForTimeout(200);
-  await nav.locator('button', { hasText: label }).click();
-  await page.waitForTimeout(400);
 }
 
 /** Dismiss Next.js error overlay if present */

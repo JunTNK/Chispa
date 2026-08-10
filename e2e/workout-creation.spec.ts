@@ -3,16 +3,21 @@
  * stroke-rounded icons (v3).
  */
 import { test, expect } from '@playwright/test';
-import { completeOnboarding } from './helpers';
+import {
+  completeOnboarding,
+  navigateFromHome,
+  goBack,
+} from './helpers';
 
 test.describe('Workout creation — muscle group icons', () => {
-  test('1. Shows 4 muscle group cards with stroke-rounded SVG icons', async ({ page }) => {
-    // Complete onboarding to reach home
+  /** Helper: navigate to workout creation screen */
+  async function goToCreateWorkout(page: import('@playwright/test').Page) {
     await completeOnboarding(page, 20000);
+    await navigateFromHome(page, 'Crear rutina');
+  }
 
-    // Click "Crear entrenamiento"
-    await page.locator('text=Crear rutina').click();
-    await page.waitForTimeout(500);
+  test('1. Shows 4 muscle group cards with stroke-rounded SVG icons', async ({ page }) => {
+    await goToCreateWorkout(page);
 
     // Verify the muscle group section is visible
     await expect(
@@ -44,11 +49,7 @@ test.describe('Workout creation — muscle group icons', () => {
   });
 
   test('2. Clicking a muscle group card navigates to exercise selection', async ({ page }) => {
-    await completeOnboarding(page, 20000);
-
-    // Click "Crear entrenamiento"
-    await page.locator('text=Crear rutina').click();
-    await page.waitForTimeout(500);
+    await goToCreateWorkout(page);
 
     // Click "Todo el cuerpo"
     await page.locator('button').filter({ hasText: 'Todo el cuerpo' }).click();
@@ -60,11 +61,7 @@ test.describe('Workout creation — muscle group icons', () => {
   });
 
   test('3. Name input is available and editable', async ({ page }) => {
-    await completeOnboarding(page, 20000);
-
-    // Click "Crear entrenamiento"
-    await page.locator('text=Crear rutina').click();
-    await page.waitForTimeout(500);
+    await goToCreateWorkout(page);
 
     // Find the name input (placeholder contains "Full body")
     const nameInput = page.locator('input[placeholder*="Full body"]');
@@ -74,11 +71,7 @@ test.describe('Workout creation — muscle group icons', () => {
   });
 
   test('4. Duration presets are selectable', async ({ page }) => {
-    await completeOnboarding(page, 20000);
-
-    // Click "Crear entrenamiento"
-    await page.locator('text=Crear rutina').click();
-    await page.waitForTimeout(500);
+    await goToCreateWorkout(page);
 
     // Click a duration button
     const durationBtn = page.locator('button').filter({ hasText: '30 min' });
@@ -92,11 +85,7 @@ test.describe('Workout creation — muscle group icons', () => {
   });
 
   test('5. Elegir ejercicios button is visible and clickable', async ({ page }) => {
-    await completeOnboarding(page, 20000);
-
-    // Click "Crear entrenamiento"
-    await page.locator('text=Crear rutina').click();
-    await page.waitForTimeout(500);
+    await goToCreateWorkout(page);
 
     // Verify the CTA button exists
     const ctaBtn = page.locator('button').filter({ hasText: 'Elegir ejercicios' });
@@ -105,15 +94,10 @@ test.describe('Workout creation — muscle group icons', () => {
   });
 
   test('6. Back button returns to home', async ({ page }) => {
-    await completeOnboarding(page, 20000);
+    await goToCreateWorkout(page);
 
-    // Click "Crear entrenamiento"
-    await page.locator('text=Crear rutina').click();
-    await page.waitForTimeout(500);
-
-    // Click the back button (aria-label="Volver")
-    await page.locator('button[aria-label="Volver"]').click();
-    await page.waitForTimeout(500);
+    // Click the back button
+    await goBack(page);
 
     // Should be back at home screen
     await expect(page.locator('text=Crear rutina')).toBeVisible();
