@@ -18,6 +18,10 @@ try {
         authToken: process.env.SENTRY_AUTH_TOKEN,
         // Only upload source maps in CI/production builds
         dryRun: process.env.NODE_ENV !== 'production',
+        // Bundle optimization: strip Sentry debug/console logging from prod
+        disableLogger: true,
+        // Hide source map upload messages in build output
+        silent: true,
       });
   }
 } catch {
