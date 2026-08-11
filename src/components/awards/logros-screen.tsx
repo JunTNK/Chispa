@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT, useLocale } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';

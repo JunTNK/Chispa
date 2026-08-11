@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

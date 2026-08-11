@@ -10,7 +10,7 @@ vi.mock('next/image', () => ({
   },
 }));
 
-// ─── Mock framer-motion ───
+// ─── Mock motion/react ───
 // Strip motion-specific props and render with the correct HTML tag
 const motionMap: Record<string, string> = {
   div: 'div',
@@ -52,7 +52,7 @@ function stripMotionProps(props: Record<string, unknown>): Record<string, unknow
   return result;
 }
 
-vi.mock('framer-motion', () => {
+vi.mock('motion/react', () => {
   const motion = new Proxy(
     {},
     {

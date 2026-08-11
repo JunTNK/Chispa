@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useT } from '@/lib/i18n/use-t';
 import { ChevronDown, ShieldAlert, Target, Lightbulb } from 'lucide-react';
 import type { Exercise } from '@/types';

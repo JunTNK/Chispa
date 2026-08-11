@@ -14,7 +14,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { useToast } from '@/components/ui/toast';

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useT } from '@/lib/i18n/use-t';
 import { Button } from '@/components/ui/button';
 import { saveCustomExercise, type CustomExercise } from '@/lib/db/custom-exercises-db';

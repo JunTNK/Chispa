@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT, useLocale } from '@/lib/i18n/use-t';
 import { supabaseSync } from '@/lib/sync/supabase-sync';

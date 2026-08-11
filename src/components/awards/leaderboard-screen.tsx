@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { fetchLeaderboard, pushLeaderboard, type LeaderboardEntry } from '@/lib/sync/leaderboard';

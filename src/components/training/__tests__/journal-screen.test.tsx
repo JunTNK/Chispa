@@ -41,8 +41,8 @@ vi.mock('@/lib/store', () => ({
   useStore: (selector: (s: typeof mockState) => unknown) => selector(mockState),
 }));
 
-vi.mock('framer-motion', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('framer-motion')>();
+vi.mock('motion/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('motion/react')>();
   return {
     ...actual,
     motion: {

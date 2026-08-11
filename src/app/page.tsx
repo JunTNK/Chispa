@@ -2,7 +2,7 @@
 
 import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { AnimatePresence, motion, MotionConfig } from 'framer-motion';
+import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { onAuthStateChange } from '@/lib/auth/supabase-auth';

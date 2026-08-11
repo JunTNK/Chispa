@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { trackEvent } from '@/lib/analytics';
 import { useT } from '@/lib/i18n/use-t';

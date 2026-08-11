@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { fmtTime } from '@/lib/utils/helpers';
