@@ -50,8 +50,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
   themeColor: "#0a0d14",
 };
@@ -66,7 +64,7 @@ export default function RootLayout({
       <head>
         <link rel="apple-touch-icon" href="https://image.qwenlm.ai/public_source/6293bf56-c9cc-4349-841d-cdde04e9d74e/1d08f0a58-ea85-4e8b-b799-e65c81f037a6.png" />
         {/* Preload critical resources */}
-        <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        {/* LCP font (Inter) is already auto-preloaded by next/font with hashed URLs — no manual preload needed. */}
         {/* DNS prefetch for external services */}
         <link rel="dns-prefetch" href="https://image.qwenlm.ai" />
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />

@@ -2,14 +2,30 @@
 
 import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { AnimatePresence, motion, MotionConfig } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { onAuthStateChange } from '@/lib/auth/supabase-auth';
 import { trackDAU } from '@/lib/analytics';
-import { AppLayout } from '@/components/layout/app-layout';
 import { ToastContainer } from '@/components/ui/toast';
-import { AchievementToast } from '@/components/awards/achievement-toast';
+
+/* ─── Lazy-loaded shell & chrome (keep heavy animation libs out of the initial bundle) ─── */
+
+// MotionShell: view transitions (motion/react). Code-split into its own chunk
+// (isolated from the main bundle). `AnimatePresence initial={false}` makes SSR
+// render the content at full opacity — no opacity:0 flash, no LCP regression.
+const MotionShell = dynamic(() => import('@/components/layout/motion-shell').then(m => ({ default: m.MotionShell })), {
+  ssr: true,
+});
+
+// AppLayout pulls NavBar + motion: lazy so the landing page never loads it.
+const AppLayout = dynamic(() => import('@/components/layout/app-layout').then(m => ({ default: m.AppLayout })), {
+  ssr: true,
+});
+
+// AchievementToast uses motion + lucide: lazy (it's an overlay, returns null usually).
+const AchievementToast = dynamic(() => import('@/components/awards/achievement-toast').then(m => ({ default: m.AchievementToast })), {
+  ssr: false,
+});
 
 /* ─── Static import (landing page — always loaded first) ─── */
 import { WelcomeScreen } from '@/components/onboarding/welcome-screen';
@@ -114,34 +130,6 @@ const ScreenFallback = () => {
   );
 };
 
-/* ─── Animation Variants ─── */
-
-const pageVariants = {
-  initial: { opacity: 0, y: 10 } as const,
-  animate: { opacity: 1, y: 0 } as const,
-  exit: { opacity: 0, y: -10 } as const,
-};
-
-const pageTransition = {
-  duration: 0.2,
-  ease: [0.22, 1, 0.36, 1] as const,
-};
-
-function PageWrapper({ view, children }: { view: string; children: React.ReactNode }) {
-  return (
-    <motion.div
-      key={view}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
-      transition={pageTransition}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
 export default function App() {
   const view = useStore((s) => s.view);
   const prefs = useStore((s) => s.prefs);
@@ -187,77 +175,72 @@ export default function App() {
     return unsubscribe;
   }, []);
 
-  const renderScreen = () => {
-    const content = (() => {
-      switch (view) {
-        case 'welcome':
-          return <WelcomeScreen />;
-        case 'login':
-          return <LoginScreen />;
-        case 'register':
-          return <RegisterScreen />;
-        case 'onboarding':
-          return <OnboardingScreen />;
-        case 'home':
-        case 'train':
-          return <AppLayout><HomeScreen /></AppLayout>;
-        case 'session':
-          return <SessionScreen />;
-        case 'summary':
-          return <SummaryScreen />;
-        case 'coach':
-          return <AppLayout><CoachScreen /></AppLayout>;
-        case 'progress':
-          return <AppLayout><ProgressScreen /></AppLayout>;
-        case 'analytics':
-          return <AppLayout><AnalyticsScreen /></AppLayout>;
-        case 'pricing':
-          return <AppLayout><PricingScreen /></AppLayout>;
-        case 'profile':
-          return <AppLayout><ProfileScreen /></AppLayout>;
-        case 'quest':
-          return <AppLayout><QuestScreen /></AppLayout>;
-        case 'dopamina':
-          return <AppLayout><DopaminaScreen /></AppLayout>;
-        case 'logros':
-          return <AppLayout><LogrosScreen /></AppLayout>;
-        case 'leaderboard':
-          return <AppLayout><LeaderboardScreen /></AppLayout>;
-        case 'create-workout':
-          return <CreateWorkoutScreen />;
-        case 'quick-log':
-          return <QuickLogScreen />;
-         case 'catalog':
-           return <AppLayout><ExerciseCatalogScreen /></AppLayout>;
-         case 'journal':
-           return <AppLayout><JournalScreen /></AppLayout>;
-        case 'feedback':
-          return <AppLayout><FeedbackScreen /></AppLayout>;
-        case 'sistema':
-          return <AppLayout><SistemaScreen /></AppLayout>;
-        default:
-          return <WelcomeScreen />;
-      }
-    })();
-
-    return (
-      <PageWrapper view={view}>
-        <Suspense fallback={<ScreenFallback />}>
-          {content}
-        </Suspense>
-      </PageWrapper>
-    );
+  const renderContent = () => {
+    switch (view) {
+      case 'welcome':
+        return <WelcomeScreen />;
+      case 'login':
+        return <LoginScreen />;
+      case 'register':
+        return <RegisterScreen />;
+      case 'onboarding':
+        return <OnboardingScreen />;
+      case 'home':
+      case 'train':
+        return <AppLayout><HomeScreen /></AppLayout>;
+      case 'session':
+        return <SessionScreen />;
+      case 'summary':
+        return <SummaryScreen />;
+      case 'coach':
+        return <AppLayout><CoachScreen /></AppLayout>;
+      case 'progress':
+        return <AppLayout><ProgressScreen /></AppLayout>;
+      case 'analytics':
+        return <AppLayout><AnalyticsScreen /></AppLayout>;
+      case 'pricing':
+        return <AppLayout><PricingScreen /></AppLayout>;
+      case 'profile':
+        return <AppLayout><ProfileScreen /></AppLayout>;
+      case 'quest':
+        return <AppLayout><QuestScreen /></AppLayout>;
+      case 'dopamina':
+        return <AppLayout><DopaminaScreen /></AppLayout>;
+      case 'logros':
+        return <AppLayout><LogrosScreen /></AppLayout>;
+      case 'leaderboard':
+        return <AppLayout><LeaderboardScreen /></AppLayout>;
+      case 'create-workout':
+        return <CreateWorkoutScreen />;
+      case 'quick-log':
+        return <QuickLogScreen />;
+       case 'catalog':
+         return <AppLayout><ExerciseCatalogScreen /></AppLayout>;
+       case 'journal':
+         return <AppLayout><JournalScreen /></AppLayout>;
+      case 'feedback':
+        return <AppLayout><FeedbackScreen /></AppLayout>;
+      case 'sistema':
+        return <AppLayout><SistemaScreen /></AppLayout>;
+      default:
+        return <WelcomeScreen />;
+    }
   };
 
+  const screen = (
+    <Suspense fallback={<ScreenFallback />}>
+      {renderContent()}
+    </Suspense>
+  );
+
+  // Content stays mounted in a single wrapper (no remount on hydration):
+  // MotionShell renders it at full opacity immediately thanks to
+  // `AnimatePresence initial={false}`, and view switches still animate.
   return (
-    <MotionConfig reducedMotion="user">
-      <div id="app" className="max-w-[440px] lg:max-w-none mx-auto min-h-dvh relative bg-[var(--bg)] overflow-hidden">
-        <AnimatePresence mode="wait">
-          {renderScreen()}
-        </AnimatePresence>
-        <ToastContainer />
-        <AchievementToast />
-      </div>
-    </MotionConfig>
+    <div id="app" className="max-w-[440px] lg:max-w-none mx-auto min-h-dvh relative bg-[var(--bg)] overflow-hidden">
+      <MotionShell view={view}>{screen}</MotionShell>
+      <ToastContainer />
+      <AchievementToast />
+    </div>
   );
 }

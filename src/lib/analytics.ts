@@ -51,18 +51,21 @@ export function trackEvent(
     console.log(`${PREFIX} ${event}`, ctx ?? '');
   }
 
-  // Forward to Sentry as metrics
+  // Forward to Sentry as metrics — lazy dynamic import so the heavy Sentry
+  // SDK stays OUT of the initial client bundle. Only loaded when a DSN is
+  // configured (production) and an event is actually reported.
   try {
-    if (typeof require !== 'undefined') {
-      const Sentry = require('@sentry/nextjs');
-      if (Sentry?.captureEvent) {
-        Sentry.captureEvent({
+    if (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN) {
+      import('@sentry/nextjs').then(({ captureEvent }) => {
+        captureEvent({
           message: `chispa.${event}`,
           level: 'info',
           tags: { event_type: event },
           extra: ctx,
         });
-      }
+      }).catch(() => {
+        // Sentry not available — silently continue
+      });
     }
   } catch {
     // Sentry not available — silently continue

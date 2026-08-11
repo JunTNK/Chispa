@@ -15,19 +15,22 @@ function fmt(context: string, err: unknown): string {
   return `${PREFIX} ${context} — ${msg} (${ts})`;
 }
 
-/** Lazy import Sentry — only when needed, never blocks the app */
+/**
+ * Lazy import Sentry — only when needed, never blocks the app.
+ * Uses a dynamic import so the heavy Sentry SDK stays OUT of the initial
+ * client bundle; it's only fetched when a DSN is configured (production)
+ * and an error actually needs reporting.
+ */
 function captureToSentry(err: unknown, context: string) {
   if (process.env.NODE_ENV !== 'production') return;
-  // Guard: `require` is undefined in browser bundles
-  if (typeof require === 'undefined') return;
-  try {
-    const Sentry = require('@sentry/nextjs');
-    Sentry?.captureException?.(err instanceof Error ? err : new Error(String(err)), {
+  if (!(process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN)) return;
+  import('@sentry/nextjs').then(({ captureException }) => {
+    captureException(err instanceof Error ? err : new Error(String(err)), {
       tags: { context },
     });
-  } catch {
+  }).catch(() => {
     // Sentry not available — silently continue (errors still logged to console)
-  }
+  });
 }
 
 /**
