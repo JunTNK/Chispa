@@ -59,11 +59,13 @@ const ProfileScreen = dynamic(() => import('@/components/profile/profile-screen'
 });
 
 const QuestScreen = dynamic(() => import('@/components/neurofit/quest-screen').then(m => ({ default: m.QuestScreen })), {
-  ssr: true,
+  ssr: false,
+  loading: () => <ScreenFallback />,
 });
 
 const DopaminaScreen = dynamic(() => import('@/components/neurofit/dopamina-screen').then(m => ({ default: m.DopaminaScreen })), {
-  ssr: true,
+  ssr: false,
+  loading: () => <ScreenFallback />,
 });
 
 const LogrosScreen = dynamic(() => import('@/components/awards/logros-screen').then(m => ({ default: m.LogrosScreen })), {
@@ -71,7 +73,8 @@ const LogrosScreen = dynamic(() => import('@/components/awards/logros-screen').t
 });
 
 const SistemaScreen = dynamic(() => import('@/components/neurofit/sistema-screen').then(m => ({ default: m.SistemaScreen })), {
-  ssr: true,
+  ssr: false,
+  loading: () => <ScreenFallback />,
 });
 
 const LeaderboardScreen = dynamic(() => import('@/components/awards/leaderboard-screen').then(m => ({ default: m.LeaderboardScreen })), {

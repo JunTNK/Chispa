@@ -65,6 +65,11 @@ export default function RootLayout({
     <html lang="es" className={`h-full antialiased ${inter.variable} ${sora.variable} ${bricolage.variable} ${fraunces.variable} ${hanken.variable}`}>
       <head>
         <link rel="apple-touch-icon" href="https://image.qwenlm.ai/public_source/6293bf56-c9cc-4349-841d-cdde04e9d74e/1d08f0a58-ea85-4e8b-b799-e65c81f037a6.png" />
+        {/* Preload critical resources */}
+        <link rel="preload" href="/fonts/inter-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        {/* DNS prefetch for external services */}
+        <link rel="dns-prefetch" href="https://image.qwenlm.ai" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
 <script dangerouslySetInnerHTML={{
   __html: `
     (function(){
