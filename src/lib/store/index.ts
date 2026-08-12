@@ -20,6 +20,7 @@ import type {
    FriendEntry,
    InviteCode,
    WeightEntry,
+   CommunityPost,
    UserSubscription,
    SubscriptionTier,
    AnchorRoutine,
@@ -28,6 +29,7 @@ import type { LeaderboardEntry } from '@/lib/sync/leaderboard';
 import { applyQuestResult, EMPTY_PLAYER } from '@/lib/system/quest-engine';
 import { evaluateTitles } from '@/lib/system/titles';
 import type { PlayerState, QuestTier, ResolvedTask } from '@/lib/system/types';
+import { uid as genUid } from '@/lib/utils/helpers';
 
 interface AppState {
   onboarded: boolean;
@@ -73,6 +75,9 @@ interface AppState {
   friends: FriendEntry[];
   /** Mi código de invitación actual (6 dígitos) o null si expiró */
   myInviteCode: InviteCode | null;
+
+  /** Feed cooperativo — chispas de movimiento compartidas (solo si coopMode != 'none') */
+  communityPosts: CommunityPost[];
 
   /** Subscription tier (free/pro/lifetime) + trial state */
   subscription: UserSubscription;
@@ -135,6 +140,10 @@ interface AppState {
   generateInviteCode: () => string;
   addFriend: (code: string, name?: string) => boolean;
   removeFriend: (id: string) => void;
+  /** Añade una chispa al feed cooperativo (normalizada, por defecto local) */
+  addCommunityPost: (p: CommunityPost) => void;
+  /** Aplauso cooperativo: toggle local de reacción en un post */
+  reactToPost: (id: string) => void;
   setSystemMode: (on: boolean) => void;
   setSubscription: (tier: SubscriptionTier, stripeCustomerId?: string) => void;
   startProTrial: () => void;
@@ -177,6 +186,7 @@ const initialState: {
   coopMode: 'none' | 'friends' | 'public';
   friends: FriendEntry[];
   myInviteCode: InviteCode | null;
+  communityPosts: CommunityPost[];
   player: PlayerState | null;
   subscription: UserSubscription;
 } = {
@@ -218,6 +228,7 @@ const initialState: {
   coopMode: 'none',
   friends: [],
   myInviteCode: null,
+  communityPosts: [],
   player: null,
   subscription: { tier: 'free', isInTrial: false, trialDaysLeft: 0 },
 };
@@ -247,7 +258,15 @@ export const useStore = create<AppState>()(
       setCheckin: (k: string, c: CheckIn) =>
         set((s: AppState) => ({ checkins: { ...s.checkins, [k]: c } })),
       addWorkout: (w: Workout) =>
-        set((s: AppState) => ({ workouts: [...s.workouts, w] })),
+        set((s: AppState) => {
+          // Feed cooperativo: si el usuario tiene modo coop activo, cada sesión
+          // completada se convierte en una chispa para la comunidad.
+          const posts =
+            s.coopMode !== 'none'
+              ? [buildPostFromWorkout(w), ...s.communityPosts].slice(0, 100)
+              : s.communityPosts;
+          return { workouts: [...s.workouts, w], communityPosts: posts };
+        }),
       addEvent: (e: AIEvent) =>
         set((s: AppState) => ({ events: [e, ...s.events].slice(0, 40) })),
       addChat: (m: ChatMessage) =>
@@ -279,7 +298,27 @@ export const useStore = create<AppState>()(
           ),
         })),
       addQuickLog: (entry: QuickLogEntry) =>
-        set((s: AppState) => ({ quickLogs: [entry, ...s.quickLogs].slice(0, 100) })),
+        set((s: AppState) => {
+          const posts =
+            s.coopMode !== 'none'
+              ? [buildPostFromQuickLog(entry), ...s.communityPosts].slice(0, 100)
+              : s.communityPosts;
+          return { quickLogs: [entry, ...s.quickLogs].slice(0, 100), communityPosts: posts };
+        }),
+      addCommunityPost: (p: CommunityPost) =>
+        set((s: AppState) => ({ communityPosts: [p, ...s.communityPosts].slice(0, 100) })),
+      reactToPost: (id: string) =>
+        set((s: AppState) => ({
+          communityPosts: s.communityPosts.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  myReacted: !p.myReacted,
+                  reactions: Math.max(0, p.reactions + (p.myReacted ? -1 : 1)),
+                }
+              : p
+          ),
+        })),
       logWeight: (date: string, weightKg: number) =>
         set((s: AppState) => {
           const others = s.weightHistory.filter((e) => e.date !== date);
@@ -455,9 +494,39 @@ export const useStore = create<AppState>()(
         coopMode: state.coopMode,
         friends: state.friends,
         myInviteCode: state.myInviteCode,
+        communityPosts: state.communityPosts,
         player: state.player,
         subscription: state.subscription,
       }),
     }
   ) as any
 );
+
+/* ─── Feed cooperativo: constructores de chispas ─── */
+
+function buildPostFromWorkout(w: Workout): CommunityPost {
+  return {
+    // uuid puro: la columna community_posts.id es uuid — con prefijo el
+    // upsert del sync fallaría (uuid inválido) y el pull duplicaría cards.
+    id: crypto?.randomUUID?.() ?? genUid(),
+    author_id: '', // '' = yo
+    kind: 'workout',
+    focus: w.focus,
+    durationMin: w.actual_minutes ?? w.duration,
+    created_at: new Date().toISOString(),
+    reactions: 0,
+    myReacted: false,
+  };
+}
+
+function buildPostFromQuickLog(e: QuickLogEntry): CommunityPost {
+  return {
+    id: crypto?.randomUUID?.() ?? genUid(),
+    author_id: '', // '' = yo
+    kind: 'quicklog',
+    durationMin: e.duration,
+    created_at: new Date().toISOString(),
+    reactions: 0,
+    myReacted: false,
+  };
+}

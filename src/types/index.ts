@@ -20,6 +20,25 @@ export interface InviteCode {
   expires_at: string;    // ISO, 48h
 }
 
+/**
+ * Chispa del feed cooperativo (local-first; sync cuando coopMode != 'none').
+ * Sin competencia: sin scores, sin rachas — solo movimiento compartido y aplausos.
+ */
+export interface CommunityPost {
+  /** id local (`post_<uuid>`) o uuid remoto */
+  id: string;
+  /** '' = yo · peer_code del amigo · 'anon' en modo público remoto */
+  author_id: string;
+  kind: 'workout' | 'quicklog';
+  focus?: 'full' | 'upper' | 'lower' | 'core';
+  durationMin?: number;
+  created_at: string;
+  /** Aplausos cooperativos (tally local) */
+  reactions: number;
+  /** Aplauso propio (toggle local) */
+  myReacted: boolean;
+}
+
 export interface Profile {
   user_id: string;
   name: string;

@@ -116,6 +116,10 @@ const FeedbackScreen = dynamic(() => import('@/components/feedback/feedback-scre
   ssr: true,
 });
 
+const ComunidadScreen = dynamic(() => import('@/components/community/comunidad-screen').then(m => ({ default: m.ComunidadScreen })), {
+  ssr: true,
+});
+
 /* ─── Fallback loading states ─── */
 
 const ScreenFallback = () => {
@@ -222,6 +226,8 @@ export default function App() {
         return <AppLayout><FeedbackScreen /></AppLayout>;
       case 'sistema':
         return <AppLayout><SistemaScreen /></AppLayout>;
+      case 'comunidad':
+        return <AppLayout><ComunidadScreen /></AppLayout>;
       default:
         return <WelcomeScreen />;
     }

@@ -41,6 +41,10 @@ const { mockFrom, trainedTwin } = vi.hoisted(() => {
    *   · single-row:  select('*').eq('user_id', uid).single()
    *   · colección:   select('*').eq('user_id', uid).gte('date', ...).order(...)
    */
+  /** order() devuelve { limit } para soportar la query del feed cooperativo
+   *  (select().order('created_at').limit(50)) y las colecciones existentes. */
+  const orderChain = () => ({ limit: vi.fn().mockResolvedValue(emptyList) });
+
   const mockFrom = vi.fn((table: string) => {
     const single = () =>
       table === 'digital_twins'
@@ -52,18 +56,18 @@ const { mockFrom, trainedTwin } = vi.hoisted(() => {
         eq: vi.fn(() => ({
           maybeSingle: vi.fn(single),
           single: vi.fn(single),
-          gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue(emptyList) })),
-          order: vi.fn().mockResolvedValue(emptyList),
+          gte: vi.fn(() => ({ order: vi.fn(orderChain) })),
+          order: vi.fn(orderChain),
         })),
-        order: vi.fn().mockResolvedValue(emptyList),
+        order: vi.fn(orderChain),
       })),
       eq: vi.fn(() => ({
         maybeSingle: vi.fn(single),
         single: vi.fn(single),
-        gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue(emptyList) })),
-        order: vi.fn().mockResolvedValue(emptyList),
+        gte: vi.fn(() => ({ order: vi.fn(orderChain) })),
+        order: vi.fn(orderChain),
       })),
-      gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue(emptyList) })),
+      gte: vi.fn(() => ({ order: vi.fn(orderChain) })),
       upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
       insert: vi.fn().mockResolvedValue(noData),
       update: vi.fn().mockResolvedValue(noData),
@@ -123,23 +127,24 @@ describe('supabaseSync — persistencia de la inteligencia entrenada', () => {
         table === 'digital_twins'
           ? Promise.resolve({ data: { ...trainedTwin, exercise_progress: null }, error: null })
           : Promise.resolve({ data: null, error: null });
+      const orderChain = () => ({ limit: vi.fn().mockResolvedValue({ data: [], error: null }) });
       return {
         select: vi.fn(() => ({
           eq: vi.fn(() => ({
             maybeSingle: vi.fn(single),
             single: vi.fn(single),
-            gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: [], error: null }) })),
-            order: vi.fn().mockResolvedValue({ data: [], error: null }),
+            gte: vi.fn(() => ({ order: vi.fn(orderChain) })),
+            order: vi.fn(orderChain),
           })),
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          order: vi.fn(orderChain),
         })),
         eq: vi.fn(() => ({
           maybeSingle: vi.fn(single),
           single: vi.fn(single),
-          gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: [], error: null }) })),
-          order: vi.fn().mockResolvedValue({ data: [], error: null }),
+          gte: vi.fn(() => ({ order: vi.fn(orderChain) })),
+          order: vi.fn(orderChain),
         })),
-        gte: vi.fn(() => ({ order: vi.fn().mockResolvedValue({ data: [], error: null }) })),
+        gte: vi.fn(() => ({ order: vi.fn(orderChain) })),
         upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
         insert: vi.fn().mockResolvedValue({ data: null, error: null }),
         update: vi.fn().mockResolvedValue({ data: null, error: null }),

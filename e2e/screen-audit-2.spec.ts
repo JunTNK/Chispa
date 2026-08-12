@@ -1,11 +1,11 @@
 /**
  * 🎯 SCREEN AUDIT — Part 2: Nav Screens & Profile
- * Question -> Coach -> Sistema -> Progress -> Profile -> Dopamina
+ * Quest -> Coach -> Sistema -> Progress -> Profile -> Dopamina -> Patrones -> Comunidad
  */
 import { test, expect } from '@playwright/test';
 import { completeOnboarding, startCapture, checkErrors, resetErrors, reportAudit, openExtraMenu } from './helpers';
 
-test('Audit 2/3 — Quest → Coach → Sistema → Progress → Profile → Dopamina', async ({ page }) => {
+test('Audit 2/3 — Quest → Coach → Sistema → Progress → Profile → Dopamina → Patrones → Comunidad', async ({ page }) => {
   resetErrors();
   startCapture(page);
 
@@ -55,6 +55,16 @@ test('Audit 2/3 — Quest → Coach → Sistema → Progress → Profile → Dop
   await checkErrors(page, 'dopamina');
   console.log('✅ 12. Dopamina');
 
-  const errCount = reportAudit('Audit 2/3', 6);
+  // 13. PATRONES (analytics — pantalla Pro; en free muestra la card bloqueada)
+  await openExtraMenu(page, 'Patrones');
+  await checkErrors(page, 'analytics');
+  console.log('✅ 13. Patrones');
+
+  // 14. COMUNIDAD (feed cooperativo)
+  await openExtraMenu(page, 'Comunidad');
+  await checkErrors(page, 'comunidad');
+  console.log('✅ 14. Comunidad');
+
+  const errCount = reportAudit('Audit 2/3', 8);
   expect(errCount).toBe(0);
 });

@@ -22,7 +22,7 @@ export const enOnboarding: Record<string, string> = {
     'Estado: en desarrollo activo. Tu feedback construye la hoja de ruta.': 'Status: actively in development. Your feedback shapes the roadmap.',
     'Escríbenos': 'Drop us a line',
    'El motor ya corre 80/15/5. Tus datos nunca salen sin tu OK.': 'The engine already runs 80/15/5. Your data never leaves without your OK.',
-    'En construcción: feed social cooperativo y analytics. La competencia es opcional, contra tu yo pasado, nunca contra otros.': 'Under construction: cooperative social feed and analytics. Competition is optional, against your past self, never against others.',
+    'Comunidad cooperativa y analytics Pro: la competencia es opcional, contra tu yo pasado, nunca contra otros.': 'Cooperative community and Pro analytics: competition is optional, against your past self, never against others.',
     'Preguntas frecuentes': 'Frequently asked questions',
     'Terminar aquí': 'Finish here',
     'Qué verás al entrar': 'What you\'ll see inside',

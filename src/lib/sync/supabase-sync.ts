@@ -3,7 +3,7 @@
 import { supabase } from '@/lib/db/supabase';
 import { useStore } from '@/lib/store';
 import { uid as genUid } from '@/lib/utils/helpers';
-import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessage, UserAchievement, QuestState, FriendEntry, WeightEntry } from '@/types';
+import type { Profile, DigitalTwin, CheckIn, Workout, WorkoutExercise, ChatMessage, UserAchievement, QuestState, FriendEntry, WeightEntry, CommunityPost } from '@/types';
 
 /* ─── Types ─── */
 
@@ -25,6 +25,8 @@ export interface SyncPayload {
   /** Social graph (local-first; synced when coopMode != 'none') */
   friends?: FriendEntry[];
   coopMode?: 'none' | 'friends' | 'public';
+  /** Feed cooperativo — chispas de movimiento (push propio; pull de la comunidad) */
+  communityPosts?: CommunityPost[];
 }
 
 export interface SyncResult {
@@ -288,7 +290,30 @@ export class SupabaseSyncService {
         if (!error) pushed.push(`weight_log (${entries.length})`);
       }
 
-      // 9. Social graph (friends + coopMode)
+      // 9. Community feed — solo mis chispas (la de los demás llegan por pull)
+      if (payload.communityPosts && payload.communityPosts.length > 0) {
+        const own = payload.communityPosts.filter(
+          (p) => p.author_id === '' || p.author_id === uid
+        );
+        if (own.length > 0) {
+          const entries = own.map((p) => ({
+            id: p.id,
+            user_id: uid,
+            author_id: uid,
+            kind: p.kind,
+            focus: p.focus ?? null,
+            duration_min: p.durationMin ?? null,
+            created_at: p.created_at,
+          }));
+          // Tolerante: si la tabla 015 aún no está aplicada, el paso se omite.
+          const { error: cpErr } = await (supabase as any)
+            .from('community_posts')
+            .upsert(entries, { onConflict: 'id', ignoreDuplicates: true });
+          if (!cpErr) pushed.push(`community_posts (${entries.length})`);
+        }
+      }
+
+      // 10. Social graph (friends + coopMode)
       if (payload.coopMode && payload.coopMode !== 'none') {
         const { error: cErr } = await (supabase as any)
           .from('user_profiles')
@@ -538,6 +563,29 @@ export class SupabaseSyncService {
         pushed.push(`weight_log (${payload.weightHistory!.length})`);
       }
 
+      // 9. Community feed (cooperativo — últimas 50 chispas de la comunidad)
+      // select-all vía RLS (015): todos leen, cada quien inserta las suyas.
+      const { data: communityPosts } = await (supabase as any)
+        .from('community_posts')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (communityPosts && communityPosts.length > 0) {
+        payload.communityPosts = communityPosts.map((p: Record<string, unknown>) => ({
+          id: p.id as string,
+          // Las chispas propias se muestran en primera persona; el resto anónimo
+          author_id: (p.author_id as string) === uid ? '' : 'anon',
+          kind: (p.kind as CommunityPost['kind']),
+          focus: (p.focus as CommunityPost['focus']) ?? undefined,
+          durationMin: (p.duration_min as number | null) ?? undefined,
+          created_at: p.created_at as string,
+          reactions: 0,
+          myReacted: false,
+        }));
+        pushed.push(`community_posts (${payload.communityPosts!.length})`);
+      }
+
       this._status = 'synced';
       const result: SyncResult = { success: true, pushed, pulled: payload };
       this._lastResult = result;
@@ -662,6 +710,19 @@ export class SupabaseSyncService {
   }
 
   /**
+   * Merge del feed cooperativo por id (posts inmutables: unión simple).
+   * El local gana en conflicto para conservar aplausos y reacciones propias.
+   */
+  static mergePosts(local: CommunityPost[], remote: CommunityPost[]): CommunityPost[] {
+    const byId = new Map<string, CommunityPost>();
+    for (const p of local) byId.set(p.id, p);
+    for (const p of remote) if (!byId.has(p.id)) byId.set(p.id, p);
+    return Array.from(byId.values())
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 100);
+  }
+
+  /**
    * Merge completo: aplica todas las estrategias a un payload remoto contra el store local.
    * Retorna los datos ya mergeados, listos para cargar en el store.
    */
@@ -671,6 +732,7 @@ export class SupabaseSyncService {
     workouts: Workout[];
     checkins: Record<string, CheckIn>;
     weightHistory: WeightEntry[];
+    communityPosts: CommunityPost[];
   }): SyncPayload {
     const result: SyncPayload = {};
 
@@ -717,6 +779,14 @@ export class SupabaseSyncService {
       );
     }
 
+    // Feed cooperativo: unión por id (posts inmutables)
+    if (remote.communityPosts || local.communityPosts.length > 0) {
+      result.communityPosts = SupabaseSyncService.mergePosts(
+        local.communityPosts,
+        remote.communityPosts ?? []
+      );
+    }
+
     // Achievements: merge sync — gana remote si está unlocked, sino local
     if (remote.achievements) {
       result.achievements = {};
@@ -753,6 +823,7 @@ export function applyPulledPayload(result: SyncResult): void {
     workouts: store.workouts,
     checkins: store.checkins,
     weightHistory: store.weightHistory,
+    communityPosts: store.communityPosts,
   });
 
   if (mergedData.lang) {
@@ -781,5 +852,8 @@ export function applyPulledPayload(result: SyncResult): void {
   }
   if (mergedData.questState) {
     store.setQuestState(mergedData.questState);
+  }
+  if (mergedData.communityPosts) {
+    useStore.setState({ communityPosts: mergedData.communityPosts });
   }
 }

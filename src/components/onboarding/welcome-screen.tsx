@@ -304,7 +304,7 @@ export function WelcomeScreen() {
               </li>
               <li className="flex gap-[10px] items-start">
                 <span aria-hidden className="mt-[3px] w-[5px] h-[5px] shrink-0 rounded-full bg-[#f7b65f]" />
-                 <span className="text-[.85rem] text-[var(--muted)]">{t('En construcción: feed social cooperativo y analytics. La competencia es opcional, contra tu yo pasado, nunca contra otros.')}</span>
+                 <span className="text-[.85rem] text-[var(--muted)]">{t('Comunidad cooperativa y analytics Pro: la competencia es opcional, contra tu yo pasado, nunca contra otros.')}</span>
               </li>
             </ul>
           </div>

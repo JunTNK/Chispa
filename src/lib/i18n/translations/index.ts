@@ -12,6 +12,7 @@ import { enTraining } from './training';
 import { enTraining2 } from './training2';
 import { enNeurofit } from './neurofit';
 import { enAwards } from './awards';
+import { enCommunity } from './community';
 import { journalTranslations } from './journal';
 
 export const EN: Record<string, string> = {
@@ -24,5 +25,6 @@ export const EN: Record<string, string> = {
   ...enTraining2,
   ...enNeurofit,
   ...enAwards,
+  ...enCommunity,
   ...journalTranslations.es,
 };
