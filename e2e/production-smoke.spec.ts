@@ -85,9 +85,13 @@ test.describe('🔥 Production Smoke', () => {
 
     // Login screen
     await page.goto('/');
-    await page.getByText('Iniciar sesión').click();
-    await page.waitForTimeout(500);
-    await expect(page.locator('h1')).toContainText('Iniciar sesión');
+    // Carga en frío contra el deploy: el click puede caer antes de que React
+    // hidrate (listeners aún sin attachar) y ser tragado sin efecto.
+    // toPass reintenta clic+assert hasta que la navegación se registra.
+    await expect(async () => {
+      await page.getByText('Iniciar sesión').click();
+      await expect(page.locator('h1')).toContainText('Iniciar sesión', { timeout: 3000 });
+    }).toPass({ timeout: 15000 });
     await expect(page.locator('input[type="email"]').first()).toBeVisible();
     await expect(page.locator('input[type="password"]').first()).toBeVisible();
     await expect(page.locator('button[aria-label="Volver"]')).toBeVisible();
