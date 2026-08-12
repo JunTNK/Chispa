@@ -5,7 +5,7 @@
  * Run with: npx playwright test e2e/visual-regression.spec.ts --update-screenshots
  * Compare with: npx playwright test e2e/visual-regression.spec.ts
  */
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import {
   completeOnboarding,
   navigateToNavScreen,
@@ -18,6 +18,57 @@ const screenshotOptions = {
   fullPage: true,
   animations: 'disabled' as const,
 };
+
+/**
+ * Inyecta un plan FIJO en el store persistido (`chispa_store`) para que el home
+ * renderice la PlanCard con contenido determinista.
+ *
+ * Sin esto, el auto-plan post-onboarding usa Math.random (shuffle de ejercicios
+ * en TrainingAgent) → los ejercicios y el wrapping de sus nombres varían entre
+ * corridas y los screenshots del home son inestables (altura + contenido).
+ *
+ * El `date` = hoy evita que el home auto-genere otro plan (guard `hasPlan`).
+ *
+ * ⚠️ Depende del formato de persistencia de zustand (`chispa_store` =
+ * `{ state, version }`). Si se cambia la clave o el versionado, este seeding
+ * deja de aplicar en silencio y el home vuelve a ser flaky: revisar aquí.
+ */
+async function seedHomePlan(page: Page) {
+  await page.addInitScript(() => {
+    const key = 'chispa_store';
+    let store: { state?: Record<string, unknown> } = {};
+    try {
+      store = JSON.parse(localStorage.getItem(key) || '{}');
+    } catch {
+      store = {};
+    }
+    store.state = store.state || {};
+    store.state.plan = {
+      action: 'train',
+      date: new Date().toISOString().slice(0, 10),
+      done: false,
+      intensity: 'light',
+      confidence: 70,
+      message: 'Mensaje determinista para visual regression.',
+      reasons: ['Recuperación 63/100: sesión estándar', 'Consistencia 0%: hoy reconectamos', 'Ajustamos carga a tu energía'],
+      workout: {
+        focus: 'full',
+        intensity: 'light',
+        duration: 20,
+        title: 'Sesión ligera',
+        sets: 2,
+        rest: 40,
+        exercises: [
+          { exercise_id: 'v1', name: 'Sentadilla', muscle: 'piernas', sets: 2, reps: 10, rest: 40, completed_sets: 0, completed_reps: [], status: 'pending' },
+          { exercise_id: 'v2', name: 'Plancha', muscle: 'core', sets: 2, reps: 30, rest: 40, completed_sets: 0, completed_reps: [], status: 'pending' },
+          { exercise_id: 'v3', name: 'Puente de glúteos', muscle: 'gluteos', sets: 2, reps: 12, rest: 40, completed_sets: 0, completed_reps: [], status: 'pending' },
+          { exercise_id: 'v4', name: 'Curl femoral', muscle: 'isquios', sets: 2, reps: 10, rest: 40, completed_sets: 0, completed_reps: [], status: 'pending' },
+        ],
+      },
+    };
+    localStorage.setItem(key, JSON.stringify(store));
+  });
+}
 
 test.describe('Visual Regression — Key Screens', () => {
   test('1. Welcome screen', async ({ page }) => {
@@ -39,6 +90,7 @@ test.describe('Visual Regression — Key Screens', () => {
   });
 
   test('3. Home screen — empty state', async ({ page }) => {
+    await seedHomePlan(page);
     await completeOnboarding(page, 20000);
     await page.waitForTimeout(500);
     
@@ -46,6 +98,7 @@ test.describe('Visual Regression — Key Screens', () => {
   });
 
   test('4. Home screen — navbar visible', async ({ page }) => {
+    await seedHomePlan(page);
     await completeOnboarding(page, 20000);
     await page.waitForTimeout(500);
     
@@ -56,11 +109,64 @@ test.describe('Visual Regression — Key Screens', () => {
     await expect(page).toHaveScreenshot('home-navbar.png', screenshotOptions);
   });
 
-  test('5. Coach screen', async ({ page }) => {
+  test('4b. Home — sesión activa (cronómetro enmascarado)', async ({ page }) => {
+    await seedHomePlan(page);
     await completeOnboarding(page, 20000);
-    await navigateToNavScreen(page, 'Coach');
     await page.waitForTimeout(500);
-    
+
+    // Inicia la sesión activa desde su único punto de entrada explícito
+    // (la card "Registro rápido" navega al wizard, nunca arranca el timer).
+    await page.locator('button', { hasText: 'Estoy entrenando ahora' }).click();
+    await page.waitForTimeout(1000);
+
+    // El cronómetro (MM:SS) avanza cada segundo → se enmascara para que el
+    // baseline sea determinista; el resto de la card es estático.
+    const timer = page
+      .locator('span.font-mono')
+      .filter({ hasText: /^\d{2}:\d{2}$/ });
+    await expect(timer).toBeVisible();
+
+    await expect(page).toHaveScreenshot('home-live-session.png', {
+      ...screenshotOptions,
+      mask: [timer],
+    });
+  });
+
+  test('5. Coach screen', async ({ page }) => {
+    // Determinismo para visual regression:
+    // - seedHomePlan → el coach usa `plan` para las preguntas sugeridas;
+    //   sin él, el auto-plan (aleatorio) puede no existir aún al navegar.
+    // - LocalLLM descarga Transformers.js + el modelo (~1GB) desde CDN con
+    //   progreso variable → se bloquea el CDN para que el estado final sea
+    //   SIEMPRE 'unavailable' ("Usando respuestas predefinidas") y el header
+    //   no muestre barra de descarga ni badge con % dinámico.
+    // - El avatar es una URL externa (proxiada por next/image a
+    //   /_next/image?url=... con slashes codificados) → se sustituye por una
+    //   imagen 1x1 fija con un patrón amplio que cubre ambas formas.
+    await seedHomePlan(page);
+    await completeOnboarding(page, 20000);
+
+    await page.route('**/cdn.jsdelivr.net/**', (route) => route.abort());
+    await page.route('**image.qwenlm.ai**', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'image/png',
+        body: Buffer.from(
+          'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+          'base64'
+        ),
+      })
+    );
+
+    await navigateToNavScreen(page, 'Coach');
+
+    // Esperar a que el estado del modelo se asiente en 'unavailable'
+    // (el fallo del CDN es inmediato) antes de capturar.
+    await page
+      .getByText('Usando respuestas predefinidas')
+      .waitFor({ state: 'visible', timeout: 15000 });
+    await page.waitForTimeout(500);
+
     await expect(page).toHaveScreenshot('coach-screen.png', screenshotOptions);
   });
 
@@ -123,6 +229,7 @@ test.describe('Visual Regression — Key Screens', () => {
 
 test.describe('Visual Regression — Themes', () => {
   test('13. Dark theme — home', async ({ page }) => {
+    await seedHomePlan(page);
     await completeOnboarding(page, 20000);
     await page.waitForTimeout(500);
     
@@ -130,6 +237,7 @@ test.describe('Visual Regression — Themes', () => {
   });
 
   test('14. Light theme — home', async ({ page }) => {
+    await seedHomePlan(page);
     await completeOnboarding(page, 20000);
     
     // Switch to light theme via profile
@@ -151,6 +259,7 @@ test.describe('Visual Regression — Themes', () => {
   });
 
   test('15. High contrast theme — home', async ({ page }) => {
+    await seedHomePlan(page);
     await completeOnboarding(page, 20000);
     
     // Switch to high contrast via profile

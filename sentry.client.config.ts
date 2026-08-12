@@ -14,10 +14,18 @@
  */
 import { init, captureException } from '@sentry/nextjs';
 
-// Only initialize if DSN is available and in production
-if (process.env.NODE_ENV === 'production' && (process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN)) {
+// Only initialize if DSN is available, in production, and NOT an obvious
+// placeholder (e.g. el scaffolding `PEGA_TU_DSN@o123456.../project-id` que
+// se pega antes de crear la cuenta). Un DSN inválido genera ruido CORS en
+// consola y rompe los e2e que validan consola limpia.
+const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
+const isPlaceholderDsn =
+  !dsn ||
+  /PEGA_TU|\/project-id$|your-org|your-project|example\.com/i.test(dsn);
+
+if (process.env.NODE_ENV === 'production' && !isPlaceholderDsn) {
   init({
-    dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN,
+    dsn,
 
     // Performance monitoring — sample rate 10% in production to save quota
     tracesSampleRate: 0.1,

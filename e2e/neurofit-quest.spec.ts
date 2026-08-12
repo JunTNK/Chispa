@@ -37,14 +37,13 @@ test.describe('Quest screen', () => {
   test('2. Boss battle section is visible', async ({ page }) => {
     await goToQuest(page);
 
-    // Boss section should be visible (either defeated or active)
-    const bossDefeated = page.locator('text=Jefe derrotado esta semana');
-    const bossActive = page.locator('text=Jefe semanal');
-    
-    const hasDefeated = await bossDefeated.isVisible().catch(() => false);
-    const hasActive = await bossActive.isVisible().catch(() => false);
-    
-    expect(hasDefeated || hasActive).toBe(true);
+    // La pantalla carga datos async ("Cargando..."): el check isVisible() de
+    // un solo disparo se adelanta a la carga → espera auto-retry. El boss
+    // semanal se muestra para usuario fresco ('Jefe semanal') o derrotado.
+    const boss = page
+      .locator('text=Jefe derrotado esta semana')
+      .or(page.locator('text=Jefe semanal'));
+    await expect(boss.first()).toBeVisible({ timeout: 15000 });
   });
 
   test('3. XP ring and level progress are displayed', async ({ page }) => {

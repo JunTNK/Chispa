@@ -13,7 +13,7 @@ import { test, expect } from '@playwright/test';
 import {
   completeOnboarding,
   openExtraMenu,
-  goBack,
+  navigateToNavScreen,
 } from './helpers';
 
 test.describe('Profile settings', () => {
@@ -35,12 +35,15 @@ test.describe('Profile settings', () => {
   test('2. Accessibility toggles exist and are interactive', async ({ page }) => {
     await goToProfile(page);
 
-    // Switches should exist (role="switch")
+    // Switches should exist (role="switch"). La pantalla carga async
+    // ("Cargando..."): espera auto-retry antes de contar. Actual: 7
+    // (Reducir movimiento + 6 preferencias del map).
     const switches = page.locator('[role="switch"]');
+    await expect(switches.first()).toBeVisible({ timeout: 15000 });
     const count = await switches.count();
     expect(count).toBeGreaterThanOrEqual(3);
 
-    // Click the first switch (high contrast)
+    // Click the first switch
     const firstSwitch = switches.first();
     const wasChecked = await firstSwitch.getAttribute('aria-checked');
     await firstSwitch.click();
@@ -58,12 +61,14 @@ test.describe('Profile settings', () => {
   test('3. Language switcher changes UI language', async ({ page }) => {
     await goToProfile(page);
 
-    // Find language group
-    const langGroup = page.getByRole('group', { name: 'Idioma' });
-    await expect(langGroup).toBeVisible();
+    // El nombre accesible del grupo está localizado ('Idioma'/'Language'), así
+    // que se apunta a los botones directamente (nombres exactos 'es'/'en')
+    // en vez de re-localizar el grupo tras cambiar el idioma.
+    const enBtn = page.getByRole('button', { name: /^en$/i });
+    const esBtn = page.getByRole('button', { name: /^es$/i });
+    await expect(enBtn).toBeVisible();
 
     // Click EN button
-    const enBtn = langGroup.getByRole('button', { name: /^en$/i });
     await enBtn.click();
     await page.waitForTimeout(1000);
 
@@ -75,7 +80,6 @@ test.describe('Profile settings', () => {
     await expect(page.locator('text=Your Digital Twin')).toBeVisible({ timeout: 5000 });
 
     // Switch back to ES
-    const esBtn = langGroup.getByRole('button', { name: /^es$/i });
     await esBtn.click();
     await page.waitForTimeout(1000);
 
@@ -86,7 +90,9 @@ test.describe('Profile settings', () => {
   test('4. Back navigation returns to home', async ({ page }) => {
     await goToProfile(page);
 
-    await goBack(page);
+    // Perfil es una pantalla navegada (sin botón "Volver"): se vuelve a home
+    // desde el navbar.
+    await navigateToNavScreen(page, 'Inicio');
 
     // Should be back at home
     await expect(page.locator('text=Crear rutina')).toBeVisible();

@@ -38,17 +38,19 @@ test.describe('Quick log flow', () => {
     await goToQuickLog(page);
 
     // Duration buttons should be visible (1, 5, 10, 15, 20, 30, 45, 60)
+    // Cada botón muestra "{n} min" (número + span), así que se empareja por
+    // accessible name exacto en lugar de regex sobre el número pelado.
     const durations = [1, 5, 10, 15, 20, 30, 45, 60];
     for (const d of durations) {
-      await expect(page.locator('button').filter({ hasText: new RegExp(`^${d}$`) }).first()).toBeVisible();
+      await expect(page.getByRole('button', { name: `${d} min`, exact: true })).toBeVisible();
     }
 
     // 20 should be selected by default
-    const btn20 = page.locator('button').filter({ hasText: /^20$/ }).first();
+    const btn20 = page.getByRole('button', { name: '20 min', exact: true });
     await expect(btn20).toHaveClass(/#ffb454/);
 
     // Click 30 min
-    await page.locator('button').filter({ hasText: /^30$/ }).first().click();
+    await page.getByRole('button', { name: '30 min', exact: true }).click();
     await page.waitForTimeout(200);
 
     // Click Siguiente
@@ -163,5 +165,59 @@ test.describe('Quick log flow', () => {
 
     // Should be back at home
     await expect(page.locator('text=Crear rutina')).toBeVisible();
+  });
+});
+
+test.describe('Live timer — sesión activa (Te estás moviendo)', () => {
+  /** Helper: completar onboarding y quedarnos en home */
+  async function goToHome(page: import('@playwright/test').Page) {
+    await completeOnboarding(page, 20000);
+  }
+
+  test('8. Estoy entrenando ahora arranca la sesión activa', async ({ page }) => {
+    await goToHome(page);
+
+    // Nuevo layout del home: card "Registro rápido" + link secundario del timer.
+    // El timer NUNCA arranca automático: solo desde el link explícito.
+    await expect(page.locator('text=Registro rápido').first()).toBeVisible();
+    await expect(page.locator('text=Estoy entrenando ahora')).toBeVisible();
+
+    await page.locator('text=Estoy entrenando ahora').click();
+    await page.waitForTimeout(300);
+
+    // El home entra en modo sesión activa
+    await expect(page.locator('text=Te estás moviendo')).toBeVisible();
+    // El cronómetro corre en formato MM:SS
+    await expect(page.getByText(/^\d{2}:\d{2}$/)).toBeVisible();
+  });
+
+  test('9. Cancelar el timer vuelve al home normal', async ({ page }) => {
+    await goToHome(page);
+
+    await page.locator('text=Estoy entrenando ahora').click();
+    await expect(page.locator('text=Te estás moviendo')).toBeVisible();
+
+    await page.locator('button').filter({ hasText: 'Cancelar' }).click();
+    await page.waitForTimeout(400);
+
+    // La sesión activa desaparece y la card vuelve al estado normal
+    await expect(page.locator('text=Te estás moviendo')).not.toBeVisible();
+    await expect(page.locator('text=Registro rápido').first()).toBeVisible();
+  });
+
+  test('10. Terminar y guardar registra el movimiento', async ({ page }) => {
+    await goToHome(page);
+
+    await page.locator('text=Estoy entrenando ahora').click();
+    await expect(page.locator('text=Te estás moviendo')).toBeVisible();
+
+    // Deja correr ~2s para que registre tiempo y guarda
+    await page.waitForTimeout(2000);
+    await page.locator('button').filter({ hasText: 'Terminar y guardar' }).click();
+
+    // Toast de confirmación + home vuelve al estado normal (card "Registro rápido")
+    await expect(page.locator('text=Cada minuto cuenta.')).toBeVisible({ timeout: 3000 });
+    await expect(page.locator('text=Te estás moviendo')).not.toBeVisible();
+    await expect(page.locator('text=Registro rápido').first()).toBeVisible();
   });
 });

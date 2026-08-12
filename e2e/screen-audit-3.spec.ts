@@ -34,7 +34,13 @@ test('Audit 3/3 — Logros → Leaderboard → Catalog → Session → /docs →
   await dismissPortal(page);
   await nav.locator('button').filter({ hasText: 'Inicio' }).click();
   await page.waitForTimeout(400);
-  await page.locator('button').filter({ hasText: 'Calcular mi día' }).click();
+  // Tras el onboarding el check-in ya está sembrado y el plan auto-generado:
+  // 'Calcular mi día' solo se clica si existe (mismo patrón que runCheckIn
+  // en helpers.ts — mantener sincronizado).
+  const calcBtn = page.locator('button').filter({ hasText: 'Calcular mi día' });
+  if (await calcBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await calcBtn.click();
+  }
   // Wait for plan generation with timeout (DecisionEngine may return rest day)
   const startBtn = page.locator('button').filter({ hasText: 'Empezar ahora' });
   try {

@@ -13,10 +13,16 @@
  */
 import { init } from '@sentry/nextjs';
 
-// Only initialize if DSN is available and in production
-if (process.env.NODE_ENV === 'production' && (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN)) {
+// Only initialize if DSN is available, in production, and NOT an obvious
+// placeholder (ver sentry.client.config.ts).
+const dsn = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
+const isPlaceholderDsn =
+  !dsn ||
+  /PEGA_TU|\/project-id$|your-org|your-project|example\.com/i.test(dsn);
+
+if (process.env.NODE_ENV === 'production' && !isPlaceholderDsn) {
   init({
-    dsn: process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN,
+    dsn,
 
     // Performance monitoring — sample rate 10% in production
     tracesSampleRate: 0.1,

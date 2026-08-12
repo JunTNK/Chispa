@@ -30,17 +30,13 @@ test.describe('Session flow — check-in → plan → session → summary', () =
   test('1. Check-in generates a plan (or rest day)', async ({ page }) => {
     await goToHome(page);
 
-    // Click "Calcular mi día"
-    await page.locator('button').filter({ hasText: 'Calcular mi día' }).click();
-
-    // Wait for plan to appear — could be training or rest
-    await page.waitForTimeout(3000);
+    // Tras el onboarding el check-in ya está sembrado y el plan se auto-genera:
+    // runCheckIn espera "Empezar ahora" (o devuelve null si toca descanso).
+    const startBtn = await runCheckIn(page);
 
     // Either "Empezar ahora" or a rest message should appear
-    const startBtn = page.locator('button').filter({ hasText: 'Empezar ahora' });
-    const restMsg = page.locator('text=Hoy la chispa se recarga');
-
-    const hasStart = await startBtn.isVisible().catch(() => false);
+    const restMsg = page.locator('text=Hoy toca recargar');
+    const hasStart = startBtn !== null;
     const hasRest = await restMsg.isVisible().catch(() => false);
 
     expect(hasStart || hasRest).toBe(true);

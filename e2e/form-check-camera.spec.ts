@@ -55,7 +55,8 @@ test.describe('Form Check — camera end-to-end', () => {
     await page.waitForTimeout(1200);
 
     // ── 3. Open Form Check ──
-    await page.locator('button').filter({ hasText: 'Form' }).click();
+    // El botón muestra t('Postura') (es); 'Form' es solo la traducción en inglés.
+    await page.locator('button').filter({ hasText: 'Postura' }).click();
 
     // ── 4. THE FIX: video must mount AND receive the camera stream ──
     await page.waitForFunction(

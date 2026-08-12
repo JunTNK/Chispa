@@ -75,8 +75,11 @@ test.describe('Dopamina screen', () => {
   test('5. Dopamine scores are displayed on activities', async ({ page }) => {
     await goToDopamina(page);
 
-    // Activities should show dopamine scores (numbers 5-10)
+    // La pantalla carga datos async ("Cargando..."): espera auto-retry a que
+    // el menú renderice antes de contar los scores (uno por actividad, 5-10).
+    await expect(page.locator('text=Jumping jacks').first()).toBeVisible({ timeout: 15000 });
     const scoreElements = page.locator('text=/^[5-9]$|^10$/');
+    await expect(scoreElements.first()).toBeVisible({ timeout: 15000 });
     const count = await scoreElements.count();
     expect(count).toBeGreaterThanOrEqual(5); // Multiple activities with scores
   });

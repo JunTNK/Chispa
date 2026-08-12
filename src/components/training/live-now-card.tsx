@@ -2,13 +2,16 @@
  * 🟢 LiveNowCard — "Estoy entrenando ahora" / card "Registro rápido"
  *
  * Principio ND aplicado:
- * - Presente, no pasado. Un toque arranca el timer.
+ * - Presente, no pasado. El timer se arranca EXPLÍCITAMENTE desde el
+ *   link secundario ("Estoy entrenando ahora") — nunca al tocar la card.
  * - Si el usuario ya entrenó, puede "Terminar y guardar".
- * - El timer persiste en el store para sobrevivir refresh.
- * - Link secundario: "Registrar algo que ya hice" → ruta a quick-log.
+ * - El timer vive en el store (no se persiste: un refresh lo reinicia).
+ * - La card "Registro rápido" → ruta a quick-log (wizard).
  *
  * `variant="card"`: caja compacta para el grid de 3 acciones del Home
- * (lápiz + "Registro rápido"). Al tocar se transforma en el timer en vivo.
+ * (lápiz + "Registro rápido"). La card abre el wizard de registro rápido
+ * (su nombre coincide con la pantalla); el link secundario arranca el
+ * timer en vivo de forma explícita (nunca automático).
  * `variant="banner"`: banner a ancho completo (comportamiento anterior).
  */
 'use client';
@@ -125,7 +128,7 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
-          onClick={startLive}
+          onClick={() => setView('quick-log')}
           className="flex-1 rounded-xl border border-[var(--line)] bg-[var(--card)] hover:border-[#34d399]/40 p-3 flex flex-col gap-2 text-left min-h-[84px] transition-all focus-visible:ring-2 focus-visible:ring-[#34d399] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg)]"
         >
           <PenLine size={18} className="text-[#34d399]" />
@@ -133,10 +136,10 @@ export function LiveNowCard({ variant = 'banner' }: { variant?: 'banner' | 'card
           <span className="block text-[10px] text-[var(--muted)] leading-tight">{t('Registra lo que estás haciendo')}</span>
         </motion.button>
         <button
-          onClick={() => setView('quick-log')}
+          onClick={startLive}
           className="w-full text-center text-[9px] text-[var(--muted)] hover:text-[var(--text)] underline underline-offset-1"
         >
-          {t('Registrar algo que ya hice')}
+          {t('Estoy entrenando ahora')}
         </button>
       </div>
     );

@@ -34,6 +34,10 @@ test('Audit 1/3 — Welcome → Login → Register → Home → Create → Catal
   console.log('✅ 3. Register');
 
   // 4. ONBOARDING → HOME
+  // El flujo login/register persiste `view` en el store (partialize), así que
+  // page.goto('/') restauraría la pantalla de registro. Se resetea el store
+  // para aterrizar en el welcome de nuevo antes de completar el onboarding.
+  await page.evaluate(() => localStorage.removeItem('chispa_store'));
   await completeOnboarding(page);
   await page.waitForTimeout(500);
   await checkErrors(page, 'home');

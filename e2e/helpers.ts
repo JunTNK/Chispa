@@ -188,10 +188,17 @@ export async function waitForText(page: Page, text: string, timeout = 5000) {
 /**
  * Run a complete session flow: check-in → plan → session.
  * Returns the startBtn locator if a session is available, or null if rest day.
+ *
+ * Tras el onboarding la app ya siembra un check-in amable y el home
+ * auto-genera el plan, así que "Calcular mi día" puede no estar visible:
+ * solo se clica si existe y luego se espera el plan ("Empezar ahora" o descanso).
  */
 export async function runCheckIn(page: Page) {
   await dismissPortal(page);
-  await page.locator('button').filter({ hasText: 'Calcular mi día' }).click();
+  const calcBtn = page.locator('button').filter({ hasText: 'Calcular mi día' });
+  if (await calcBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await calcBtn.click();
+  }
 
   const startBtn = page.locator('button').filter({ hasText: 'Empezar ahora' });
   try {
