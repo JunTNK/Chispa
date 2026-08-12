@@ -39,7 +39,7 @@ interface AppState {
   twin: DigitalTwin | null;
   /** UI language: Spanish (default) or English */
   lang: 'es' | 'en';
-  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref };
+  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref; explainerRate?: number; explainerAutoplay?: boolean };
   sensory: { quiet: boolean; dim: boolean; swap: boolean };
   checkins: Record<string, CheckIn>;
   workouts: Workout[];
@@ -95,6 +95,10 @@ interface AppState {
   setPref: (k: string, v: boolean) => void;
   setVoice: (v: VoiceMode) => void;
   setRestPref: (r: RestPref) => void;
+  /** Velocidad de lectura TTS del explainer (0.75/1/1.25) — persistida */
+  setExplainerRate: (rate: number) => void;
+  /** Autoplay del flipbook del explainer — persistido (pausar = no autoplay) */
+  setExplainerAutoplay: (on: boolean) => void;
   setLang: (l: 'es' | 'en') => void;
   setSensory: (s: Partial<{ quiet: boolean; dim: boolean; swap: boolean }>) => void;
   setCheckin: (k: string, c: CheckIn) => void;
@@ -159,7 +163,7 @@ const initialState: {
   neuro: { type: string; duration: number } | null;
   twin: DigitalTwin | null;
   lang: 'es' | 'en';
-  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref };
+  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref; explainerRate?: number; explainerAutoplay?: boolean };
   /** Timestamp cuando el usuario empezó "Estoy entrenando ahora" — persistido para sobrevivir refresh. */
   liveNowStartedAt: number | null;
   sensory: { quiet: boolean; dim: boolean; swap: boolean };
@@ -196,7 +200,7 @@ const initialState: {
   neuro: null,
   twin: null,
   lang: 'es',
-  prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false, showFAQs: true, light: false, systemMode: false, audioGuide: false, voice: 'system', restPref: 'auto' },
+  prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false, showFAQs: true, light: false, systemMode: false, audioGuide: false, voice: 'system', restPref: 'auto', explainerRate: 1, explainerAutoplay: true },
   liveNowStartedAt: null,
   sensory: { quiet: false, dim: false, swap: false },
   checkins: {},
@@ -249,6 +253,10 @@ export const useStore = create<AppState>()(
         set((s: AppState) => ({ prefs: { ...s.prefs, voice: v } })),
       setRestPref: (r: RestPref) =>
         set((s: AppState) => ({ prefs: { ...s.prefs, restPref: r } })),
+      setExplainerRate: (rate: number) =>
+        set((s: AppState) => ({ prefs: { ...s.prefs, explainerRate: rate } })),
+      setExplainerAutoplay: (on: boolean) =>
+        set((s: AppState) => ({ prefs: { ...s.prefs, explainerAutoplay: on } })),
       setLang: (l: 'es' | 'en') => set({ lang: l }),
       startLive: () => set({ liveNowStartedAt: Date.now() } as Partial<AppState>),
       finishLive: () => set({ liveNowStartedAt: null } as Partial<AppState>),

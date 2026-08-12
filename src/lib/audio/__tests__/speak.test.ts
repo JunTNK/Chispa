@@ -29,8 +29,15 @@ describe('speak (entrada única de audio)', () => {
     setVoiceMode('system');
     await speak('Hola', 'es');
     expect(sys.speak).toHaveBeenCalledTimes(1);
-    expect(sys.speak).toHaveBeenCalledWith('Hola', 'es');
+    // rate es opcional: sin él se pasa undefined (voz del sistema a 1×)
+    expect(sys.speak).toHaveBeenCalledWith('Hola', 'es', undefined);
     expect(neural.speakNeural).not.toHaveBeenCalled();
+  });
+
+  it('voz del sistema → propaga el rate para lectura lenta', async () => {
+    setVoiceMode('system');
+    await speak('Hola', 'es', 0.75);
+    expect(sys.speak).toHaveBeenCalledWith('Hola', 'es', 0.75);
   });
 
   it('voz neural disponible → usa la neural', async () => {

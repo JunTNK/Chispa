@@ -53,17 +53,25 @@ function stripMotionProps(props: Record<string, unknown>): Record<string, unknow
 }
 
 vi.mock('motion/react', () => {
+  // Cache por tag: el mismo `motion.div` debe ser SIEMPRE la misma función para
+  // que React reconcilie (no remonte) el subtree en cada render. Sin cache, el
+  // Proxy devuelve una función nueva por acceso y todo hijo con estado (p.ej.
+  // el flipbook) se remonta y pierde su estado en cada re-render del padre.
+  const motionCache: Record<string, React.FC> = {};
   const motion = new Proxy(
     {},
     {
       get: (_target: unknown, tag: string) => {
         const htmlTag = motionMap[tag] || 'div';
-        const MotionComponent = (props: Record<string, unknown>) => {
-          const htmlProps = stripMotionProps(props);
-          return React.createElement(htmlTag, htmlProps, props.children as React.ReactNode);
-        };
-        MotionComponent.displayName = `motion.${tag}`;
-        return MotionComponent;
+        if (!motionCache[tag]) {
+          const MotionComponent = (props: Record<string, unknown>) => {
+            const htmlProps = stripMotionProps(props);
+            return React.createElement(htmlTag, htmlProps, props.children as React.ReactNode);
+          };
+          MotionComponent.displayName = `motion.${tag}`;
+          motionCache[tag] = MotionComponent;
+        }
+        return motionCache[tag];
       },
     }
   );

@@ -1,17 +1,40 @@
 /**
  * Tests for ExerciseExplainer component
  *
- * Verifies the 3-section collapsible panel: Cómo/Para qué/Precauciones
+ * Verifies the localized explainer: flipbook, tip card, micro-pasos atómicos
+ * (checklist), secciones colapsables (Cómo/Para qué/Precauciones) y el botón
+ * "Escuchar" (TTS).
  */
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ExerciseExplainer } from '../exercise-explainer';
+import { isProbablySpanish } from '@/lib/utils/exercise-translate';
+import { useStore } from '@/lib/store';
 import type { Exercise } from '@/types';
 
-// Mock useT to return the key as-is
+// Mock useT: devuelve la clave con interpolación de variables (como el real)
 vi.mock('@/lib/i18n/use-t', () => ({
-  useT: () => (key: string) => key,
+  useT: () => (key: string, vars?: Record<string, string | number>) => {
+    if (!vars) return key;
+    let out = key;
+    for (const [k, v] of Object.entries(vars)) out = out.split(`{${k}}`).join(String(v));
+    return out;
+  },
 }));
+
+// Mock audio: TTS no disponible en jsdom — verificamos que speak se llama
+const speakMock = vi.fn(async (_text: string, _lang: string, _rate?: number) => {});
+const stopSpeakMock = vi.fn();
+vi.mock('@/lib/audio/speak', () => ({
+  speak: (text: string, lang: string, rate?: number) => speakMock(text, lang, rate),
+  stopSpeak: () => stopSpeakMock(),
+  voiceSupported: () => true,
+}));
+
+beforeEach(() => {
+  // Velocidad por defecto entre tests (el chip arranca en 1×)
+  useStore.setState({ prefs: { ...useStore.getState().prefs, explainerRate: 1 } });
+});
 
 function makeExercise(overrides: Partial<Exercise>): Exercise {
   return {
@@ -31,8 +54,15 @@ function makeExercise(overrides: Partial<Exercise>): Exercise {
 }
 
 describe('ExerciseExplainer', () => {
-  it('renders nothing when exercise has no instructions, benefits, or precautions', () => {
-    const ex = makeExercise({ instructions: '', instructionsSteps: [], benefits: undefined, precautions: undefined });
+  it('renders nothing when exercise has no instructions, benefits, precautions, cue, or frames', () => {
+    const ex = makeExercise({
+      instructions: '',
+      instructionsSteps: [],
+      benefits: undefined,
+      precautions: undefined,
+      cue: undefined,
+      images: undefined,
+    });
     const { container } = render(<ExerciseExplainer exercise={ex} />);
     expect(container.innerHTML).toBe('');
   });
@@ -70,24 +100,24 @@ describe('ExerciseExplainer', () => {
     expect(screen.queryByText('Precauciones')).toBeNull();
   });
 
-  it('shows content when section is expanded', () => {
+  it('shows micro-pasos as a numbered checklist when expanded', () => {
     const ex = makeExercise({ instructionsSteps: ['Step one', 'Step two'] });
-    render(<ExerciseExplainer exercise={ex} />);
+    const { container } = render(<ExerciseExplainer exercise={ex} />);
 
-    // Click to expand howTo
     fireEvent.click(screen.getByText('Cómo hacerlo'));
-    expect(screen.getByText('Step one Step two')).toBeDefined();
+    expect(screen.getByText('Step one')).toBeDefined();
+    expect(screen.getByText('Step two')).toBeDefined();
+    // Checklist atómico: un <li> por paso
+    expect(container.querySelectorAll('ol li')).toHaveLength(2);
   });
 
   it('hides content when section is collapsed again', () => {
     const ex = makeExercise({ instructionsSteps: ['Step one'] });
     render(<ExerciseExplainer exercise={ex} />);
 
-    // Expand
     fireEvent.click(screen.getByText('Cómo hacerlo'));
     expect(screen.getByText('Step one')).toBeDefined();
 
-    // Collapse
     fireEvent.click(screen.getByText('Cómo hacerlo'));
     // After collapse, AnimatePresence removes content from DOM
   });
@@ -100,11 +130,9 @@ describe('ExerciseExplainer', () => {
     });
     render(<ExerciseExplainer exercise={ex} />);
 
-    // Open howTo
     fireEvent.click(screen.getByText('Cómo hacerlo'));
     expect(screen.getByText('Step A')).toBeDefined();
 
-    // Open benefits — howTo should close
     fireEvent.click(screen.getByText('Para qué sirve'));
     expect(screen.getByText('Benefit B')).toBeDefined();
   });
@@ -127,5 +155,128 @@ describe('ExerciseExplainer', () => {
     fireEvent.click(screen.getByText('Para qué sirve'));
     expect(screen.getByText(/cuádriceps, glúteos/)).toBeDefined();
     expect(screen.getByText(/isquiotibiales/)).toBeDefined();
+  });
+
+  it('renders the tip card with the cue (el 20% esencial)', () => {
+    const ex = makeExercise({ cue: 'Keep your chest up' });
+    render(<ExerciseExplainer exercise={ex} />);
+    expect(screen.getByText('Consejo CHISPA')).toBeDefined();
+    expect(screen.getByText('Keep your chest up')).toBeDefined();
+  });
+
+  it('hides the tip card when howTo is expanded (evita duplicar contenido)', () => {
+    const ex = makeExercise({});
+    render(<ExerciseExplainer exercise={ex} />);
+    expect(screen.getByText('Consejo CHISPA')).toBeDefined();
+
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+    expect(screen.queryByText('Consejo CHISPA')).toBeNull();
+  });
+
+  it('plays the cue with TTS and stops on second tap', () => {
+    const ex = makeExercise({ cue: 'Keep your chest up' });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    const playBtn = screen.getByLabelText('Escuchar consejo');
+    fireEvent.click(playBtn);
+    expect(speakMock).toHaveBeenCalledWith('Keep your chest up', 'es', 1);
+
+    // Ahora el botón pasa a "Detener audio"
+    fireEvent.click(screen.getByLabelText('Detener audio'));
+    expect(stopSpeakMock).toHaveBeenCalled();
+  });
+
+  it('listens to each micro-paso individually', () => {
+    const ex = makeExercise({ instructionsSteps: ['Step one', 'Step two'] });
+    render(<ExerciseExplainer exercise={ex} />);
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+
+    fireEvent.click(screen.getByLabelText('Escuchar paso 1'));
+    expect(speakMock).toHaveBeenCalledWith('Step one', 'es', 1);
+  });
+
+  it('no traduce texto que ya está en español (ejercicios wger)', () => {
+    expect(isProbablySpanish('Este ejercicio es excelente para lograr una fuerte contracción')).toBe(true);
+    expect(isProbablySpanish('To get into the starting position, place the pulleys above your head')).toBe(false);
+  });
+
+  it('cycles the reading speed with the rate chip', () => {
+    const ex = makeExercise({ cue: 'Keep your chest up' });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    // El tip y las secciones muestran el chip; el primero es el del tip.
+    // (Re-consultamos tras el click: el nodo inicial puede quedar stale por
+    // la animación del motion.div raíz.)
+    const rateBtn = screen.getAllByLabelText('Velocidad de lectura')[0];
+    expect(rateBtn.textContent).toBe('1×');
+    fireEvent.click(rateBtn);
+    expect(screen.getAllByLabelText('Velocidad de lectura')[0].textContent).toBe('1.25×');
+  });
+
+  it('persists the reading speed to the store (se recuerda entre sesiones)', () => {
+    const ex = makeExercise({ cue: 'Keep your chest up' });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    fireEvent.click(screen.getAllByLabelText('Velocidad de lectura')[0]);
+    expect(useStore.getState().prefs.explainerRate).toBe(1.25);
+  });
+
+  it('syncs a micro-paso to the animation phase (paso → flipbook)', () => {
+    const ex = makeExercise({
+      instructionsSteps: ['Step one', 'Step two', 'Step three'],
+      images: ['X/0.jpg', 'X/1.jpg'],
+    });
+    render(<ExerciseExplainer exercise={ex} />);
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+
+    // El hint de sincronía solo aparece con 2+ frames y >1 paso
+    expect(screen.getByText('Toca un paso para verlo en la animación')).toBeDefined();
+
+    // Tap al paso 3 → la animación salta al frame final (2/2)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver paso 3 en la animación' }));
+    expect(screen.getByText('2/2')).toBeDefined();
+    expect(
+      screen.getByRole('button', { name: 'Ver paso 3 en la animación' }).getAttribute('aria-current')
+    ).toBe('step');
+
+    // Tap al paso 1 → frame inicial (1/2)
+    fireEvent.click(screen.getByRole('button', { name: 'Ver paso 1 en la animación' }));
+    expect(screen.getByText('1/2')).toBeDefined();
+  });
+
+  it('clears the active step when the user controls the animation manually', () => {
+    const ex = makeExercise({
+      instructionsSteps: ['Step one', 'Step two', 'Step three'],
+      images: ['X/0.jpg', 'X/1.jpg'],
+    });
+    render(<ExerciseExplainer exercise={ex} />);
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ver paso 3 en la animación' }));
+    expect(
+      screen.getByRole('button', { name: 'Ver paso 3 en la animación' }).getAttribute('aria-current')
+    ).toBe('step');
+
+    // El usuario reproduce la animación → el highlight se limpia
+    // (el frame ya no corresponde a una fase elegida)
+    fireEvent.click(screen.getByLabelText('Reproducir animación'));
+    expect(
+      screen.getByRole('button', { name: 'Ver paso 3 en la animación' }).getAttribute('aria-current')
+    ).toBeNull();
+  });
+
+  it('does not show the sync hint without frame sequence', () => {
+    const ex = makeExercise({ instructionsSteps: ['Step one', 'Step two'] });
+    render(<ExerciseExplainer exercise={ex} />);
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+    expect(screen.queryByText('Toca un paso para verlo en la animación')).toBeNull();
+  });
+
+  it('starts from the persisted reading speed', () => {
+    useStore.setState({ prefs: { ...useStore.getState().prefs, explainerRate: 1.25 } });
+    const ex = makeExercise({ cue: 'Keep your chest up' });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    expect(screen.getAllByLabelText('Velocidad de lectura')[0].textContent).toBe('1.25×');
   });
 });

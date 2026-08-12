@@ -6,7 +6,10 @@
 # (0.jpg) cuando el GIF no existe. Si en el futuro se añaden GIFs, basta con
 # clonar con `git lfs` o descargarlos manualmente.
 #
-# Compresión: elimina frames extras + comprime 0.jpg a calidad 75 + resize 400px
+# Compresión: elimina frames extras + comprime 0.jpg a calidad 75 + resize 400px.
+# Flipbook: tras la copia se descargan los frames 1.jpg (download-frames.mjs) con
+# la misma optimización, para que el explainer pueda ANIMAR el movimiento
+# (inicio → contracción) en futuras regeneraciones.
 set -e
 
 echo "📥 Clonando free-exercise-db (depth 1)..."
@@ -58,6 +61,10 @@ for (const dir of dirs) {
 // Wait for all async writes
 setTimeout(() => console.log('✅ ' + compressed + ' imágenes optimizadas'), 2000);
 "
+
+# Flipbook: recupera los frames 1.jpg (borrados arriba) con la misma optimización
+echo "🎞️ Descargando frames 1.jpg (flipbook)..."
+node scripts/download-frames.mjs
 
 COUNT=$(ls public/exercises | wc -l)
 echo "✅ $COUNT ejercicios descargados a public/exercises/"

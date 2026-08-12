@@ -14,14 +14,17 @@ export function voiceSupported(): boolean {
 /**
  * Anuncia un texto y corta la síntesis anterior (evita voces encimadas).
  * Devuelve false si no hay soporte (la app sigue fluyendo en silencio).
+ *
+ * `rate` permite ralentizar/acelerar la lectura (0.75×/1×/1.25×) — útil para
+ * el botón "Escuchar" del explainer (lectura larga, no solo anuncios cortos).
  */
-export function speak(text: string, lang: 'es' | 'en' = 'es'): boolean {
+export function speak(text: string, lang: 'es' | 'en' = 'es', rate = 1): boolean {
   if (!voiceSupported() || !text.trim()) return false;
   const synth = window.speechSynthesis;
   const voices = synth.getVoices?.() ?? [];
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang === 'en' ? 'en-US' : 'es-ES';
-  utterance.rate = 1;
+  utterance.rate = rate;
   const voice =
     voices.find((v: { lang: string }) => v.lang.startsWith(lang === 'en' ? 'en' : 'es')) ??
     undefined;
