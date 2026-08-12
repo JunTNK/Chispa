@@ -117,6 +117,13 @@ export function getTrialDaysLeft(activatedAt?: string | null): number {
   return Math.max(0, Math.min(days, TRIAL_DAYS));
 }
 
+/**
+ * Sección del explainer de ejercicios (una abierta a la vez; null = todas
+ * colapsadas). Compartida entre el store (persistencia) y el explainer para
+ * evitar que el union literal derive en dos sitios.
+ */
+export type ExplainerSection = 'howTo' | 'benefits' | 'precautions';
+
 export interface Exercise {
   /** Unique identifier (slug from free-exercise-db) */
   id: string;

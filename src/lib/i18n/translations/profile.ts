@@ -54,6 +54,8 @@ export const enProfile: Record<string, string> = {
   'FAQs al final de la landing': 'FAQs at the bottom of the landing page',
   'Tema claro': 'Light theme',
   'Intercambia el dark mode por claro': 'Switch from dark to light theme',
+  'Autoplay del flipbook': 'Flipbook autoplay',
+  'Reproducir automáticamente la animación del ejercicio en el explicador. Al pausarla, se desactiva para la próxima.': 'Automatically play the exercise animation in the explainer. Pausing it disables it for next time.',
   'Idioma': 'Language',
   'Español': 'Spanish',
   'English': 'English',

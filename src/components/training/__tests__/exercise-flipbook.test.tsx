@@ -34,9 +34,14 @@ function makeExercise(images?: string[]): Exercise {
 }
 
 beforeEach(() => {
-  // Restaurar prefs por defecto (reduceMotion: false + autoplay: true)
+  // Restaurar prefs por defecto (reduceMotion: false + autoplay: true + sin slow)
   useStore.setState({
-    prefs: { ...useStore.getState().prefs, reduceMotion: false, explainerAutoplay: true },
+    prefs: {
+      ...useStore.getState().prefs,
+      reduceMotion: false,
+      explainerAutoplay: true,
+      explainerSlow: false,
+    },
   });
 });
 
@@ -142,6 +147,18 @@ describe('ExerciseFlipbook', () => {
     // 3 pasos → el 2º (índice 1) mapea a la fase de contracción (frame final)
     act(() => ref.current?.jumpToStep(1, 3));
     expect(screen.getByText('2/2')).toBeDefined();
+  });
+
+  it('persists slow motion (0.5×) when toggled (preferencia recordada)', () => {
+    render(<ExerciseFlipbook exercise={makeExercise(['X/0.jpg', 'X/1.jpg'])} />);
+    fireEvent.click(screen.getByLabelText('Cámara lenta'));
+    expect(useStore.getState().prefs.explainerSlow).toBe(true);
+  });
+
+  it('starts with the persisted slow-motion preference', () => {
+    useStore.setState({ prefs: { ...useStore.getState().prefs, explainerSlow: true } });
+    render(<ExerciseFlipbook exercise={makeExercise(['X/0.jpg', 'X/1.jpg'])} />);
+    expect(screen.getByLabelText('Cámara lenta').getAttribute('aria-pressed')).toBe('true');
   });
 
   it('jumpToStep es no-op con un solo paso o sin secuencia', () => {

@@ -214,3 +214,19 @@ describe('LogrosScreen · Movimiento (sin gamificar el cuerpo)', () => {
     expect(screen.getByText('Ritmo de movimiento')).toBeInTheDocument();
   });
 });
+
+describe('ProfileScreen · Accesibilidad', () => {
+  it('toggle autoplay del flipbook persiste en el store', () => {
+    render(<ProfileScreen />);
+    const toggle = screen.getByRole('switch', { name: 'Autoplay del flipbook' });
+    // Estado efectivo por defecto: ON (el flipbook lee undefined ?? true) — el
+    // toggle no muestra un falso OFF para prefs aún sin definir
+    expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(toggle);
+    expect(useStore.getState().prefs.explainerAutoplay).toBe(false);
+
+    fireEvent.click(screen.getByRole('switch', { name: 'Autoplay del flipbook' }));
+    expect(useStore.getState().prefs.explainerAutoplay).toBe(true);
+  });
+});

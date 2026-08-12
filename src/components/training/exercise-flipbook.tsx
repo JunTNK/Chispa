@@ -53,11 +53,14 @@ export const ExerciseFlipbook = React.forwardRef<ExerciseFlipbookHandle, Exercis
   // Preferencia de autoplay persistida (pausar en el flipbook la desactiva)
   const autoplayPref = useStore((s) => s.prefs.explainerAutoplay ?? true);
   const setExplainerAutoplay = useStore((s) => s.setExplainerAutoplay);
+  // Cámara lenta persistida: se recuerda entre sesiones
+  const persistedSlow = useStore((s) => s.prefs.explainerSlow ?? false);
+  const setExplainerSlow = useStore((s) => s.setExplainerSlow);
   const urls = React.useMemo(() => getExerciseImageUrls(exercise), [exercise]);
 
   const [frame, setFrame] = React.useState(0);
   const [playing, setPlaying] = React.useState(false);
-  const [slow, setSlow] = React.useState(false);
+  const [slow, setSlow] = React.useState(persistedSlow);
   const [broken, setBroken] = React.useState<ReadonlySet<number>>(new Set());
 
   // Frames que cargaron bien (descarta los que dieron 404/error)
@@ -210,7 +213,12 @@ export const ExerciseFlipbook = React.forwardRef<ExerciseFlipbookHandle, Exercis
           <ChevronRight size={18} />
         </button>
         <button
-          onClick={() => setSlow((s) => !s)}
+          onClick={() => {
+            const next = !slow;
+            setSlow(next);
+            // Persistir: la cámara lenta elegida se recuerda entre sesiones
+            setExplainerSlow(next);
+          }}
           aria-label={t('Cámara lenta')}
           aria-pressed={slow}
           className={`w-11 h-11 rounded-xl border flex items-center justify-center gap-1 text-[11px] font-bold transition-all active:scale-95 ${

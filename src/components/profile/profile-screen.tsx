@@ -570,31 +570,37 @@ export function ProfileScreen() {
             { key: 'light', label: t('Tema claro'), desc: t('Intercambia el dark mode por claro') },
             { key: 'systemMode', label: t('Modo Sistema'), desc: t('Quests diarios, rangos y títulos. Sin castigos: el Sistema adapta, no obliga. Apágalo cuando quieras.') },
             { key: 'audioGuide', label: t('Sonido guía'), desc: t('Voz que anuncia ejercicios y descansos en el modo audio. Se apaga en un toque.') },
-          ].map(({ key, label, desc }) => (
-            <div key={key} className="flex items-center justify-between">
-              <div>
-                <span className="text-sm font-semibold">{label}</span>
-                <p className="text-xs text-[var(--muted)]">{desc}</p>
-              </div>
-              <button
-                role="switch"
-                aria-label={label}
-                aria-checked={Boolean((prefs as any)[key])}
-                onClick={() => setPref(key, !(prefs as any)[key])}
-                className={`w-[52px] h-[30px] rounded-full border-none shrink-0 transition-all relative ${
-                  (prefs as any)[key]
-                    ? 'bg-gradient-to-r from-[#ffb454] to-[#ff7a3d]'
-                    : 'bg-white/[.13]'
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 w-[26px] h-[26px] rounded-full bg-white shadow transition-all ${
-                    (prefs as any)[key] ? 'left-[25px]' : 'left-0.5'
+            // defaultOn: el flipbook trata undefined como ON (?? true) — el toggle
+            // debe mostrar el mismo estado efectivo, no un falso OFF para prefs nuevos
+            { key: 'explainerAutoplay', label: t('Autoplay del flipbook'), desc: t('Reproducir automáticamente la animación del ejercicio en el explicador. Al pausarla, se desactiva para la próxima.'), defaultOn: true },
+          ].map(({ key, label, desc, defaultOn }) => {
+            const checked = Boolean((prefs as any)[key] ?? defaultOn);
+            return (
+              <div key={key} className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-semibold">{label}</span>
+                  <p className="text-xs text-[var(--muted)]">{desc}</p>
+                </div>
+                <button
+                  role="switch"
+                  aria-label={label}
+                  aria-checked={checked}
+                  onClick={() => setPref(key, !checked)}
+                  className={`w-[52px] h-[30px] rounded-full border-none shrink-0 transition-all relative ${
+                    checked
+                      ? 'bg-gradient-to-r from-[#ffb454] to-[#ff7a3d]'
+                      : 'bg-white/[.13]'
                   }`}
-                />
-              </button>
-            </div>
-          ))}
+                >
+                  <span
+                    className={`absolute top-0.5 w-[26px] h-[26px] rounded-full bg-white shadow transition-all ${
+                      checked ? 'left-[25px]' : 'left-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+            );
+          })}
         </div>
       </Card>
 

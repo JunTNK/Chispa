@@ -32,8 +32,10 @@ vi.mock('@/lib/audio/speak', () => ({
 }));
 
 beforeEach(() => {
-  // Velocidad por defecto entre tests (el chip arranca en 1×)
-  useStore.setState({ prefs: { ...useStore.getState().prefs, explainerRate: 1 } });
+  // Prefs del explainer por defecto entre tests (rate 1×, todo colapsado)
+  useStore.setState({
+    prefs: { ...useStore.getState().prefs, explainerRate: 1, explainerOpenSection: null },
+  });
 });
 
 function makeExercise(overrides: Partial<Exercise>): Exercise {
@@ -278,5 +280,41 @@ describe('ExerciseExplainer', () => {
     render(<ExerciseExplainer exercise={ex} />);
 
     expect(screen.getAllByLabelText('Velocidad de lectura')[0].textContent).toBe('1.25×');
+  });
+
+  it('persists the open section to the store (se recuerda entre sesiones)', () => {
+    const ex = makeExercise({ instructionsSteps: ['Step one', 'Step two'] });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+    expect(useStore.getState().prefs.explainerOpenSection).toBe('howTo');
+
+    // Colapsar → vuelve a null (todo cerrado)
+    fireEvent.click(screen.getByText('Cómo hacerlo'));
+    expect(useStore.getState().prefs.explainerOpenSection).toBeNull();
+  });
+
+  it('starts with the persisted open section (y oculta la tip card)', () => {
+    useStore.setState({ prefs: { ...useStore.getState().prefs, explainerOpenSection: 'howTo' } });
+    const ex = makeExercise({ instructionsSteps: ['Step one'] });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    // La sección arranca abierta → su contenido es visible
+    expect(screen.getByText('Step one')).toBeDefined();
+    // Con howTo abierto, la tip card queda oculta (evita duplicar)
+    expect(screen.queryByText('Consejo CHISPA')).toBeNull();
+  });
+
+  it('falls back to collapsed when the persisted section is invalid (anti-corrupción)', () => {
+    // Simular persistencia corrupta (valor que no es una sección real)
+    useStore.setState({
+      prefs: { ...useStore.getState().prefs, explainerOpenSection: 'bogus' as never },
+    });
+    const ex = makeExercise({ instructionsSteps: ['Step one'] });
+    render(<ExerciseExplainer exercise={ex} />);
+
+    // Todo colapsado: el contenido de howTo no se ve y la tip card sí
+    expect(screen.queryByText('Step one')).toBeNull();
+    expect(screen.getByText('Consejo CHISPA')).toBeDefined();
   });
 });

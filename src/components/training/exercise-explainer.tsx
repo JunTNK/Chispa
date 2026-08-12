@@ -24,13 +24,13 @@ import { speak, stopSpeak, voiceSupported } from '@/lib/audio/speak';
 import { useLocalizedExerciseText, splitNumberedSteps } from '@/lib/utils/exercise-translate';
 import { ExerciseFlipbook } from './exercise-flipbook';
 import type { ExerciseFlipbookHandle } from './exercise-flipbook';
-import type { Exercise } from '@/types';
+import type { Exercise, ExplainerSection } from '@/types';
 
 interface ExerciseExplainerProps {
   exercise: Exercise;
 }
 
-type Section = 'howTo' | 'benefits' | 'precautions';
+type Section = ExplainerSection;
 
 const SECTION_META: Record<Section, { icon: typeof Lightbulb; color: string; bg: string }> = {
   howTo: {
@@ -196,7 +196,16 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
   // un valor válido del ciclo por si la persistencia guardó un dato corrupto.
   const persistedRate = useStore((s) => s.prefs.explainerRate ?? 1);
   const setExplainerRate = useStore((s) => s.setExplainerRate);
-  const [openSection, setOpenSection] = React.useState<Section | null>(null);
+  // Sección abierta persistida: se recuerda entre sesiones (null = todas colapsadas).
+  // Se valida contra las secciones reales por si la persistencia guardó algo inválido.
+  const persistedOpenSection = useStore((s) => s.prefs.explainerOpenSection ?? null);
+  const setExplainerOpenSection = useStore((s) => s.setExplainerOpenSection);
+  const [openSection, setOpenSection] = React.useState<Section | null>(() => {
+    const sections: readonly Section[] = ['howTo', 'benefits', 'precautions'];
+    return persistedOpenSection !== null && sections.includes(persistedOpenSection)
+      ? persistedOpenSection
+      : null;
+  });
   const [speakingId, setSpeakingId] = React.useState<string | null>(null);
   const [rate, setRate] = React.useState(
     RATES.includes(persistedRate) ? persistedRate : 1
@@ -452,7 +461,12 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
           section={s.key}
           title={s.title}
           isOpen={openSection === s.key}
-          onToggle={() => setOpenSection(openSection === s.key ? null : s.key)}
+          onToggle={() => {
+            const next = openSection === s.key ? null : s.key;
+            setOpenSection(next);
+            // Persistir: la sección abierta/colapsada se recuerda entre sesiones
+            setExplainerOpenSection(next);
+          }}
           listenId={s.key}
           listenText={s.listenText}
           speakingId={speakingId}

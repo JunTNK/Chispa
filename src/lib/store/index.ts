@@ -24,6 +24,7 @@ import type {
    UserSubscription,
    SubscriptionTier,
    AnchorRoutine,
+   ExplainerSection,
 } from '@/types';
 import type { LeaderboardEntry } from '@/lib/sync/leaderboard';
 import { applyQuestResult, EMPTY_PLAYER } from '@/lib/system/quest-engine';
@@ -39,7 +40,7 @@ interface AppState {
   twin: DigitalTwin | null;
   /** UI language: Spanish (default) or English */
   lang: 'es' | 'en';
-  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref; explainerRate?: number; explainerAutoplay?: boolean };
+  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref; explainerRate?: number; explainerAutoplay?: boolean; explainerSlow?: boolean; explainerOpenSection?: ExplainerSection | null };
   sensory: { quiet: boolean; dim: boolean; swap: boolean };
   checkins: Record<string, CheckIn>;
   workouts: Workout[];
@@ -99,6 +100,10 @@ interface AppState {
   setExplainerRate: (rate: number) => void;
   /** Autoplay del flipbook del explainer — persistido (pausar = no autoplay) */
   setExplainerAutoplay: (on: boolean) => void;
+  /** Cámara lenta del flipbook (0.5×) — persistida */
+  setExplainerSlow: (slow: boolean) => void;
+  /** Sección abierta del explainer — persistida (null = todas colapsadas) */
+  setExplainerOpenSection: (section: ExplainerSection | null) => void;
   setLang: (l: 'es' | 'en') => void;
   setSensory: (s: Partial<{ quiet: boolean; dim: boolean; swap: boolean }>) => void;
   setCheckin: (k: string, c: CheckIn) => void;
@@ -163,7 +168,7 @@ const initialState: {
   neuro: { type: string; duration: number } | null;
   twin: DigitalTwin | null;
   lang: 'es' | 'en';
-  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref; explainerRate?: number; explainerAutoplay?: boolean };
+  prefs: { reduceMotion: boolean; highContrast: boolean; fontLarge: boolean; hideStreaks: boolean; showFAQs?: boolean; light?: boolean; systemMode?: boolean; audioGuide?: boolean; voice?: VoiceMode; restPref?: RestPref; explainerRate?: number; explainerAutoplay?: boolean; explainerSlow?: boolean; explainerOpenSection?: ExplainerSection | null };
   /** Timestamp cuando el usuario empezó "Estoy entrenando ahora" — persistido para sobrevivir refresh. */
   liveNowStartedAt: number | null;
   sensory: { quiet: boolean; dim: boolean; swap: boolean };
@@ -200,7 +205,7 @@ const initialState: {
   neuro: null,
   twin: null,
   lang: 'es',
-  prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false, showFAQs: true, light: false, systemMode: false, audioGuide: false, voice: 'system', restPref: 'auto', explainerRate: 1, explainerAutoplay: true },
+  prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false, showFAQs: true, light: false, systemMode: false, audioGuide: false, voice: 'system', restPref: 'auto', explainerRate: 1, explainerAutoplay: true, explainerSlow: false, explainerOpenSection: null },
   liveNowStartedAt: null,
   sensory: { quiet: false, dim: false, swap: false },
   checkins: {},
@@ -257,6 +262,10 @@ export const useStore = create<AppState>()(
         set((s: AppState) => ({ prefs: { ...s.prefs, explainerRate: rate } })),
       setExplainerAutoplay: (on: boolean) =>
         set((s: AppState) => ({ prefs: { ...s.prefs, explainerAutoplay: on } })),
+      setExplainerSlow: (slow: boolean) =>
+        set((s: AppState) => ({ prefs: { ...s.prefs, explainerSlow: slow } })),
+      setExplainerOpenSection: (section: ExplainerSection | null) =>
+        set((s: AppState) => ({ prefs: { ...s.prefs, explainerOpenSection: section } })),
       setLang: (l: 'es' | 'en') => set({ lang: l }),
       startLive: () => set({ liveNowStartedAt: Date.now() } as Partial<AppState>),
       finishLive: () => set({ liveNowStartedAt: null } as Partial<AppState>),
