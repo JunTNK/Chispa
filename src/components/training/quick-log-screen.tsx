@@ -185,11 +185,20 @@ export function QuickLogScreen() {
         },
       };
       setTwin(updated);
-      supabaseSync.push({ twin: updated, workouts: [...useStore.getState().workouts, w] }).catch(
+      supabaseSync.push({
+        twin: updated,
+        workouts: [...useStore.getState().workouts, w],
+        // Feed cooperativo: sube las chispas generadas por addWorkout/addQuickLog
+        communityPosts: useStore.getState().communityPosts,
+      }).catch(
         logError('quicklog:push')
       );
     } else {
-      supabaseSync.push({ workouts: [...useStore.getState().workouts, w] }).catch(
+      supabaseSync.push({
+        workouts: [...useStore.getState().workouts, w],
+        // Feed cooperativo: sube las chispas generadas por addWorkout/addQuickLog
+        communityPosts: useStore.getState().communityPosts,
+      }).catch(
         logError('quicklog:push')
       );
     }

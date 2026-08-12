@@ -1,27 +1,31 @@
 /**
  * e2e · ROUND-TRIP REAL CON SUPABASE
  * ==================================
- * Verifica el ciclo completo de persistencia de la inteligencia del Digital Twin:
+ * Verifica el ciclo completo de persistencia contra una base Supabase real:
  *
- *   completar sesión → push a Supabase → recargar → pull → el twin conserva hard/last_date
+ *   1. Digital Twin:  completar sesión → push → recargar → pull → el twin conserva hard/last_date
+ *   2. Feed cooperativo: quick-log con coop activo → push (community_posts) →
+ *      otro dispositivo → pull → la chispa propia vuelve al feed
  *
  * Requisitos (si no se cumplen, el test salta con un mensaje claro, no falla):
- *   1. Credenciales reales en .env.local (NEXT_PUBLIC_SUPABASE_URL,
- *      NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY).
+ *   1. Credenciales reales en .env.local o process.env (NEXT_PUBLIC_SUPABASE_URL,
+ *      SUPABASE_SERVICE_ROLE_KEY). process.env gana: permite apuntar a un Supabase
+ *      local (`supabase start`) para validar sin tocar el proyecto de producción.
  *   2. Esquema reconciliado: ejecutar `supabase/run-all-migrations.sql` en el
  *      SQL Editor del dashboard (crea neuro_profiles/quest_states/achievements/
  *      leaderboard y renombra ex_progress→exercise_progress, avoid→avoid_patterns,
  *      sleep→sleep_hours; añade lang, best_hours, preferred_duration, confidence).
+ *   3. Migración 015 (community_posts) para el test del feed cooperativo.
  *
- * El test crea un usuario desechable vía admin API (service role), siembra un
- * twin mínimo, completa una sesión real por la UI (crear rutina → Sentadilla →
- * 3 series → RPE Duro → guardar), comprueba la fila en la DB real, simula otro
- * dispositivo (borra el twin local), recarga y verifica que el pull restaura
- * hard/last_date desde Supabase. Al final elimina el usuario (cascade limpia todo).
+ * Cada test crea un usuario desechable vía admin API (service role), completa el
+ * flujo real por la UI, comprueba la fila en la DB real, simula otro dispositivo
+ * (borra el dato del store local), recarga y verifica que el pull lo restaura.
+ * Al final elimina el usuario (cascade limpia todo).
  */
 import { test, expect } from '@playwright/test';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { openExtraMenu, navigateToNavScreen, navigateFromHome } from './helpers';
 
 /* ─── Credenciales reales (Playwright no carga .env.local por sí solo) ─── */
 
@@ -36,7 +40,9 @@ function loadEnv(): Record<string, string | undefined> {
   } catch {
     /* no .env.local → el test salta */
   }
-  return { ...process.env, ...env };
+  // process.env gana sobre .env.local: permite apuntar a un Supabase local
+  // (o CI) sin tocar el archivo de desarrollo.
+  return { ...env, ...process.env };
 }
 
 const env = loadEnv();
@@ -44,7 +50,10 @@ const SB_URL = env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const SB_SERVICE = env.SUPABASE_SERVICE_ROLE_KEY ?? '';
 
 /* ─── Usuario desechable ─── */
-const EMAIL = `e2e-roundtrip-${Date.now()}@chispa.app`;
+// Sufijo por test: evita colisión de email entre los dos tests (worker compartido)
+let emailSuffix = 'base';
+// Se genera UNA vez por test (el mismo email para createUser, seed y login)
+let EMAIL = `e2e-roundtrip-${Date.now()}-${emailSuffix}@chispa.app`;
 const PASSWORD = 'roundtrip123!';
 let userId: string | null = null;
 
@@ -80,6 +89,16 @@ async function schemaReady(): Promise<boolean> {
       }
     );
     return probe.status === 204; // 400 → columna inexistente → esquema no aplicado
+  } catch {
+    return false;
+  }
+}
+
+/** Preflight del feed cooperativo: ¿la migración 015 (community_posts) está aplicada? */
+async function communityPostsReady(): Promise<boolean> {
+  try {
+    const res = await adminFetch('/rest/v1/community_posts?select=id&limit=1');
+    return res.ok; // 404/PGRST205 → tabla aún no creada → el test de chispas salta
   } catch {
     return false;
   }
@@ -125,7 +144,7 @@ async function getTwinProgress(uid: string): Promise<Record<string, any>> {
 
 const EXERCISE_ID = 'Bodyweight_Squat'; // "Sentadilla con peso corporal" (reps, ninguno)
 
-test.describe('Round-trip real con Supabase: twin conserva hard/last_date', () => {
+test.describe('Round-trip real con Supabase: twin + feed cooperativo', () => {
   let ready = false;
   let skipReason = '';
 
@@ -176,6 +195,8 @@ test.describe('Round-trip real con Supabase: twin conserva hard/last_date', () =
     });
 
     // ── 1. Crear usuario desechable + seed mínimo ──
+    emailSuffix = 'twin';
+    EMAIL = `e2e-roundtrip-${Date.now()}-${emailSuffix}@chispa.app`;
     userId = await createUser();
     const uid = userId;
     try {
@@ -328,6 +349,188 @@ test.describe('Round-trip real con Supabase: twin conserva hard/last_date', () =
       expect(pageErrors).toEqual([]);
     } finally {
       // ── 10. Limpieza: borra el usuario → cascade elimina users/profiles/twin/workouts ──
+      if (userId) {
+        await deleteUser(userId);
+        userId = null;
+      }
+    }
+  });
+
+  /** Lee las chispas reales del feed en la DB (solo las del usuario) */
+  async function getMyPosts(uid: string): Promise<{ id: string; kind: string; author_id: string }[]> {
+    const res = await adminFetch(
+      `/rest/v1/community_posts?user_id=eq.${uid}&select=id,kind,author_id`
+    );
+    if (!res.ok) return [];
+    return (await res.json()) as { id: string; kind: string; author_id: string }[];
+  }
+
+  test('chispas: quick-log con coop activo → push → otro dispositivo → pull restaura el feed', async ({ page }) => {
+    test.skip(!ready, skipReason || 'Entorno Supabase no disponible');
+    test.setTimeout(120_000);
+
+    const pageErrors: string[] = [];
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+    page.on('console', (msg) => {
+      if (msg.type() !== 'error') return;
+      const t = msg.text();
+      if (t.includes('Hydration failed') || t.includes('favicon')) return;
+      if (t.includes('status of 404')) return;
+      if (t.includes('status of 406')) return;
+      pageErrors.push(t);
+    });
+
+    await page.addInitScript(() => {
+      if ('serviceWorker' in navigator) {
+        Object.defineProperty(navigator, 'serviceWorker', {
+          value: {
+            register: () => Promise.resolve({}),
+            getRegistration: () => Promise.resolve(null),
+            getRegistrations: () => Promise.resolve([]),
+          },
+          configurable: true,
+        });
+      }
+    });
+
+    // ── 1. Usuario desechable + seed mínimo (twin necesario para el save del quick-log) ──
+    // El test de chispas requiere la migración 015 (community_posts): si no
+    // está aplicada, salta con un mensaje claro en vez de fallar.
+    if (!ready) {
+      test.skip(true, skipReason || 'Entorno Supabase no disponible');
+      return;
+    }
+    const feedReady = await communityPostsReady();
+    if (!feedReady) {
+      const ref = SB_URL.replace(/^https?:\/\//, '').replace(/\.supabase\.co.*$/, '');
+      test.skip(true, `Migración 015 no aplicada: ejecuta la parte de community_posts de run-all-migrations.sql en https://supabase.com/dashboard/project/${ref}/sql/new`);
+      return;
+    }
+    emailSuffix = 'chispas';
+    EMAIL = `e2e-roundtrip-${Date.now()}-${emailSuffix}@chispa.app`;
+    userId = await createUser();
+    const uid = userId;
+    try {
+      await seedRow('users', { id: uid, email: EMAIL, name: 'E2E Chispas' });
+      await seedRow('profiles', {
+        user_id: uid,
+        goal: 'fuerza',
+        level: 'inicio',
+        equipment: 'ninguno',
+        limitations: [],
+        days_per_week: '2-3',
+        neurotype: 'adh-c',
+        preferred_duration: 20,
+        name: 'E2E Chispas',
+      });
+      await seedRow('digital_twins', {
+        user_id: uid,
+        motivation_style: 'data',
+        avoid_patterns: [],
+        best_hours: {},
+        patterns: { completion_rate: 0.5, avg_duration: 20, abandon_rate: 0.2, best_hours: {} },
+        exercise_progress: {},
+        lang: 'es',
+        preferred_duration: 20,
+        confidence: 50,
+      });
+
+      // ── 2. Login real por la UI ──
+      await page.goto('/');
+      await page.getByText('Iniciar sesión').click();
+      await page.locator('#login-email').fill(EMAIL);
+      await page.locator('#login-password').fill(PASSWORD);
+      await page.locator('button', { hasText: 'Entrar' }).click();
+      await expect(page.locator('text=Crear rutina')).toBeVisible({ timeout: 20000 });
+
+      // Esperar a que el pull post-login haya aplicado twin+profile al store
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              try {
+                const raw = localStorage.getItem('chispa_store');
+                if (!raw) return false;
+                const s = (JSON.parse(raw) as { state?: Record<string, unknown> }).state;
+                return !!(s && s.twin && s.profile);
+              } catch {
+                return false;
+              }
+            }),
+          { timeout: 15000, intervals: [500] }
+        )
+        .toBe(true);
+
+      // ── 3. Activar modo cooperativo en Perfil (Amigos → genera chispas) ──
+      await openExtraMenu(page, 'Perfil');
+      await page.locator('button', { hasText: 'Amigos' }).click();
+      await page.waitForTimeout(400);
+
+      // ── 4. Volver al home y hacer un quick-log (crea chispas workout + quicklog) ──
+      await navigateToNavScreen(page, 'Inicio');
+      await expect(page.locator('text=Crear rutina').first()).toBeVisible();
+      await navigateFromHome(page, 'Registro rápido');
+      await page.locator('button').filter({ hasText: 'Siguiente' }).click();
+      await page.waitForTimeout(500);
+      await page.locator('button').filter({ hasText: /Siguiente|Continuar sin detalles/ }).first().click();
+      await page.waitForTimeout(500);
+      await page.locator('button').filter({ hasText: 'Duro' }).click();
+      await page.waitForTimeout(200);
+      await page.locator('button').filter({ hasText: '¡Listo! Guardar' }).click();
+      await page.waitForTimeout(500);
+      await page.locator('button').filter({ hasText: 'Ir al inicio' }).click();
+      await page.waitForTimeout(500);
+
+      // ── 5. El push (con communityPosts) escribió la chispa del quick-log en la DB real ──
+      await expect
+        .poll(
+          async () => {
+            const posts = await getMyPosts(uid);
+            return posts.some((p) => p.kind === 'quicklog');
+          },
+          { timeout: 20000, intervals: [1000] }
+        )
+        .toBe(true);
+
+      // ── 6. Simular otro dispositivo: borrar el feed del store local ──
+      await page.evaluate(() => {
+        const raw = localStorage.getItem('chispa_store');
+        if (!raw) return;
+        const data = JSON.parse(raw) as { state?: Record<string, unknown> };
+        if (data?.state) {
+          data.state.communityPosts = [];
+        }
+        localStorage.setItem('chispa_store', JSON.stringify(data));
+      });
+
+      // ── 7. Recargar → pull → mergePosts restaura la chispa propia (author_id '') ──
+      await page.reload();
+      await expect
+        .poll(
+          () =>
+            page.evaluate(() => {
+              try {
+                const raw = localStorage.getItem('chispa_store');
+                if (!raw) return false;
+                const data = JSON.parse(raw) as {
+                  state?: {
+                    communityPosts?: { kind: string; author_id: string }[];
+                  };
+                };
+                const posts = data?.state?.communityPosts ?? [];
+                return posts.some((p) => p.kind === 'quicklog' && p.author_id === '');
+              } catch {
+                return false;
+              }
+            }),
+          { timeout: 25000, intervals: [1000] }
+        )
+        .toBe(true);
+
+      // Sin errores de consola en todo el flujo
+      expect(pageErrors).toEqual([]);
+    } finally {
+      // ── 8. Limpieza ──
       if (userId) {
         await deleteUser(userId);
         userId = null;

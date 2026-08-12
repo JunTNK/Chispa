@@ -18,6 +18,7 @@ export function useSync() {
   const workouts = useStore((s) => s.workouts);
   const achievements = useStore((s) => s.achievements);
   const questState = useStore((s) => s.questState);
+  const communityPosts = useStore((s) => s.communityPosts);
 
   /**
    * Push current store data to Supabase.
@@ -33,8 +34,9 @@ export function useSync() {
       workouts: workouts ?? undefined,
       achievements: achievements ?? undefined,
       questState: questState ?? undefined,
+      communityPosts: communityPosts ?? undefined,
     });
-  }, [profile, lang, neuro, twin, checkins, workouts, achievements, questState]);
+  }, [profile, lang, neuro, twin, checkins, workouts, achievements, questState, communityPosts]);
 
   /**
    * Pull data from Supabase and merge into local store.

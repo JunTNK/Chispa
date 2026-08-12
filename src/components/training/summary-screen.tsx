@@ -109,6 +109,8 @@ export function SummaryScreen() {
     supabaseSync.push({
       workouts: [...currentWorkouts, w],
       twin: updated,
+      // Feed cooperativo: sube las chispas generadas por addWorkout
+      communityPosts: useStore.getState().communityPosts,
     }).catch(logError('summary:push-workout'));
 
     // Push XP to leaderboard
