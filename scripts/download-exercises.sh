@@ -10,6 +10,8 @@
 # Flipbook: tras la copia se descargan los frames 1.jpg (download-frames.mjs) con
 # la misma optimización, para que el explainer pueda ANIMAR el movimiento
 # (inicio → contracción) en futuras regeneraciones.
+# Redundancia: los *.json de free-exercise-db se descartan — la app usa el
+# catálogo consolidado src/lib/utils/exercises.json (evita 873 archivos muertos).
 set -e
 
 echo "📥 Clonando free-exercise-db (depth 1)..."
@@ -39,6 +41,8 @@ function processDir(dir) {
       processDir(fullPath);
     } else if (entry.name.endsWith('.jpg') && entry.name !== '0.jpg') {
       fs.unlinkSync(fullPath);
+    } else if (entry.name.endsWith('.json')) {
+      fs.unlinkSync(fullPath); // catálogo redundante: la app usa src/lib/utils/exercises.json
     }
   }
 }
