@@ -97,4 +97,35 @@ test.describe('Profile settings', () => {
     // Should be back at home
     await expect(page.locator('text=Crear rutina')).toBeVisible();
   });
+
+  test('5. Autoplay del flipbook toggle persiste en el store', async ({ page }) => {
+    await goToProfile(page);
+
+    const toggle = page.getByRole('switch', { name: 'Autoplay del flipbook' });
+    await expect(toggle).toBeVisible({ timeout: 15000 });
+
+    // Estado efectivo por defecto: ON (el flipbook lee undefined ?? true — el
+    // toggle no muestra un falso OFF para prefs aún sin definir)
+    expect(await toggle.getAttribute('aria-checked')).toBe('true');
+
+    // Apagar → el switch cambia Y el valor se persiste en chispa_store
+    await toggle.click();
+    await page.waitForTimeout(300);
+    expect(await toggle.getAttribute('aria-checked')).toBe('false');
+
+    const prefs = await page.evaluate(() => {
+      try {
+        const raw = localStorage.getItem('chispa_store');
+        return raw ? (JSON.parse(raw) as { state?: { prefs?: Record<string, unknown> } })?.state?.prefs : null;
+      } catch {
+        return null;
+      }
+    });
+    expect(prefs?.explainerAutoplay).toBe(false);
+
+    // Encender de nuevo → restaura
+    await toggle.click();
+    await page.waitForTimeout(300);
+    expect(await toggle.getAttribute('aria-checked')).toBe('true');
+  });
 });
