@@ -21,14 +21,37 @@ import { type Page, type Locator } from '@playwright/test';
  *   9 = Theme        → Step 10 (Sensory)
  *   10 = Sensory     → finish (button: "Crear mi Digital Twin") → BootScreen → Home
  */
+/**
+ * CTA del welcome con reintento. En producción el CTA tiene un busy de ~800ms
+ * que puede tragarse el click y dejar la pantalla sin navegar; en vez de
+ * esperar un timeout fijo, esperamos a que el input del paso 1 aparezca y
+ * reintentamos el click si no navegó (máx. 3 intentos).
+ */
+async function clickWelcomeCta(page: Page): Promise<void> {
+  const cta = page.locator('#cta-btn');
+  const nameInput = page.locator('input').first();
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await cta.waitFor({ state: 'visible', timeout: 15000 });
+    // Pausa corta: deja que el CTA termine cualquier re-render/hidratación
+    await page.waitForTimeout(250);
+    await cta.click().catch(() => {});
+    try {
+      await nameInput.waitFor({ state: 'visible', timeout: 10000 });
+      return; // navegó al paso 1 (Name)
+    } catch {
+      // No navegó (busy del CTA) → reintentar
+    }
+  }
+  throw new Error('El CTA del welcome no navegó al onboarding tras 3 intentos');
+}
+
 export async function navigateOnboarding(page: Page, targetStep: number) {
-  // Step 0: Welcome → click CTA
-  await page.locator('#cta-btn').click();
-  await page.waitForTimeout(1200);
+  // Step 0: Welcome → click CTA (con reintento si el busy se traga el click)
+  await clickWelcomeCta(page);
   if (targetStep <= 0) return;
 
   // Step 1: Name
-  await page.locator('input').fill('Test');
+  await page.locator('input').first().fill('Test');
   await page.locator('button', { hasText: 'Continuar' }).click();
   await page.waitForTimeout(300);
   if (targetStep <= 1) return;
