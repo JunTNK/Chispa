@@ -21,9 +21,11 @@ import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { ChevronDown, ShieldAlert, Target, Lightbulb, Zap, Volume2, Square, Play } from 'lucide-react';
 import { speak, stopSpeak, voiceSupported } from '@/lib/audio/speak';
+import { speakWithEvents } from '@/lib/utils/speech';
 import { useLocalizedExerciseText, splitNumberedSteps } from '@/lib/utils/exercise-translate';
 import { ExerciseFlipbook } from './exercise-flipbook';
 import type { ExerciseFlipbookHandle } from './exercise-flipbook';
+import { KaraokeText } from './karaoke-text';
 import type { Exercise, ExplainerSection } from '@/types';
 
 interface ExerciseExplainerProps {
@@ -214,11 +216,29 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
   const flipbookRef = React.useRef<ExerciseFlipbookHandle>(null);
   const [activeStep, setActiveStep] = React.useState<number | null>(null);
 
+  // ─── Modo guiado (spec §4): el audio lee cada paso mientras el flipbook
+  // loopea/posiciona esa fase. UNA sola instancia de TTS: `speakWithEvents`
+  // toma el relevo del audio módulo para encadenar los pasos. ───
+  const [guided, setGuided] = React.useState(false);
+  const guidedRef = React.useRef<{ stop: () => void } | null>(null);
+
+  const stopGuided = React.useCallback(() => {
+    const stop = guidedRef.current?.stop;
+    guidedRef.current = null;
+    stop?.();
+    setGuided(false);
+    setSpeakingId(null);
+    setActiveStep(null);
+  }, []);
+
   // Cortar la voz al desmontar el explainer y al cambiar de ejercicio (robustez:
   // no depender de que el padre desmonte el panel para cortar el audio).
-  React.useEffect(() => () => stopSpeak(), []);
+  React.useEffect(() => () => { guidedRef.current?.stop(); stopSpeak(); }, []);
   React.useEffect(() => {
     stopSpeak();
+    guidedRef.current?.stop();
+    guidedRef.current = null;
+    setGuided(false);
     setSpeakingId(null);
     setActiveStep(null);
   }, [exercise.id]);
@@ -269,6 +289,9 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
 
   // ─── Audio ───
   const handleSpeak = (id: string, text: string) => {
+    // Cualquier lectura manual corta el modo guiado en curso (evita barras
+    // colgadas y voces encimadas).
+    if (guided) stopGuided();
     const trimmed = text.trim();
     if (!trimmed) return;
     if (speakingId === id) {
@@ -290,6 +313,64 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
     setExplainerRate(next);
   };
 
+  /**
+   * Escuchar de sección: el "Cómo hacerlo" completo usa modo karaoke (spec §4):
+   * el audio lee mientras la palabra leída se resalta. KaraokeText es la única
+   * instancia de TTS activa mientras habla (evita voces encimadas).
+   */
+  const handleSectionSpeak = (id: string, text: string) => {
+    if (guided) stopGuided();
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    if (speakingId === id) {
+      stopSpeak();
+      setSpeakingId(null);
+      return;
+    }
+    stopSpeak();
+    if (id === 'howTo' && microSteps.length > 0) {
+      setSpeakingId('howTo'); // KaraokeText toma el relevo y habla con eventos
+      return;
+    }
+    setSpeakingId(id);
+    void speak(trimmed, lang, rate);
+  };
+
+  /**
+   * Modo guiado (spec §4): el audio lee cada micro-paso en orden mientras el
+   * flipbook se posiciona en la fase correspondiente. Auto-avanza al terminar
+   * cada paso (onend de speakWithEvents).
+   */
+  const toggleGuided = () => {
+    if (guided) {
+      stopGuided();
+      return;
+    }
+    if (microSteps.length === 0) return;
+    stopSpeak();
+    setSpeakingId('guided');
+    setGuided(true);
+    const run = (i: number) => {
+      if (!guidedRef.current) return;
+      if (i >= microSteps.length) {
+        stopGuided();
+        return;
+      }
+      setActiveStep(i);
+      flipbookRef.current?.jumpToStep(i, microSteps.length);
+      const stop = speakWithEvents(microSteps[i], lang, rate, () => {}, () => run(i + 1));
+      if (stop) {
+        guidedRef.current = { stop };
+      } else {
+        // Sin soporte de voz: el modo guiado avanza visual (ritmo fijo).
+        const id = window.setTimeout(() => run(i + 1), 2200);
+        guidedRef.current = { stop: () => window.clearTimeout(id) };
+      }
+    };
+    guidedRef.current = { stop: () => {} };
+    run(0);
+  };
+
   // ─── Secciones ───
   const sections: { key: Section; title: string; node: React.ReactNode; listenText: string }[] = [];
 
@@ -306,6 +387,36 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
           </div>
         ) : microSteps.length > 1 ? (
           <div className="py-1">
+            {/* Modo guiado: el audio lee cada paso mientras el flipbook muestra esa fase */}
+            <div className="flex items-center justify-between gap-2 rounded-xl border border-[rgba(52,211,153,0.25)] bg-[rgba(52,211,153,0.06)] px-3 py-2 mb-2">
+              <button
+                onClick={toggleGuided}
+                aria-pressed={guided}
+                className="flex items-center gap-1.5 text-xs font-bold text-[#34d399] min-h-9 transition-colors hover:text-[#6ee7b7]"
+              >
+                {guided ? <Square size={13} /> : <Play size={13} />}
+                {t(guided ? 'Detener modo guiado' : 'Modo guiado')}
+              </button>
+              {guided && (
+                <span className="text-[11px] text-[var(--muted)] tabular-nums">
+                  {t('Paso {n} de {total}', { n: (activeStep ?? 0) + 1, total: microSteps.length })}
+                </span>
+              )}
+            </div>
+
+            {/* Modo karaoke: la palabra leída se resalta (spec §4) */}
+            {speakingId === 'howTo' && (
+              <div className="mb-2">
+                <KaraokeText
+                  text={microSteps.join(' ')}
+                  lang={lang}
+                  rate={rate}
+                  active
+                  onDone={() => setSpeakingId(null)}
+                />
+              </div>
+            )}
+
             {syncAvailable && (
               <p className="flex items-center gap-1.5 text-[11px] text-[var(--muted)] py-1.5">
                 <Play size={12} className="text-[#ffb454] shrink-0" />
@@ -470,7 +581,7 @@ export function ExerciseExplainer({ exercise }: ExerciseExplainerProps) {
           listenId={s.key}
           listenText={s.listenText}
           speakingId={speakingId}
-          onSpeak={handleSpeak}
+          onSpeak={handleSectionSpeak}
           rate={rate}
           onCycleRate={cycleRate}
           label={t('Escuchar {title}', { title: s.title })}

@@ -30,6 +30,13 @@ function makeResult(overrides = {}) {
   };
 }
 
+/** Botón RPE "Justo" — desambigua del MicroFeedback (desc 'Al punto perfecto'). */
+function rpeJustoButton(): HTMLElement | undefined {
+  return screen
+    .getAllByRole('button', { name: /justo/i })
+    .find((b) => b.textContent?.includes('Al punto') && !b.textContent?.includes('perfecto'));
+}
+
 function renderWithPlan(result: any) {
   useStore.setState({
     profile: mockProfile,
@@ -109,7 +116,7 @@ describe('SummaryScreen', () => {
   it('shows RPE selection buttons', () => {
     renderWithPlan(makeResult());
     expect(screen.getByText(/suave/i)).toBeInTheDocument();
-    expect(screen.getByText(/justo/i)).toBeInTheDocument();
+    expect(rpeJustoButton()).toBeTruthy();
     expect(screen.getByText(/duro/i)).toBeInTheDocument();
   });
 
@@ -145,7 +152,7 @@ describe('SummaryScreen', () => {
     renderWithPlan(makeResult({ rate: 0.85, minutes: 18, doneEx: 4, totalEx: 5, exs: [] }));
 
     // Select RPE and motivation
-    fireEvent.click(screen.getByText(/justo/i));
+    fireEvent.click(rpeJustoButton()!);
     fireEvent.click(screen.getByText(/recuperación 78/i));
 
     // Click save
@@ -155,5 +162,28 @@ describe('SummaryScreen', () => {
     expect(state.view).toBe('home');
     expect(state.plan?.done).toBe(true);
     expect(state.workouts.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('motivación y micro-feedback se aplican juntos sin pisarse', () => {
+    renderWithPlan(
+      makeResult({
+        rate: 0.85,
+        exs: [
+          { exercise_id: 'squat', name: 'Sentadilla', muscle: 'piernas' as const, sets: 2, reps: 12, rest: 50, completed_sets: 2, completed_reps: [12, 12], status: 'done' as const },
+        ],
+      })
+    );
+
+    // Motivación (energy) + micro-feedback (liked = sí) en la misma sesión
+    fireEvent.click(screen.getByText(/chispa se enciende/i));
+    fireEvent.click(screen.getByRole('button', { name: /lo repetiría/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /guardar entrenamiento/i }));
+
+    const twin = useStore.getState().twin!;
+    // Ambos cambios sobreviven: la motivación NO pisa el micro-feedback ni al revés
+    expect(twin.motivation_style).toBe('energy');
+    expect(twin.ex_progress['squat']?.easy).toBe(1);
+    expect(twin.ex_progress['squat']?.last_date).toBe(new Date().toISOString().slice(0, 10));
   });
 });

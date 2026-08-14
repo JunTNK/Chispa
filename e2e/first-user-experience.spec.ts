@@ -69,7 +69,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     // ✅ El usuario distingue las 2 acciones principales
     const cta = page.locator('#cta-btn');
     await expect(cta).toBeVisible();
-    await expect(cta).toHaveText('Crear mi perfil');
+    await expect(cta).toHaveText('Ver mi rutina de hoy sin registro');
     await expect(cta).toBeEnabled();
 
     // ✅ Login secundario: no distrae, no abruma
@@ -91,7 +91,7 @@ test.describe('🧠 First-time neurodivergent user experience', () => {
     await page.goto('/');
     await userPause(page);
 
-    // CTA: "Crear mi perfil"
+    // CTA: "Ver mi rutina de hoy sin registro"
     await page.locator('#cta-btn').click();
     await userPause(page, 1500);
 

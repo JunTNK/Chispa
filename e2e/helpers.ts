@@ -146,8 +146,12 @@ type NavScreen = 'Inicio' | 'Quest' | 'Coach' | 'Sistema' | 'Crear rutina';
 /**
  * Navigate to a screen via the main navbar.
  * Use this for: Inicio, Quest, Coach, Sistema
+ *
+ * Primero se descarta el portal devtools de Next.js (dev): su overlay puede
+ * interceptar los clicks del navbar y hacer flakear el test.
  */
 export async function navigateToNavScreen(page: Page, screen: NavScreen, waitMs = 500) {
+  await dismissPortal(page);
   const nav = getNav(page);
   await nav.locator('button').filter({ hasText: screen }).click();
   await page.waitForTimeout(waitMs);
@@ -156,11 +160,16 @@ export async function navigateToNavScreen(page: Page, screen: NavScreen, waitMs 
 /**
  * Navigate to a screen via the "Más" (extra) menu.
  * Use this for: Perfil, Progreso, Logros, Ranking, Ejercicios, Dopamina, Bitácora
+ *
+ * El portal devtools de Next.js (dev) puede aparecer entre navegaciones y
+ * tapar los botones: se descarta antes de cada click del menú.
  */
 export async function openExtraMenu(page: Page, label: string) {
+  await dismissPortal(page);
   const nav = getNav(page);
   await nav.locator('button', { hasText: 'Más' }).click();
   await page.waitForTimeout(200);
+  await dismissPortal(page);
   await nav.locator('button', { hasText: label }).click();
   await page.waitForTimeout(400);
 }
@@ -170,6 +179,7 @@ export async function openExtraMenu(page: Page, label: string) {
  * Use this for: Crear rutina, Registro rápido, Bitácora
  */
 export async function navigateFromHome(page: Page, text: string, waitMs = 500) {
+  await dismissPortal(page);
   await page.locator('text=' + text).first().click();
   await page.waitForTimeout(waitMs);
 }
@@ -178,6 +188,7 @@ export async function navigateFromHome(page: Page, text: string, waitMs = 500) {
  * Click the back button and wait.
  */
 export async function goBack(page: Page, waitMs = 500) {
+  await dismissPortal(page);
   await page.locator('button[aria-label="Volver"]').click();
   await page.waitForTimeout(waitMs);
 }

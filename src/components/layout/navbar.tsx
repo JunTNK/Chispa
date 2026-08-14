@@ -7,7 +7,7 @@ import { useT } from '@/lib/i18n/use-t';
 import { useToast } from '@/components/ui/toast';
 import { Icons } from '@/components/ui/icons';
 import { cn } from '@/lib/utils/helpers';
-import { Dumbbell, Sparkles, User, ChartBar as ChartIcon, Medal, Trophy, BarChart3, Users } from 'lucide-react';
+import { Dumbbell, Sparkles, User, ChartBar as ChartIcon, Medal, Trophy, BarChart3, Users, Sprout } from 'lucide-react';
 
 // Primarios: Inicio + Sistema siempre visibles. Entrenar/Coach son el core loop ND.
 // Quest (gamificado) se mueve a "Más" -> menos presión social / RSD (neurodivergente).
@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 
 const EXTRA_ITEMS = [
   { view: 'quest', label: 'Quest', icon: Icons.Spark },
+  { view: 'jardin', label: 'Jardín', icon: Sprout },
   { view: 'catalog', label: 'Ejercicios', icon: Dumbbell },
   { view: 'dopamina', label: 'Dopamina', icon: Sparkles },
    { view: 'logros', label: 'Logros', icon: Medal },

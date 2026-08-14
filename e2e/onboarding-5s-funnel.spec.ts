@@ -11,7 +11,7 @@ test.describe('5s funnel · humano-proxy', () => {
     await page.goto('/', { waitUntil: 'networkidle' });
     const cta = page.locator('#cta-btn');
     await expect(cta).toBeVisible();
-    await expect(cta).toHaveText('Crear mi perfil');
+    await expect(cta).toHaveText('Ver mi rutina de hoy sin registro');
   });
 
   test('CTA hero alcanzable sin desplazamiento largo (< 3 viewports)', async ({ page }) => {
@@ -65,7 +65,7 @@ test.describe('5s funnel · humano-proxy', () => {
     await page.goto('/', { waitUntil: 'networkidle' });
     await page.locator('#cta-btn-foot').scrollIntoViewIfNeeded();
     await expect(page.locator('#cta-btn-foot')).toBeVisible();
-    await expect(page.locator('#cta-btn-foot')).toHaveText('Crear mi perfil');
+    await expect(page.locator('#cta-btn-foot')).toHaveText('Ver mi rutina de hoy sin registro');
 
     // Scroll hacia arriba y confirma que el footbar sticky aún está en viewport
     await page.evaluate(() => window.scrollBy(0, -500));

@@ -204,6 +204,34 @@ export interface CheckIn {
   stress: number;
   recovery_score: number;
   created_at: string;
+  /**
+   * Check-in visual de 3 taps (spec CHISPA-UX): dónde estás.
+   * Opcional — los clientes antiguos y el onboarding siembran checkins sin él.
+   */
+  location?: 'casa' | 'gym' | 'calle' | 'silla';
+  /** Tiempo disponible elegido: 2 / 5 / 10+ minutos. */
+  time?: 2 | 5 | 10;
+  /** Cómo estás de cabeza (4ª tap opcional). */
+  head?: 'chispa' | 'caos' | 'calma' | 'agotado';
+}
+
+/**
+ * Modos emocionales DEDUCIDOS por el algoritmo a partir del check-in
+ * (spec CHISPA-UX: nunca se muestran como menú — el usuario informa, CHISPA decide).
+ */
+export type EmotionalMode = 'chispa' | 'caos' | 'calma' | 'silla' | 'micro';
+
+/**
+ * Respuestas del micro-feedback post-rutina (spec CHISPA-UX): 3 preguntas de
+ * 1 tap que alimentan al algoritmo — nunca texto libre obligatorio.
+ */
+export interface MicroFeedbackAnswers {
+  /** ¿Fue mucho / justo / poco? */
+  effort: 'mucho' | 'justo' | 'poco' | null;
+  /** ¿Te gustó este movimiento? */
+  liked: 'si' | 'no' | null;
+  /** ¿Podrías hacerlo mañana? */
+  tomorrow: 'si' | 'quizas' | 'no' | null;
 }
 
 export interface DigitalTwin {

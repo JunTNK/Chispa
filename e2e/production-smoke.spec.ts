@@ -47,7 +47,7 @@ test.describe('🔥 Production Smoke', () => {
 
     // Welcome content
     await expect(page.locator('#cta-btn')).toBeVisible();
-    await expect(page.locator('#cta-btn')).toHaveText('Crear mi perfil');
+    await expect(page.locator('#cta-btn')).toHaveText('Ver mi rutina de hoy sin registro');
     await expect(page.locator('#cta-btn')).toHaveAttribute('aria-busy', 'false');
     await expect(page.locator('h1')).toContainText('CHISPA');
     await expect(page.locator('text=Iniciar sesión')).toBeVisible();

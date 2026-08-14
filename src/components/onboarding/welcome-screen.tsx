@@ -212,11 +212,27 @@ export function WelcomeScreen() {
 
         {/* Lede */}
         <p
-          className="animate-in text-[.98rem] leading-[1.6] text-[var(--muted)] max-w-[34ch] mb-[24px]"
+          className="animate-in text-[.98rem] leading-[1.6] text-[var(--muted)] max-w-[34ch] mb-[14px]"
           style={{ animationDelay: '230ms' }}
         >
           {t('Entrenamiento adaptativo para TDAH y neurodivergencias.')}
         </p>
+
+        {/* Hero (spec §2): la promesa en tres palabras */}
+        <p
+          className="animate-in font-['Bricolage_Grotesque',system-ui,sans-serif] font-bold text-[clamp(1.02rem,4.2vw,1.28rem)] tracking-[-.01em] text-[#ffd79a] mb-[10px]"
+          style={{ animationDelay: '260ms' }}
+        >
+          {t('Un botón. Un movimiento. Cero culpa.')}
+        </p>
+
+        {/* Manifiesto (spec §2) — encendedor, no gimnasio */}
+        <blockquote
+          className="animate-in text-[.9rem] italic leading-[1.65] text-[var(--muted)] max-w-[36ch] mb-[24px] border-l-2 border-[#f7b65f]/50 pl-3 text-left"
+          style={{ animationDelay: '275ms' }}
+        >
+          {t('CHISPA no es un gimnasio en tu bolsillo. Es un encendedor para tu cuerpo en los días difíciles. Abres, eliges cómo estás y haces un solo movimiento. Sin planes locos, sin culpa, sin rachas que se rompen.')}
+        </blockquote>
 
         {/* Triad */}
         <div
@@ -241,7 +257,7 @@ export function WelcomeScreen() {
               transform: 'skewX(-18deg)',
               width: '60%',
             }} />
-            {t('Crear mi perfil')}
+            {t('Ver mi rutina de hoy sin registro')}
           </button>
         </div>
 
@@ -385,7 +401,7 @@ export function WelcomeScreen() {
             onClick={handleCta}
             className="flex-1 font-['Hanken_Grotesk',system-ui,sans-serif] font-semibold text-[1rem] py-[15px] px-[18px] rounded-[14px] text-[#2a1405] bg-gradient-to-r from-[#f9c074] to-[#ef7a3c] active:scale-[.985] aria-busy:pointer-events-none aria-busy:opacity-85"
           >
-            {t('Crear mi perfil')}
+            {t('Ver mi rutina de hoy sin registro')}
           </button>
           <button
             onClick={() => setView('login')}

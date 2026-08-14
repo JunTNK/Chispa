@@ -515,7 +515,9 @@ describe('SummaryScreen — a11y', () => {
 
   it('renders without axe violations', async () => {
     const { container } = render(<SummaryScreen />);
-    await screen.findByText(/hecho|movimiento|guardamos/i, {}, { timeout: 3000 });
+    // Varios textos coinciden (título + micro-feedback): basta con que haya al menos uno
+    const texts = await screen.findAllByText(/hecho|movimiento|guardamos/i, {}, { timeout: 3000 });
+    expect(texts.length).toBeGreaterThanOrEqual(1);
     await expectNoViolations(container);
   });
 

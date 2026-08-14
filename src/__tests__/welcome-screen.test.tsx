@@ -26,7 +26,7 @@ describe('WelcomeScreen · 5-second test (acción visible sin scroll)', () => {
     const { container } = render(<WelcomeScreen />);
 
     // Hero CTA (above the fold) + footbar fijo (misma acción, siempre visible)
-    expect(screen.getAllByRole('button', { name: /crear mi perfil/i })).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /ver mi rutina de hoy sin registro/i })).toHaveLength(2);
     expect(container.querySelector('#cta-btn')).not.toBeNull();
     expect(container.querySelector('#cta-btn-foot')).not.toBeNull();
     expect(screen.getByRole('button', { name: /iniciar sesión/i })).toBeInTheDocument();

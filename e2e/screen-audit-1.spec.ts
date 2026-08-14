@@ -14,7 +14,7 @@ test('Audit 1/3 — Welcome → Login → Register → Home → Create → Catal
   await page.waitForTimeout(400);
   await checkErrors(page, 'welcome');
   await expect(page.locator('h1')).toContainText('CHISPA');
-  await expect(page.locator('#cta-btn')).toHaveText('Crear mi perfil');
+  await expect(page.locator('#cta-btn')).toHaveText('Ver mi rutina de hoy sin registro');
   await expect(page.getByText('Iniciar sesión')).toBeVisible();
   console.log('✅ 1. Welcome');
 

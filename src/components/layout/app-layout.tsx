@@ -8,7 +8,7 @@ import { SkipLink } from '@/components/layout/skip-link';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const view = useStore((s) => s.view);
-  const showNav = ['home', 'train', 'coach', 'progress', 'analytics', 'pricing', 'profile', 'quest', 'dopamina', 'logros', 'sistema', 'leaderboard', 'catalog', 'journal'].includes(view);
+  const showNav = ['home', 'train', 'coach', 'progress', 'jardin', 'analytics', 'pricing', 'profile', 'quest', 'dopamina', 'logros', 'sistema', 'leaderboard', 'catalog', 'journal'].includes(view);
   const showHeader = ['progress', 'profile'].includes(view);
   const mainRef = useRef<HTMLDivElement>(null);
   const prevView = useRef(view);

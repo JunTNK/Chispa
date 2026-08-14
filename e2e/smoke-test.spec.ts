@@ -10,7 +10,7 @@ test.describe('Smoke tests', () => {
 
     await page.goto('/');
     await expect(page.locator('#cta-btn')).toBeVisible();
-    await expect(page.locator('#cta-btn')).toHaveText('Crear mi perfil');
+    await expect(page.locator('#cta-btn')).toHaveText('Ver mi rutina de hoy sin registro');
 
     expect(errors, 'Console errors found').toHaveLength(0);
   });

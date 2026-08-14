@@ -11,8 +11,9 @@ import { updateTwin } from '@/lib/agents/decision-engine';
 import { uid, todayKey } from '@/lib/utils/helpers';
 import { RpeSelector } from '@/components/training/rpe-selector';
 import { MotivationSelector } from '@/components/training/motivation-selector';
+import { MicroFeedback } from '@/components/training/micro-feedback';
 import { supabaseSync } from '@/lib/sync/supabase-sync';
-import type { Workout, DigitalTwin } from '@/types';
+import type { Workout, DigitalTwin, MicroFeedbackAnswers } from '@/types';
 import { Sparkles, TrendingUp, Sprout, Wrench, Zap } from 'lucide-react';
 import { useConfetti } from '@/components/ui/particles';
 import { useAchievementEval } from '@/lib/awards/use-achievement-eval';
@@ -34,6 +35,11 @@ export function SummaryScreen() {
 
   const [rpe, setRpe] = React.useState<string | null>(null);
   const [motiv, setMotiv] = React.useState<string | null>(null);
+  const [micro, setMicro] = React.useState<MicroFeedbackAnswers>({
+    effort: null,
+    liked: null,
+    tomorrow: null,
+  });
   const workouts = useStore((s) => s.workouts);
   const { fire: fireConfetti } = useConfetti();
   const { evaluate: evaluateAchievements } = useAchievementEval();
@@ -97,10 +103,43 @@ export function SummaryScreen() {
         : workouts.filter((w) => (w as any).adapted).length,
     });
 
+    // Twin final: se construye UNA sola vez sobre `updated` para que ni la
+    // motivación ni el micro-feedback se pisen entre sí (bug fix).
+    let finalTwin = updated;
+
     if (motiv) {
-      setTwin({ ...updated, motivation_style: (motiv ?? 'data') as DigitalTwin['motivation_style'] });
+      finalTwin = { ...finalTwin, motivation_style: (motiv ?? 'data') as DigitalTwin['motivation_style'] };
       logEvent('motivation_learned', { style: motiv });
     }
+
+    // Micro-feedback (spec §5): 3 toques que alimentan al algoritmo.
+    // 'me gustó' / 'lo haría mañana' → el twin recuerda el ejercicio como
+    // agradable (ex_progress.easy + last_date); el esfuerzo va al analytics.
+    const hasFeedback = micro.effort !== null || micro.liked !== null || micro.tomorrow !== null;
+    if (hasFeedback) {
+      logEvent('micro_feedback', {
+        effort: micro.effort,
+        liked: micro.liked,
+        tomorrow: micro.tomorrow,
+        rate: result.rate,
+      });
+      if (micro.liked === 'si' || micro.tomorrow === 'si') {
+        const likedProgress = { ...finalTwin.ex_progress };
+        result.exs
+          .filter((e) => e.status === 'done')
+          .forEach((e) => {
+            const cur = likedProgress[e.exercise_id] ?? { easy: 0 };
+            likedProgress[e.exercise_id] = {
+              ...cur,
+              easy: (cur.easy ?? 0) + 1,
+              last_date: todayKey(),
+            };
+          });
+        finalTwin = { ...finalTwin, ex_progress: likedProgress };
+      }
+    }
+
+    setTwin(finalTwin);
 
     setPlan({ ...plan, done: true, result: { ...result, rpe: rpe ?? undefined, motiv: motiv ?? undefined } });
 
@@ -108,7 +147,7 @@ export function SummaryScreen() {
     const currentWorkouts = useStore.getState().workouts;
     supabaseSync.push({
       workouts: [...currentWorkouts, w],
-      twin: updated,
+      twin: finalTwin,
       // Feed cooperativo: sube las chispas generadas por addWorkout
       communityPosts: useStore.getState().communityPosts,
     }).catch(logError('summary:push-workout'));
@@ -126,7 +165,8 @@ export function SummaryScreen() {
     ? t('Sesión completa. El motor ya está aprendiendo de ti.')
     : result.rate >= 0.4
       ? t('Más de la mitad hecho. Eso cuenta, y mucho.')
-      : t('Empezar ya es ganar. El motor lo ha registrado.');
+      // Salida parcial sin culpa (spec §5): moverse un poco ya es victoria.
+      : t('Bien. Hoy tu chispa se movió. Vuelve cuando puedas.');
 
   const xpEarned = Math.round((result.doneEx / Math.max(1, result.totalEx)) * 50 + result.minutes);
 
@@ -220,6 +260,12 @@ export function SummaryScreen() {
         <RpeSelector value={rpe} onChange={setRpe} />
 
         <MotivationSelector value={motiv} onChange={setMotiv} />
+
+        {/* Micro-feedback post-rutina: 3 preguntas de 1 tap (spec §5) */}
+        <MicroFeedback
+          value={micro}
+          onChange={(patch) => setMicro((m) => ({ ...m, ...patch }))}
+        />
 
         <Button variant="primary" size="large" className="w-full" onClick={handleSave}>
           <Icons.Check /> {t('Guardar entrenamiento')}

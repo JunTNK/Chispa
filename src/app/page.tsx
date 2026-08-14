@@ -64,6 +64,10 @@ const ProgressScreen = dynamic(() => import('@/components/progress/progress-scre
   ssr: true,
 });
 
+const JardinScreen = dynamic(() => import('@/components/progress/jardin-screen').then(m => ({ default: m.JardinScreen })), {
+  ssr: true,
+});
+
 const AnalyticsScreen = dynamic(() => import('@/components/analytics/analytics-screen').then(m => ({ default: m.AnalyticsScreen })), {
   ssr: true,
 });
@@ -200,6 +204,8 @@ export default function App() {
         return <AppLayout><CoachScreen /></AppLayout>;
       case 'progress':
         return <AppLayout><ProgressScreen /></AppLayout>;
+      case 'jardin':
+        return <AppLayout><JardinScreen /></AppLayout>;
       case 'analytics':
         return <AppLayout><AnalyticsScreen /></AppLayout>;
       case 'pricing':

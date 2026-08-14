@@ -5,12 +5,12 @@
 | Capa | Tecnología |
 |------|-----------|
 | **Framework** | Next.js 15 (App Router, React 19, TypeScript) |
-| **Estilos** | Tailwind CSS v3 |
+| **Estilos** | Tailwind CSS v4 (CSS-first: `@import "tailwindcss"` + tokens en `globals.css`) |
 | **Estado** | Zustand v5 (persistente en localStorage) |
-| **Animación** | Framer Motion |
+| **Animación** | Motion (paquete `motion`, el rebrand de Framer Motion) |
 | **Base de datos** | Supabase (PostgreSQL + Auth) |
 | **Offline** | Service Worker + Zustand persist |
-| **Tests** | Vitest + Testing Library |
+| **Tests** | Vitest + Testing Library (unit) + Playwright (e2e) |
 | **IA Local** | Transformers.js (Qwen2.5-1.5B) |
 
 ## Comandos
@@ -33,10 +33,10 @@ npm run lint
 
 | Archivo | Propósito |
 |---------|----------|
-| `tailwind.config.ts` | Configuración de Tailwind (animaciones, colores, sombras) |
+| `src/app/globals.css` | Tailwind 4 CSS-first: `@import "tailwindcss"` + tokens CSS (colores, animaciones) — no hay `tailwind.config` |
 | `vitest.config.ts` | Configuración de Vitest (jsdom, aliases, plugins) |
 | `next.config.ts` | Configuración de Next.js (images remotePatterns, webpack, headers) |
-| `postcss.config.mjs` | PostCSS con Tailwind y Autoprefixer |
+| `postcss.config.mjs` | PostCSS con `@tailwindcss/postcss` (Tailwind 4 incluye prefixing — no hay Autoprefixer) |
 | `tsconfig.json` | TypeScript config (paths, jsx: preserve) |
 | `.env.example` | Variables de entorno (Supabase URL + keys) |
 
@@ -55,9 +55,11 @@ src/
 │   ├── ui/                    # Componentes base (Button, Card, Badge, Slider, Ring, Icons, Toast)
 │   ├── layout/                # AppLayout, Header, NavBar
 │   ├── onboarding/            # WelcomeScreen, OnboardingScreen
-│   ├── training/              # HomeScreen (check-in + plan), SessionScreen, SummaryScreen
+│   ├── training/              # HomeScreen (check-in visual 3 taps + plan), SessionScreen,
+│   │                             SummaryScreen, KaraokeText (TTS palabra a palabra),
+│   │                             MicroFeedback (3 preguntas de 1 tap), ExerciseExplainer
 │   ├── coach/                 # CoachScreen (chat con LLM local)
-│   ├── progress/              # ProgressScreen (heatmap, stats)
+│   ├── progress/              # ProgressScreen (heatmap, stats), JardinScreen (sin rachas que romper)
 │   └── profile/               # ProfileScreen
 ├── lib/
 │   ├── agents/                →  Todo en decision-engine.ts
@@ -81,17 +83,21 @@ src/
 │   │   └── schemas.ts         # Schemas Zod para validación de API requests
 │   ├── store/
 │   │   └── index.ts           # Zustand store con persistencia
+│   ├── emotional-mode.ts      # Deducción del modo emocional desde el check-in (nunca un menú)
 │   └── utils/
 │       ├── helpers.ts          # Utility functions (clamp, ema, uid, fmtTime, etc.)
 │       ├── exercises.ts        # Catálogo de ejercicios (70+)
-│       └── constants.ts        # Constantes (FOCUS_MUSCLES, etc.)
+│       ├── constants.ts        # Constantes (FOCUS_MUSCLES, etc.)
+│       ├── speech.ts           # TTS con resaltado palabra a palabra (onboundary + fallback ritmo)
+│       └── voice-lines.ts      # Líneas de voz del TTS (cubiertas por el philosophy-guard)
 ├── types/
 │   └── index.ts               # Interfaces TypeScript (Profile, Workout, DigitalTwin, etc.)
 ├── hooks/
 │   └── use-client-store.ts    # Hook para acceso al store en cliente
 ├── middleware.ts               # Next.js middleware (protección de rutas)
 └── __tests__/
-    └── setup.ts               # Setup global de tests (mocks, store reset)
+    ├── setup.ts               # Setup global de tests (mocks, store reset)
+    └── philosophy-guard.test.ts  # Guard de filosofía: escanea traducciones + voice-lines
 public/
 ├── manifest.json               # PWA manifest
 └── sw.js                       # Service Worker (offline)
@@ -156,15 +162,72 @@ supabase/
 - Offline-first con Zustand persist
 - Sync opcional con Supabase
 
+## FILOSOFÍA (NO VIOLABLE)
+
+- Una rutina, un botón, cero decisiones. Los modos emocionales se DEDUCEN, nunca son menú.
+- Sin rachas, sin culpa, sin comparaciones punitivas, sin urgencia falsa, sin venta agresiva.
+- Recargar es parte del progreso: toda salida (Saltar/Pausa/Terminar aquí) termina en mensaje amable.
+- Primera rutina del día 1: siempre 2 min y siempre completable (victoria garantizada).
+- Estado = ansiedad/tristeza profunda/bloqueo → nunca HIIT: respiración/estiramiento/silla/grounding
+  + "Esto no reemplaza apoyo profesional."
+
+## COPY
+
+- Español claro y literal, sin jerga de gym, sin ironía.
+- Declarativo/invitacional, nunca imperativo ("Esta es tu opción de hoy", no "¡Haz esto!").
+- Todo string de UI pasa por i18n; nunca mezclar idiomas en una pantalla.
+- `src/__tests__/philosophy-guard.test.ts` escanea traducciones + `voice-lines.ts`: sin obligación,
+  culpa encubierta, rachas (fuera de reencuadre), comparación social, ranking, shaming ni urgencia falsa.
+  Excepciones deliberadas viven en `ALLOWED_REFRAMES` (reencuadres) o `PENDING_S7_REDESIGN` (rachas/ranking).
+
+## PRIVACIDAD
+
+- Local-first: ningún dato sale del dispositivo sin opt-in explícito.
+- Sin registro obligatorio; perfil siempre opcional.
+- Telemetría nueva → agregada on-device + toggle opt-in, sin excepciones.
+- `e2e/default-flow-clean.spec.ts` verifica que el flujo default (sin registro) no llama a Supabase jamás.
+
+## INVARIANTES DEL TWIN (anti-regresión)
+
+- Múltiples campos del twin se aplican en UN solo setTwin (evita lost-updates;
+  caso real: micro-feedback pisaba motivation_style).
+- recovery_score se computa SIEMPRE del modelo final, nunca del preview del render.
+
+## COMPONENTES
+
+- UNA instancia de useSpeech por pantalla, pasada por props.
+- Flipbook: respeta prefers-reduced-motion; fallback a foto estática si no hay frames.
+- Componente interactivo nuevo → tests de a11y en `src/__tests__/accessibility` + targets ≥44px.
+
+## I18N
+
+- Descripciones on-device: traducir UNA vez con el LLM local, cachear, servir de caché.
+
+## DEFINITION OF DONE
+
+tsc ✅ · eslint ✅ · vitest ✅ · playwright (contra `next build && next start`) ✅
+· sin violaciones de FILOSOFÍA/COPY (revisar mensajes nuevos contra la librería sin culpa).
+
+## HOUSEKEEPING
+
+- Todo cambio de deps/config actualiza este archivo en el mismo PR.
+- Última verificación: 2026-08-13 · 72 archivos / 1020 tests unitarios · 30 specs e2e.
+
 ## Tests
 
-```
-src/lib/agents/__tests__/decision-engine.test.ts   — 16 tests (Recovery, Consistency, Decide, Motivation)
-src/lib/api/__tests__/schemas.test.ts               — 15 tests (Zod schemas)
-src/components/onboarding/__tests__/onboarding-screen.test.tsx  — 7 tests (5-step flow)
-src/components/coach/__tests__/coach-screen.test.tsx            — 5 tests (header, questions, send)
-src/components/training/__tests__/session-screen.test.tsx       — 7 tests (render, reps, buttons)
-```
+Unitarios — Vitest + Testing Library: **72 archivos · 1020 tests** (`npm test`).
+
+| Área | Archivos | Suites destacadas |
+|---|---|---|
+| `src/lib` (agents, api, awards, audio, db, pose, store, sync, system, utils, emocional) | 35 | helpers (101), achievements (90), selector-engine (30), exercise-visuals (30), pose-engine (28), decision-flow-integration (26) |
+| `src/components` (ui, training, onboarding, coach, progress, profile, awards, neurofit) | 22 | muscle-icons (39+24+16+13), exercise-explainer (25), form-check (22), onboarding-screen (17) |
+| `src/__tests__` (flujos integrales, accesibilidad, temas, i18n, filosofía) | 12 | accessibility (45), full-flow (13), philosophy-guard (9) |
+| `src/app` (docs, error-pages, loading) | 3 | boundaries-i18n (15), error-pages (14) |
+
+E2E — Playwright: **30 specs** (`npm run test:e2e`), incluido `e2e/default-flow-clean.spec.ts`
+(flujo default sin registro: sin ranking/peso/catálogo y sin llamadas a Supabase).
+Idealmente contra `next build && next start` (el portal devtools de Next dev puede interceptar
+clicks; los helpers de navegación en `e2e/helpers.ts` lo descartan con `dismissPortal`).
 
 ## Sincronización con Supabase
 

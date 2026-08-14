@@ -875,8 +875,9 @@ setPlan({
               transition={{ type: 'spring' as const, stiffness: 300, damping: 25 }}
             >
               <Card className="w-full max-w-sm">
-                 <h3 className="text-xl font-black text-center mb-2">{t('Pausa')}</h3>
-                <p className="text-sm text-[var(--muted)] text-center mb-4">{t('¿Cómo vas de energía?')}</p>
+                 <h3 className="text-xl font-black text-center mb-1">{t('Pausa')}</h3>
+                <p className="text-sm text-[var(--text)] text-center mb-1">{t('Pausa guardada. No es fracaso, es recarga.')}</p>
+                <p className="text-xs text-[var(--muted)] text-center mb-4">{t('¿Cómo vas de energía?')}</p>
                 <motion.div
                   initial="initial"
                   animate="animate"

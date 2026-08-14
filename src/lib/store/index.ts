@@ -25,6 +25,7 @@ import type {
    SubscriptionTier,
    AnchorRoutine,
    ExplainerSection,
+   EmotionalMode,
 } from '@/types';
 import type { LeaderboardEntry } from '@/lib/sync/leaderboard';
 import { applyQuestResult, EMPTY_PLAYER } from '@/lib/system/quest-engine';
@@ -46,7 +47,7 @@ interface AppState {
   workouts: Workout[];
   events: AIEvent[];
   chat: ChatMessage[];
-  plan: (DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult }) | null;
+  plan: (DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult; mode?: EmotionalMode }) | null;
   view: string;
   achievements: Record<string, UserAchievement>;
   achievementQueue: string[];
@@ -110,7 +111,7 @@ interface AppState {
   addWorkout: (w: Workout) => void;
   addEvent: (e: AIEvent) => void;
   addChat: (m: ChatMessage) => void;
-  setPlan: (p: DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult }) => void;
+  setPlan: (p: DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult; mode?: EmotionalMode }) => void;
   setView: (v: string) => void;
   /** Timer live — persistido para sobrevivir refresh */
   liveNowStartedAt: number | null;
@@ -176,7 +177,7 @@ const initialState: {
   workouts: Workout[];
   events: AIEvent[];
   chat: ChatMessage[];
-  plan: (DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult }) | null;
+  plan: (DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult; mode?: EmotionalMode }) | null;
   view: string;
   achievements: Record<string, UserAchievement>;
   achievementQueue: string[];

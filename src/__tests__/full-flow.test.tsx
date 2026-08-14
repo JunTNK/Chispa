@@ -8,6 +8,7 @@ import {
   TrainingAgent,
   MotivationEngine,
   calculateConsistency,
+  calculateRecoveryScore,
 } from '@/lib/agents/decision-engine';
 
 import { OnboardingScreen } from '@/components/onboarding/onboarding-screen';
@@ -61,15 +62,12 @@ function makePlan(overrides: Record<string, unknown> = {}) {
   };
 }
 
-/** Set a Radix slider value by focusing the thumb and using keyboard arrows */
-function setSliderValue(slider: HTMLElement, target: number, current: number, step: number) {
-  slider.focus();
-  const diff = Math.round((target - current) / step);
-  if (diff === 0) return;
-  const key = diff > 0 ? 'ArrowRight' : 'ArrowLeft';
-  for (let i = 0; i < Math.abs(diff); i++) {
-    fireEvent.keyDown(slider, { key });
-  }
+/** Botón RPE "Justo" — desambigua del MicroFeedback (desc 'Al punto perfecto'). */
+function clickRpeJusto() {
+  const btn = screen
+    .getAllByRole('button', { name: /justo/i })
+    .find((b) => b.textContent?.includes('Al punto') && !b.textContent?.includes('perfecto'));
+  if (btn) fireEvent.click(btn);
 }
 
 /** Complete onboarding through all 10 UI steps. Must be cleaned up after. */
@@ -202,7 +200,7 @@ describe('Full Flow Integration', () => {
       cleanup();
     });
 
-    it('HomeScreen shows CheckInCard when no check-in exists for today', async () => {
+    it('HomeScreen shows the 3-tap CheckInCard when no check-in exists for today', async () => {
       useStore.setState({
         onboarded: true,
         profile: mockProfile,
@@ -215,17 +213,21 @@ describe('Full Flow Integration', () => {
       // Wait for skeleton loading to finish
       const checkin = await screen.findByText('Check-in diario');
       expect(checkin).toBeInTheDocument();
-      expect(screen.getByText(/30s/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/toques/i).length).toBeGreaterThan(0);
 
-      // Verify ring displays the computed recovery score (sleep=7,energy=6,stress=4 → ~63)
+      // Verify ring displays the computed recovery score (default preview:
+      // energía media → sleep=7, energy=6, stress=4 → ~63)
       expect(screen.getByText('63')).toBeInTheDocument();
       expect(screen.getByText('recovery')).toBeInTheDocument();
 
-      // Three sliders: sleep, energy, stress
-      expect(screen.getAllByRole('slider').length).toBe(3);
+      // Primer tap: ¿Dónde estás? — 4 opciones visuales (sin sliders)
+      expect(screen.getByText('¿Dónde estás?')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /casa/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /gimnasio/i })).toBeInTheDocument();
+      expect(screen.queryAllByRole('slider')).toHaveLength(0);
     });
 
-    it('high check-in values create a push-intensity train plan', async () => {
+    it('3 taps de alta energía y cabeza calma crean un plan train con modo deducido', async () => {
       useStore.setState({
         onboarded: true,
         profile: { ...mockProfile, goal: 'fuerza' },
@@ -241,24 +243,23 @@ describe('Full Flow Integration', () => {
 
       await screen.findByText('Check-in diario');
 
-      const [sleepSlider, energySlider, stressSlider] = screen.getAllByRole('slider');
+      // Tap 1: ubicación → Casa
+      fireEvent.click(screen.getByRole('button', { name: /casa/i }));
+      expect(screen.getByText('¿Energía?')).toBeInTheDocument();
 
-      // High recovery: sleep=9, energy=8, stress=2
-      // recovery = (9-4)/4.5*100*0.4 + 8*10*0.3 + (10-2)*10*0.3
-      //          = 44.4 + 24 + 24 = 92.4 (≥ 75 → push with consistency >= 60%)
-      setSliderValue(sleepSlider, 9, 7, 0.5);
-      setSliderValue(energySlider, 8, 6, 1);
-      setSliderValue(stressSlider, 2, 4, 1);
+      // Tap 2: energía → Alta
+      fireEvent.click(screen.getByRole('button', { name: /alta/i }));
+      expect(screen.getByText('¿Cuánto tiempo tienes?')).toBeInTheDocument();
 
-      expect(screen.getByText('9h')).toBeInTheDocument();
-      expect(screen.getByText('8/10')).toBeInTheDocument();
-      expect(screen.getByText('2/10')).toBeInTheDocument();
+      // Tap 3: tiempo → 10+ min
+      fireEvent.click(screen.getByRole('button', { name: /10\+ min/i }));
 
-      // Trigger plan creation
-      fireEvent.click(screen.getByRole('button', { name: /calcular mi día/i }));
+      // 4ª tap opcional: cabeza → Calma (commits el check-in)
+      expect(screen.getByText('¿Cómo estás de cabeza? (opcional)')).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: /calma/i }));
 
-      // Wait for plan card
-      await screen.findByText(/tu entrenamiento está listo|movimiento suave|sesión ligera/i);
+      // Espera la card del plan
+      await screen.findByRole('button', { name: /empezar ahora/i });
 
       const plan = useStore.getState().plan;
       expect(plan).not.toBeNull();
@@ -267,18 +268,25 @@ describe('Full Flow Integration', () => {
       expect(plan?.workout).toBeDefined();
       expect(plan?.workout?.exercises.length).toBeGreaterThanOrEqual(1);
 
-      // Check-in saved to store
+      // El modo se DEDUCE del check-in (nunca se elige como menú)
+      expect(plan?.mode).toBe('calma');
+      expect(screen.getByText('Tu modo de hoy: Calma')).toBeInTheDocument();
+
+      // Check-in guardado con los taps mapeados al modelo numérico
       const ci = useStore.getState().checkins[todayKey()];
       expect(ci).toBeDefined();
-      expect(ci.sleep).toBe(9);
-      expect(ci.energy).toBe(8);
+      expect(ci.location).toBe('casa');
+      expect(ci.time).toBe(10);
+      expect(ci.head).toBe('calma');
+      expect(ci.sleep).toBe(7);
+      expect(ci.energy).toBe(9);
       expect(ci.stress).toBe(2);
 
       // "Empezar ahora" button visible
       expect(screen.getByRole('button', { name: /empezar ahora/i })).toBeInTheDocument();
     });
 
-    it('low check-in values create a restore plan', async () => {
+    it('cabeza Caos nunca recibe HIIT: el motor propone recarga (seguridad emocional)', async () => {
       useStore.setState({
         onboarded: true,
         profile: mockProfile,
@@ -291,26 +299,30 @@ describe('Full Flow Integration', () => {
 
       await screen.findByText('Check-in diario');
 
-      const [sleepSlider, energySlider, stressSlider] = screen.getAllByRole('slider');
-
-      // Very low recovery: sleep=4, energy=2, stress=8
-      // recovery = 0 + 6 + 6 = 12 (< 35 → restore)
-      setSliderValue(sleepSlider, 4, 7, 0.5);
-      setSliderValue(energySlider, 2, 6, 1);
-      setSliderValue(stressSlider, 8, 4, 1);
-
-      expect(screen.getByText('4h')).toBeInTheDocument();
-      expect(screen.getByText('2/10')).toBeInTheDocument();
-      expect(screen.getByText('8/10')).toBeInTheDocument();
-
-      fireEvent.click(screen.getByRole('button', { name: /calcular mi día/i }));
+      // Tap 1: ubicación → Casa
+      fireEvent.click(screen.getByRole('button', { name: /casa/i }));
+      // Tap 2: energía → Baja
+      fireEvent.click(screen.getByRole('button', { name: /baja/i }));
+      // Tap 3: tiempo → 2 min
+      fireEvent.click(screen.getByRole('button', { name: /2 min/i }));
+      // 4ª tap: cabeza → Caos → no HIIT, el motor deduce modo Caos → recarga
+      fireEvent.click(screen.getByRole('button', { name: /caos/i }));
 
       const plan = useStore.getState().plan;
       expect(plan).not.toBeNull();
+      expect(plan?.mode).toBe('caos');
       expect(plan?.action).toBe('restore');
 
-      // Should show restore card with title
+      // Should show restore card with title + opciones de recarga
       expect(screen.getByText('Hoy toca recargar')).toBeInTheDocument();
+      expect(screen.getByText(/respiración 5 min/i)).toBeInTheDocument();
+
+      // El recovery_score persistido SIEMPRE coincide con el modelo final
+      // (bug fix: no usar el preview del render sin la cabeza elegida).
+      const ci = useStore.getState().checkins[todayKey()];
+      expect(ci).toBeDefined();
+      expect(ci.head).toBe('caos');
+      expect(ci.recovery_score).toBe(calculateRecoveryScore(ci).score);
     });
   });
 
@@ -460,7 +472,7 @@ describe('Full Flow Integration', () => {
       expect(screen.getByText(/buen movimiento/i)).toBeInTheDocument();
 
       // Select RPE = "justo"
-      fireEvent.click(screen.getByText(/justo/i));
+      clickRpeJusto();
 
       // Select motivation = "energy"
       fireEvent.click(screen.getByText(/chispa se enciende/i));
@@ -630,7 +642,7 @@ describe('Full Flow Integration', () => {
 
       // Select RPE and motivation
       await act(async () => {
-        fireEvent.click(screen.getByText(/justo/i));
+        clickRpeJusto();
       });
       await act(async () => {
         fireEvent.click(screen.getByText(/recuperación/i));
