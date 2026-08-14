@@ -27,9 +27,6 @@ export const enNeurofit: Record<string, string> = {
   'Reemplaza ejercicios de alto impacto': 'Replaces high-impact exercises',
   'Desactivar {x}': 'Disable {x}',
   'Activar {x}': 'Enable {x}',
-  'Gamificación': 'Gamification',
-  'Ocultar rachas': 'Hide streaks',
-  'Reduce el estrés de mantener rachas. Los badges de racha desaparecen.': 'Reduces the stress of keeping streaks. Streak badges are hidden.',
 
   'Stack de producción': 'Production stack',
   'Híbrido 80/20': '80/20 hybrid',
@@ -110,7 +107,7 @@ export const enNeurofit: Record<string, string> = {
   'día': 'day',
   'días': 'days',
   'seguidos': 'in a row',
-  'RSD Shield: nunca &ldquo;rompes&rdquo; la racha': 'RSD Shield: you never &ldquo;break&rdquo; the streak',
+
   'Jefe derrotado esta semana': 'Boss defeated this week',
   'Nuevo jefe el lunes.': 'New boss on Monday.',
   'BOSS BATTLE · SEMANAL': 'BOSS BATTLE · WEEKLY',

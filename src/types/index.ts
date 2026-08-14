@@ -301,7 +301,7 @@ export interface ChatMessage {
 
 export interface Achievement {
   id: string;
-  category: 'workouts' | 'streak' | 'intensity' | 'focus' | 'completion' | 'level' | 'boss' | 'hidden' | 'movimiento';
+  category: 'workouts' | 'intensity' | 'focus' | 'completion' | 'level' | 'boss' | 'hidden' | 'movimiento';
   name: string;
   description: string;
   icon: string;

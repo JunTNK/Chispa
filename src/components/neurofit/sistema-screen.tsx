@@ -9,7 +9,7 @@ import {
   Cpu, Brain, Users, BatteryCharging, Coffee, MoonStar,
   VolumeX, ArrowLeftRight, Smartphone, Clock, Dumbbell,
   GitBranch, Box, Database, AlertCircle,
-   CheckCircle, Flame,
+   CheckCircle,
  } from 'lucide-react';
 import { Tooltip } from '@/components/ui/tooltip';
 import {
@@ -46,8 +46,6 @@ export function SistemaScreen() {
   const profile = useStore((s) => s.profile);
   const sensory = useStore((s) => s.sensory);
   const setSensory = useStore((s) => s.setSensory);
-  const prefs = useStore((s) => s.prefs);
-  const setPref = useStore((s) => s.setPref);
   const [caffeine, setCaffeine] = React.useState(160);
 
   const nowH = new Date().getHours();
@@ -297,40 +295,6 @@ export function SistemaScreen() {
               </motion.div>
             );
           })}
-        </div>
-      </div>
-
-      {/* Gamification Toggles */}
-      <div>
-        <div className="flex items-center gap-2 mb-2 mt-2">
-          <Flame size={14} className="text-[var(--muted)]" />
-          <h2 className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">{t('Gamificación')}</h2>
-        </div>
-        <div className="space-y-2">
-          <motion.div
-            initial={{ opacity: 0, x: -8 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.15 }}
-            className="flex items-center justify-between rounded-xl border border-white/[.07] bg-white/[.04] p-3 gap-3"
-          >
-            <div>
-              <div className="text-sm font-semibold flex items-center gap-2">
-                <Flame size={15} className="text-[var(--muted)]" /> {t('Ocultar rachas')}
-              </div>
-              <div className="text-[10px] text-[#5C6577]">{t('Reduce el estrés de mantener rachas. Los badges de racha desaparecen.')}</div>
-            </div>
-            <button
-              onClick={() => { setPref('hideStreaks', !prefs.hideStreaks); trackDecision(3); }}
-              aria-label={prefs.hideStreaks ? t('Desactivar {x}', { x: t('Ocultar rachas') }) : t('Activar {x}', { x: t('Ocultar rachas') })}
-              className={`w-11 h-6 rounded-full relative transition-all shrink-0 ${
-                prefs.hideStreaks ? 'bg-[rgba(0,212,170,0.25)] border border-[#00D4AA]' : 'bg-white/[.10] border border-white/[.15]'
-              }`}
-            >
-              <span className={`absolute top-0.5 w-[18px] h-[18px] rounded-full transition-all ${
-                prefs.hideStreaks ? 'left-[22px] bg-[#00D4AA]' : 'left-[2px] bg-[#94a0b8]'
-              }`} />
-            </button>
-          </motion.div>
         </div>
       </div>
 

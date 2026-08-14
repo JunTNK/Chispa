@@ -90,11 +90,11 @@ describe('AchievementToast', () => {
     });
 
     it('renders the achievement description', () => {
-      setStoreState({ achievementQueue: ['streak_7'] });
+      setStoreState({ achievementQueue: ['brasa_constante'] });
       render(<AchievementToast />);
 
-      expect(screen.getByText('Imparable')).toBeInTheDocument();
-      expect(screen.getByText('Mantén una racha de 7 días seguidos')).toBeInTheDocument();
+      expect(screen.getByText('Brasa constante')).toBeInTheDocument();
+      expect(screen.getByText('10 días con movimiento en 30 días rodantes')).toBeInTheDocument();
     });
 
     it('renders the sparkles icon container', () => {

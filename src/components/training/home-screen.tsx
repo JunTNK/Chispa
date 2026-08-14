@@ -732,7 +732,6 @@ function GreetingHeader() {
   const profile = useStore((s) => s.profile);
   const workouts = useStore((s) => s.workouts);
   const setView = useStore((s) => s.setView);
-  const prefs = useStore((s) => s.prefs);
   const name = profile?.name ?? '';
 
   // El nombre puede venir como uid crudo (ej. y54657687989) tras registrarse
@@ -809,11 +808,7 @@ function GreetingHeader() {
           onClick={() => setView('sistema')}
           aria-label={t('Ajustes')}
           title={t('Acceso rápido a sensorial y gamificación')}
-          className={`w-9 h-9 rounded-xl border flex items-center justify-center text-[var(--muted)] hover:bg-[var(--card2)] transition-colors shrink-0 ${
-            prefs.hideStreaks
-              ? 'bg-[rgba(0,212,170,0.08)] border-[#00D4AA]'
-              : 'bg-[var(--card2)] border-[var(--line)]'
-          }`}
+          className="w-9 h-9 rounded-xl border flex items-center justify-center text-[var(--muted)] hover:bg-[var(--card2)] transition-colors shrink-0 bg-[var(--card2)] border-[var(--line)]"
         >
           <Settings size={17} />
         </button>

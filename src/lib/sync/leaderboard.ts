@@ -1,6 +1,7 @@
 'use client';
 
 import { supabase } from '@/lib/db/supabase';
+import { useStore } from '@/lib/store';
 
 /* ─── Types ─── */
 
@@ -26,11 +27,16 @@ export interface LeaderboardResult {
  * Push the current user's XP and level to the leaderboard.
  * This stores NO personal info — just XP and level.
  * Called automatically after each workout save.
+ *
+ * Gate de opt-in explícito (rúbrica §7, local-first): si el usuario no activó
+ * el leaderboard social, NADA sale del dispositivo.
  */
 export async function pushLeaderboard(
   totalXp: number,
   level: number
 ): Promise<boolean> {
+  const optIn = useStore.getState().leaderboard_opt_in;
+  if (!optIn) return false; // local-first: no sale del dispositivo sin permiso
   try {
     const { data } = await supabase.auth.getSession();
     const uid = data?.session?.user?.id;

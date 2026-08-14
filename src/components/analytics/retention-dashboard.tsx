@@ -4,12 +4,14 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
-import { getRetentionMetrics, getRetentionInfo } from '@/lib/analytics';
+import { useStore } from '@/lib/store';
+import { getRetentionMetrics, getRetentionInfo, getMovementDaysRolling } from '@/lib/analytics';
 import { Calendar, TrendingUp, BarChart3, CheckCircle } from 'lucide-react';
 
 export function RetentionDashboard() {
   const t = useT();
-  const { firstDay, currentStreak } = getRetentionInfo();
+  const workouts = useStore((s) => s.workouts);
+  const { firstDay } = getRetentionInfo();
   const { totalActiveDays, d1Retained, d7Retained, d30Retained } = getRetentionMetrics();
 
   return (
@@ -51,10 +53,10 @@ export function RetentionDashboard() {
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <BarChart3 size={16} className="text-[#22d3ee]" />
-            <span className="text-xs font-mono uppercase text-[var(--muted)]">DAU</span>
+            <span className="text-xs font-mono uppercase text-[var(--muted)]">M30</span>
           </div>
-          <p className="text-2xl font-bold">{currentStreak}</p>
-          <p className="text-[10px] text-[var(--muted)]">{t('racha actual')}</p>
+          <p className="text-2xl font-bold">{getMovementDaysRolling(workouts)}</p>
+          <p className="text-[10px] text-[var(--muted)]">{t('días con movimiento (30 días rodantes)')}</p>
         </Card>
       </div>
 

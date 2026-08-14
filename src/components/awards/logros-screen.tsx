@@ -15,7 +15,7 @@ import {
   Footprints, Flame, Zap, Trophy, Sword, Crown,
   Target, Dumbbell, CheckCircle, Award, Activity,
   TrendingUp, Sun, Moon, Wrench, Smile, Sparkles,
-  Lock, Medal, Star, Compass,
+  Lock, Medal, Star, Compass, Coffee,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -23,7 +23,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Footprints, Flame, Zap, Trophy, Sword, Crown,
   Target, Dumbbell, CheckCircle, Award, Activity,
   TrendingUp, Sun, Moon, Wrench, Smile, Sparkles,
-  Lock, Medal, Star, Compass,
+  Lock, Medal, Star, Compass, Coffee,
 };
 
 function AvoIcon({ icon, size = 18 }: { icon: string; size?: number }) {
@@ -31,7 +31,7 @@ function AvoIcon({ icon, size = 18 }: { icon: string; size?: number }) {
   return <Icon size={size} />;
 }
 
-const CATEGORIES = ['workouts', 'streak', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden', 'movimiento'] as const;
+const CATEGORIES = ['workouts', 'intensity', 'focus', 'completion', 'level', 'boss', 'hidden', 'movimiento'] as const;
 
 const TIER_ORDER = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
 
@@ -135,11 +135,8 @@ export function LogrosScreen() {
   const [selectedCat, setSelectedCat] = React.useState<string | null>(null);
 
   const ctx = useMemo(() => computeAchievementContext(workouts), [workouts]);
-  const prefs = useStore((s) => s.prefs);
 
-  const visibleCategories = prefs.hideStreaks
-    ? CATEGORIES.filter((c) => c !== 'streak')
-    : CATEGORIES;
+  const visibleCategories = CATEGORIES;
 
   // Compute display-ready progress (read-only — summary-screen handles persistence)
   const allProgress = useMemo(() => {
@@ -190,7 +187,7 @@ export function LogrosScreen() {
       </motion.div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Card className="text-center py-3 px-2">
           <div className="text-xl font-black">{totalUnlocked}</div>
           <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{t('desbloqueados')}</div>
@@ -199,12 +196,6 @@ export function LogrosScreen() {
           <div className="text-xl font-black">{ctx.totalWorkouts}</div>
           <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">workouts</div>
         </Card>
-        {!prefs.hideStreaks && (
-        <Card className="text-center py-3 px-2">
-          <div className="text-xl font-black">{ctx.streak}</div>
-          <div className="text-[9px] text-[var(--muted)] uppercase tracking-wider">{t('racha')}</div>
-        </Card>
-        )}
       </div>
 
       {/* Category filter */}

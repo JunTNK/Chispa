@@ -31,11 +31,6 @@ import {
 import { loadNeuralVoice } from '@/lib/audio/neural-voice';
 import { Progress } from '@/components/ui/progress';
 import { LanguageSwitcher } from '@/components/settings/language-switcher';
-import {
-  SilverMedalIcon,
-  BronzeMedalIcon,
-  CrownIcon,
-} from '@/components/ui/icons-rpg';
 import { WeightHistoryCard } from './weight-history-card';
 
 export function ProfileScreen() {
@@ -57,7 +52,7 @@ export function ProfileScreen() {
    const setSubscription = useStore((s) => s.setSubscription);
 
   const setView = useStore((s) => s.setView);
-  const leaderboard = useStore((s) => s.leaderboard);
+
   const anchorRoutine = useStore((s) => s.anchorRoutine);
   const setAnchorRoutine = useStore((s) => s.setAnchorRoutine);
   const voice = useStore((s) => s.prefs.voice);
@@ -184,18 +179,8 @@ export function ProfileScreen() {
   const setCoopMode = useStore((s) => s.setCoopMode);
   const [joinCode, setJoinCode] = React.useState('');
 
-  // Leaderboard rank badge
-  const userEntry = leaderboard.find((e) => e.isCurrentUser);
-  const rankBadge = React.useMemo(() => {
-    if (!userEntry) return null;
-    const r = userEntry.rank;
-    if (r === 1) return { label: '#1', icon: <CrownIcon size={14} />, tier: 'gold' };
-    if (r <= 3) return { label: `#${r}`, icon: r === 2 ? <SilverMedalIcon size={14} /> : <BronzeMedalIcon size={14} />, tier: 'gold' };
-    if (r <= 10) return { label: 'Top 10', icon: null, tier: 'purple' };
-    if (r <= 50) return { label: 'Top 50', icon: null, tier: 'blue' };
-    if (r <= 100) return { label: 'Top 100', icon: null, tier: 'green' };
-    return null;
-  }, [userEntry]);
+  // Sin ranking social (spec §7): el badge de posición se eliminó. El slice
+  // `leaderboard` queda legacy y vacío — el opt-in está OFF por defecto.
 
   const handleReset = () => {
     reset();
@@ -235,22 +220,6 @@ export function ProfileScreen() {
           <div className="flex gap-1.5 mt-1.5 flex-wrap">
             <Badge variant="accent">{t(NEURO_LABELS[neuro?.type || 'curious'])}</Badge>
             <Badge variant="ghost">{t(GOAL_LABELS[profile?.goal || 'energia'])}</Badge>
-            {rankBadge && (
-              <span
-                className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  rankBadge.tier === 'gold'
-                    ? 'bg-[rgba(251,191,36,0.12)] text-[#fbbf24] border-[rgba(251,191,36,0.3)]'
-                    : rankBadge.tier === 'purple'
-                    ? 'bg-[rgba(167,139,250,0.12)] text-[#a78bfa] border-[rgba(167,139,250,0.3)]'
-                    : rankBadge.tier === 'blue'
-                    ? 'bg-[rgba(76,201,240,0.12)] text-[#4CC9F0] border-[rgba(76,201,240,0.3)]'
-                    : 'bg-[rgba(52,211,153,0.12)] text-[#34d399] border-[rgba(52,211,153,0.3)]'
-                }`}
-              >
-                {rankBadge.icon}{' '}
-                {t(rankBadge.label)}
-              </span>
-            )}
           </div>
         </div>
       </Card>

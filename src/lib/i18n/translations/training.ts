@@ -240,6 +240,7 @@ export const enTraining: Record<string, string> = {
   'Lo mínimo: un ejercicio, una serie. Eso ya es mucho.': 'The minimum: one exercise, one set. That is already a lot.',
   // ── Librería sin culpa (spec §5) ──
   'Bien. Hoy tu chispa se movió. Vuelve cuando puedas.': 'Good. Today your spark moved. Come back when you can.',
+  'Hoy ya brillaste. Guarda energía para mañana.': 'You already shined today. Save your energy for tomorrow.',
   'Pausa guardada. No es fracaso, es recarga.': 'Pause saved. It is not failure, it is a recharge.',
   'Bienvenido de nuevo': 'Welcome back',
   'Nada se rompió. Tu brasa siguió aquí esperando. Empecemos con 2 minutos, sin juicio.': 'Nothing broke. Your ember kept waiting here. Let us start with 2 minutes, no judgment.',

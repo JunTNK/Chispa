@@ -156,6 +156,19 @@ export function getRetentionMetrics(): {
 }
 
 /**
+ * Días distintos con movimiento en una ventana rodante (sin rachas que se rompen).
+ * La métrica real de CHISPA: volver importa más que no irse nunca.
+ */
+export function getMovementDaysRolling(workouts: { date: string; completed_rate: number }[], windowDays = 30): number {
+  const cutoff = Date.now() - windowDays * 86400000;
+  return new Set(
+    workouts
+      .filter((w) => w.completed_rate >= 0.5 && new Date(w.date).getTime() >= cutoff)
+      .map((w) => w.date)
+  ).size;
+}
+
+/**
  * Get retention info for analytics/debug.
  */
 export function getRetentionInfo(): { firstDay: string | null; lastDAU: string | null; currentStreak: number } {

@@ -19,7 +19,8 @@ import { useConfetti } from '@/components/ui/particles';
 import { useAchievementEval } from '@/lib/awards/use-achievement-eval';
 import { useSound } from '@/lib/awards/use-sound';
 import { pushLeaderboard } from '@/lib/sync/leaderboard';
-import { computeTotalXp, computeLevel } from '@/lib/awards/achievements';
+import { computeTotalXp, computeLevel, computeWorkoutXp } from '@/lib/awards/achievements';
+import { applyDailyCap } from '@/lib/system/xp';
 import { logError } from '@/lib/utils/logger';
 
 export function SummaryScreen() {
@@ -170,6 +171,13 @@ export function SummaryScreen() {
 
   const xpEarned = Math.round((result.doneEx / Math.max(1, result.totalEx)) * 50 + result.minutes);
 
+  // Tope diario de XP (rúbrica §7): previene binge → burnout. El summary se
+  // renderiza ANTES de guardar, así que `workouts` aún no incluye esta sesión.
+  const xpGanadoHoy = workouts
+    .filter((wo) => wo.date === todayKey())
+    .reduce((acc, wo) => acc + computeWorkoutXp(wo.completed_rate, wo.actual_minutes || wo.duration), 0);
+  const { awarded: xpAwarded, capped } = applyDailyCap(xpEarned, xpGanadoHoy);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -218,8 +226,13 @@ export function SummaryScreen() {
             className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[rgba(167,139,250,0.12)] border border-[rgba(167,139,250,0.25)]"
           >
             <Zap size={14} className="text-[#a78bfa]" />
-            <span className="text-xs font-bold text-[#a78bfa]">+{xpEarned} XP</span>
+            <span className="text-xs font-bold text-[#a78bfa]">+{xpAwarded} XP</span>
           </motion.div>
+          {capped && (
+            <p className="text-xs text-[#ffb454] mt-2 animate-in">
+              {t('Hoy ya brillaste. Guarda energía para mañana.')}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-2.5">

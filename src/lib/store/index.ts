@@ -53,6 +53,8 @@ interface AppState {
   achievementQueue: string[];
   questState: QuestState;
   leaderboard: LeaderboardEntry[];
+  /** Opt-in explícito para el leaderboard social (default OFF — local-first, spec §7) */
+  leaderboard_opt_in: boolean;
   workoutTemplates: WorkoutTemplate[];
   /** Id de la plantilla en edición desde Mis rutinas (null = creación nueva) */
   editingTemplateId: string | null;
@@ -123,6 +125,7 @@ interface AppState {
   dequeueAchievement: () => string | undefined;
   setQuestState: (q: Partial<QuestState>) => void;
   setLeaderboard: (entries: LeaderboardEntry[]) => void;
+  setLeaderboardOptIn: (v: boolean) => void;
   addTemplate: (t: WorkoutTemplate) => void;
   removeTemplate: (id: string) => void;
   /** Actualiza una plantilla existente (preserva id y created_at) */
@@ -183,6 +186,8 @@ const initialState: {
   achievementQueue: string[];
   questState: QuestState;
   leaderboard: LeaderboardEntry[];
+  /** Opt-in explícito para el leaderboard social (default OFF — local-first, spec §7) */
+  leaderboard_opt_in: boolean;
   workoutTemplates: WorkoutTemplate[];
   editingTemplateId: string | null;
   anchorRoutine: AnchorRoutine | null;
@@ -218,6 +223,7 @@ const initialState: {
   achievements: {},
   achievementQueue: [],
   leaderboard: [],
+  leaderboard_opt_in: false,
   workoutTemplates: [],
   editingTemplateId: null,
   anchorRoutine: null,
@@ -292,6 +298,7 @@ export const useStore = create<AppState>()(
       setPlan: (p: DecisionEngineOutput & { date?: string; workout?: WorkoutPlan; message?: string; done?: boolean; result?: SessionResult }) => set({ plan: p }),
       setView: (v: string) => set({ view: v }),
       setLeaderboard: (entries: LeaderboardEntry[]) => set({ leaderboard: entries }),
+      setLeaderboardOptIn: (v: boolean) => set({ leaderboard_opt_in: v }),
       setAchievements: (a: Record<string, UserAchievement>) => set({ achievements: a }),
       addTemplate: (t: WorkoutTemplate) =>
         set((s: AppState) => ({ workoutTemplates: [...s.workoutTemplates, t] })),

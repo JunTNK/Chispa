@@ -21,23 +21,6 @@ const TARGETS = [
 ];
 
 /**
- * Archivos con copy que AÚN viola la filosofía — pendientes de rediseño (rúbrica §7):
- * - `awards.ts`: achievements de rachas ("Mantén una racha de 3 días seguidos",
- *   "Imparable") + copy del leaderboard ("Ranking anónimo de XP — compite sin presión").
- * - `common.ts` / `layout.ts`: ítem de nav "Ranking".
- * - `neurofit.ts`: toggle "Ocultar rachas" — el sistema aún tiene rachas que ocultar.
- * - `profile.ts`: "racha actual" (contador de racha).
- * Cuando el rediseño §7 elimine estas violaciones, se mueven de vuelta a TARGETS.
- */
-const PENDING_S7_REDESIGN = new Set([
-  "src/lib/i18n/translations/awards.ts",
-  "src/lib/i18n/translations/common.ts",
-  "src/lib/i18n/translations/layout.ts",
-  "src/lib/i18n/translations/neurofit.ts",
-  "src/lib/i18n/translations/profile.ts",
-]);
-
-/**
  * Frases propias de la filosofía que mencionan conceptos sensibles para
  * negarlos/reencuadrarlos (ES + EN). Se restan ANTES de buscar lo prohibido:
  * nuestro copy habla de "rachas"/"fracaso" justo para negarlos.
@@ -51,7 +34,6 @@ const ALLOWED_REFRAMES = [
   /sin rachas ni perfección/gi,
   /las rachas crean culpa/gi,
   /no presión ni rachas/gi, // journal.ts: nota de diseño (celebra movimiento)
-  /nunca .*?rompes.*? la racha/gi, // RSD Shield: "nunca rompes la racha" (reencuadre)
   /no es (un )?fracaso/gi,
   /sin culpa/gi,
   /cero culpa/gi,
@@ -84,8 +66,7 @@ function collectFiles(target: string): string[] {
   if (statSync(target).isFile()) return [target];
   return readdirSync(target)
     .filter((f) => f.endsWith(".ts"))
-    .map((f) => join(target, f))
-    .filter((f) => !PENDING_S7_REDESIGN.has(f));
+    .map((f) => join(target, f));
 }
 
 describe("philosophy-guard: copy sin culpa, sin rachas, sin comparación social", () => {
@@ -101,14 +82,5 @@ describe("philosophy-guard: copy sin culpa, sin rachas, sin comparación social"
       if (m) violaciones.push(`"${m[0]}" → ${motivo}`);
     }
     expect(violaciones, `${file}:\n${violaciones.join("\n")}`).toEqual([]);
-  });
-
-  it("los archivos pendientes de rediseño §7 siguen existiendo", () => {
-    for (const f of PENDING_S7_REDESIGN) {
-      expect(
-        statSync(f).isFile(),
-        `${f} ya no existe — si la violación se eliminó, moverlo de vuelta a TARGETS`
-      ).toBe(true);
-    }
   });
 });

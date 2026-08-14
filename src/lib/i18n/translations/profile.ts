@@ -103,9 +103,6 @@ export const enProfile: Record<string, string> = {
   'Energía': 'Energy',
   'Directo': 'Direct',
   'Calma': 'Calm',
-  'Top 10': 'Top 10',
-  'Top 50': 'Top 50',
-  'Top 100': 'Top 100',
 
   // Sistema
   'Modo Sistema': 'System Mode',
@@ -144,7 +141,7 @@ export const enProfile: Record<string, string> = {
   'Estadísticas detalladas, patrones de energía y score de dopamina. Pro exclusivo.': 'Detailed stats, energy patterns and dopamine score. Pro exclusive.',
   'Tus patrones': 'Your patterns',
   'días de movimiento': 'movement days',
-  'racha actual': 'current streak',
+  'días con movimiento (30 días rodantes)': 'moving days (30-day rolling)',
   'Progreso de XP': 'XP progress',
   'Usuario desde {date}': 'User since {date}',
   'Primer día registrado': 'First day registered',
@@ -165,8 +162,6 @@ export const enProfile: Record<string, string> = {
   '✓ D30': '✓ D30',
   '— D30': '— D30',
   // Session screen
-  'RSD Shield: nunca "rompes" la racha': 'RSD Shield: you never "break" the streak',
-  // Session screen
   'Form': 'Form',
   'Postura': 'Form',
   // Quest system
@@ -176,7 +171,7 @@ export const enProfile: Record<string, string> = {
   'Vida': 'HP',
   '{n} sesiones · {m} HP daño': '{n} sessions · {m} HP damage',
   '{n} sesiones · {m} Vida daño': '{n} sesiones · {m} daño al jefe',
-  // Streak / movement
+  // Movement
   'en movimiento': 'moving',
   'seguidos': 'in a row',
 };

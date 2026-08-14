@@ -29,9 +29,9 @@ test.describe('flujo default sin registro: limpio y 100% local', () => {
     const startBtn = page.locator('button').filter({ hasText: 'Empezar ahora' });
     await expect(startBtn).toBeVisible({ timeout: 10000 });
 
-    // El ranking NO está en la nav principal (solo vive en el menú "Más")
+    // La comparación personal NO está en la nav principal (solo vive en el menú "Más")
     const nav = getNav(page);
-    await expect(nav.locator('button').filter({ hasText: 'Ranking' })).toHaveCount(0);
+    await expect(nav.locator('button').filter({ hasText: 'Mi evolución' })).toHaveCount(0);
 
     // ── Sesión ──
     await startBtn.click();
@@ -64,42 +64,45 @@ test.describe('flujo default sin registro: limpio y 100% local', () => {
     expect(llamadasSupabase).toEqual([]);
   });
 
-  test('el ranking vive en el menú "Más", fuera de la nav principal', async ({ page }) => {
+  test('la comparación vive en el menú "Más", fuera de la nav principal', async ({ page }) => {
     await completeOnboarding(page);
 
     const nav = getNav(page);
-    const rankingBtn = nav.locator('button').filter({ hasText: 'Ranking' });
+    const evolBtn = nav.locator('button').filter({ hasText: 'Mi evolución' });
 
-    // Nav principal (Inicio/Entrenar/Coach/Sistema/Más): sin Ranking visible
-    await expect(rankingBtn).toHaveCount(0);
+    // Nav principal (Inicio/Entrenar/Coach/Sistema/Más): sin comparación visible
+    await expect(evolBtn).toHaveCount(0);
 
     // Solo aparece al abrir el menú "Más"
     await dismissPortal(page);
     await nav.locator('button', { hasText: 'Más' }).click();
     await page.waitForTimeout(300);
     await dismissPortal(page);
-    await expect(rankingBtn).toBeVisible();
+    await expect(evolBtn).toBeVisible();
   });
 
   /**
-   * RÚBRICA §7 — LEADERBOARD (conocido pendiente de rediseño):
-   * Hoy la pantalla "Ranking" muestra la tabla completa de jugadores anónimos
-   * SIN gate de opt-in (ver leaderboard-screen.tsx y la rúbrica en la sesión).
-   * Este test documenta la violación: al aplicar el rediseño (gate opt-in o
-   * reemplazo por "contra tu yo pasado") se activa quitando el `skip`.
+   * RÚBRICA §7 — LEADERBOARD PERSONAL: la comparación es solo contra tu yo
+   * pasado (rúbrica aplicada: sin ranking social, sin jugadores anónimos,
+   * sin nombres de otros). 100% local.
    */
-  test.skip('leaderboard social está detrás de opt-in', async ({ page }) => {
+  test('la pantalla de evolución es personal, no social', async ({ page }) => {
     await completeOnboarding(page);
     await dismissPortal(page);
     const nav = getNav(page);
     await nav.locator('button', { hasText: 'Más' }).click();
     await page.waitForTimeout(300);
     await dismissPortal(page);
-    await nav.locator('button', { hasText: 'Ranking' }).click();
+    await nav.locator('button', { hasText: 'Mi evolución' }).click();
     await page.waitForTimeout(800);
 
+    // Marco personal: "contra tu yo pasado"
+    await expect(page.getByText(/Contra tu yo pasado/i)).toBeVisible();
+    await expect(page.getByText(/Esta semana vs la anterior/i)).toBeVisible();
+    await expect(page.getByText(/Este mes vs el anterior/i)).toBeVisible();
+
+    // Nada social ni de ranking asoma
     const body = await page.textContent('body');
-    expect(body).toMatch(/activar|opt-?in|habilitar/i); // gate visible, no ranking crudo
-    expect(body).not.toMatch(/top ?\d+|#\d{1,2}\b/);
+    expect(body).not.toMatch(/Tabla de Campeones|Jugador #|Ranking anónimo|Top ?\d+/i);
   });
 });

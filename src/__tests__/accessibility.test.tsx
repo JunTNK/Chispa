@@ -602,7 +602,8 @@ describe('LeaderboardScreen — a11y', () => {
 
   it('renders without axe violations', async () => {
     const { container } = render(<LeaderboardScreen />);
-    await screen.findByText(/clasificacion|leaderboard|ranking/i, {}, { timeout: 3000 });
+    // Leaderboard personal (rúbrica §7): comparación contra tu yo pasado, no ranking social
+    await screen.findByText(/contra tu yo pasado/i, {}, { timeout: 3000 });
     await expectNoViolations(container);
   });
 

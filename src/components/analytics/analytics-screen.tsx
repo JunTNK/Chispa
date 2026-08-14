@@ -5,7 +5,7 @@ import { motion } from 'motion/react';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
 import { Card } from '@/components/ui/card';
-import { getRetentionInfo } from '@/lib/analytics';
+import { getRetentionInfo, getMovementDaysRolling } from '@/lib/analytics';
 import { computeTotalXp } from '@/lib/awards/achievements';
 import {
   BarChart3, Calendar, TrendingUp, Sparkles, Flame,
@@ -31,7 +31,7 @@ export function AnalyticsScreen() {
     );
   }
 
-  const { firstDay, currentStreak } = getRetentionInfo();
+  const { firstDay } = getRetentionInfo();
   const totalXp = computeTotalXp(workouts.filter((w) => w.completed_rate >= 0.5));
   const completedWorkouts = workouts.filter((w) => w.completed_rate >= 0.5);
   const movementDays = new Set(completedWorkouts.map((w) => w.date)).size;
@@ -74,10 +74,10 @@ export function AnalyticsScreen() {
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-1">
             <Flame size={16} className="text-[#fbbf24]" />
-            <span className="text-xs font-mono uppercase text-[var(--muted)]">DAU</span>
+            <span className="text-xs font-mono uppercase text-[var(--muted)]">M30</span>
           </div>
-          <p className="text-2xl font-bold">{currentStreak}</p>
-          <p className="text-[10px] text-[var(--muted)]">{t('racha actual')}</p>
+          <p className="text-2xl font-bold">{getMovementDaysRolling(workouts)}</p>
+          <p className="text-[10px] text-[var(--muted)]">{t('días con movimiento (30 días rodantes)')}</p>
         </Card>
       </div>
 

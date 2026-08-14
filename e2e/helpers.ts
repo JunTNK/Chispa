@@ -159,7 +159,7 @@ export async function navigateToNavScreen(page: Page, screen: NavScreen, waitMs 
 
 /**
  * Navigate to a screen via the "Más" (extra) menu.
- * Use this for: Perfil, Progreso, Logros, Ranking, Ejercicios, Dopamina, Bitácora
+ * Use this for: Perfil, Progreso, Logros, Mi evolución, Ejercicios, Dopamina, Bitácora
  *
  * El portal devtools de Next.js (dev) puede aparecer entre navegaciones y
  * tapar los botones: se descarta antes de cada click del menú.

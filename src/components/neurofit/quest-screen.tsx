@@ -17,7 +17,7 @@ import { useExercises } from '@/lib/utils/use-exercises';
 import { useSound } from '@/lib/awards/use-sound';
 import type { Workout } from '@/types';
 import {
-  Flame, Trophy, Sword, Lock, Gift, Gamepad, Target,
+  Trophy, Sword, Lock, Gift, Gamepad, Target,
   TrendingUp, Grid, ChartBar, Zap, Crown,
   CheckCircle, Snowflake, Dumbbell, Activity,
 } from 'lucide-react';
@@ -266,11 +266,9 @@ export function QuestScreen() {
 
   // Real data from store + engine
   const ctx = useMemo(() => computeAchievementContext(workouts), [workouts]);
-  const prefs = useStore((s) => s.prefs);
   const totalXp = useMemo(() => computeTotalXp(workouts), [workouts]);
   const level = useMemo(() => computeLevel(totalXp), [totalXp]);
   const xpInLevel = totalXp % 200;
-  const streak = ctx.streak;
   const totalWorkouts = ctx.totalWorkouts;
 
   // Weekly workouts (for vault)
@@ -330,31 +328,6 @@ export function QuestScreen() {
         </div>
         <Badge variant="epic">Nv.{level}</Badge>
       </motion.div>
-
-      {/* Streak Card */}
-      {!prefs.hideStreaks && (
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.05 }}
-      >
-        <Card className="flex items-center gap-3 p-4">
-          <span className="w-10 h-10 rounded-xl bg-[rgba(255,107,53,0.12)] flex items-center justify-center text-[#FF6B35]">
-            <Flame size={20} />
-          </span>
-          <div className="flex-1">
-             <div className="text-sm font-bold flex items-center gap-2">
-               {streak} {streak === 1 ? t('día') : t('días')} {t('en movimiento')}
-               <span className="float inline-block"><Flame size={14} className="text-[#FF6B35]" /></span>
-             </div>
-             <div className="text-[11px] text-[var(--muted)]">{t('RSD Shield: nunca "rompes" la racha')}</div>
-          </div>
-          <Badge variant="rare" className="gap-1">
-            <Snowflake size={10} /> ×2
-          </Badge>
-        </Card>
-      </motion.div>
-      )}
 
       {/* Boss Battle — estilo épico como referencia neurofit-v3 */}
       <motion.div

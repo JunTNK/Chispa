@@ -27,7 +27,7 @@ const EXTRA_ITEMS = [
   { view: 'progress', label: 'Progreso', icon: ChartIcon },
   { view: 'analytics', label: 'Patrones', icon: BarChart3 },
   { view: 'comunidad', label: 'Comunidad', icon: Users },
-  { view: 'leaderboard', label: 'Ranking', icon: Trophy },
+  { view: 'leaderboard', label: 'Mi evolución', icon: Trophy },
   { view: 'profile', label: 'Perfil', icon: User },
 ];
 

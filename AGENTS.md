@@ -178,13 +178,15 @@ supabase/
 - Todo string de UI pasa por i18n; nunca mezclar idiomas en una pantalla.
 - `src/__tests__/philosophy-guard.test.ts` escanea traducciones + `voice-lines.ts`: sin obligación,
   culpa encubierta, rachas (fuera de reencuadre), comparación social, ranking, shaming ni urgencia falsa.
-  Excepciones deliberadas viven en `ALLOWED_REFRAMES` (reencuadres) o `PENDING_S7_REDESIGN` (rachas/ranking).
+  Excepciones deliberadas viven SOLO en `ALLOWED_REFRAMES` (reencuadres). Tras el sprint §7 no hay
+  archivos pendientes: las rachas y el ranking social se eliminaron de achievements, nav, sistema y copy.
 
 ## PRIVACIDAD
 
 - Local-first: ningún dato sale del dispositivo sin opt-in explícito.
 - Sin registro obligatorio; perfil siempre opcional.
 - Telemetría nueva → agregada on-device + toggle opt-in, sin excepciones.
+- `leaderboard_opt_in` (store) default OFF: el XP NO sale del dispositivo sin opt-in explícito.
 - `e2e/default-flow-clean.spec.ts` verifica que el flujo default (sin registro) no llama a Supabase jamás.
 
 ## INVARIANTES DEL TWIN (anti-regresión)
@@ -192,6 +194,8 @@ supabase/
 - Múltiples campos del twin se aplican en UN solo setTwin (evita lost-updates;
   caso real: micro-feedback pisaba motivation_style).
 - recovery_score se computa SIEMPRE del modelo final, nunca del preview del render.
+- XP con tope diario (`DAILY_XP_CAP` en `lib/system/xp.ts`): previene binge → burnout;
+  el summary muestra "Hoy ya brillaste" cuando toca el tope.
 
 ## COMPONENTES
 
@@ -211,17 +215,17 @@ tsc ✅ · eslint ✅ · vitest ✅ · playwright (contra `next build && next st
 ## HOUSEKEEPING
 
 - Todo cambio de deps/config actualiza este archivo en el mismo PR.
-- Última verificación: 2026-08-13 · 72 archivos / 1020 tests unitarios · 30 specs e2e.
+- Última verificación: 2026-08-14 · 74 archivos / 1028 tests unitarios · 30 specs e2e.
 
 ## Tests
 
-Unitarios — Vitest + Testing Library: **72 archivos · 1020 tests** (`npm test`).
+Unitarios — Vitest + Testing Library: **74 archivos · 1028 tests** (`npm test`).
 
 | Área | Archivos | Suites destacadas |
 |---|---|---|
-| `src/lib` (agents, api, awards, audio, db, pose, store, sync, system, utils, emocional) | 35 | helpers (101), achievements (90), selector-engine (30), exercise-visuals (30), pose-engine (28), decision-flow-integration (26) |
-| `src/components` (ui, training, onboarding, coach, progress, profile, awards, neurofit) | 22 | muscle-icons (39+24+16+13), exercise-explainer (25), form-check (22), onboarding-screen (17) |
-| `src/__tests__` (flujos integrales, accesibilidad, temas, i18n, filosofía) | 12 | accessibility (45), full-flow (13), philosophy-guard (9) |
+| `src/lib` (agents, api, awards, audio, db, pose, store, sync, system, utils, emocional) | 36 | helpers (101), achievements (88), selector-engine (30), exercise-visuals (30), pose-engine (28), decision-flow-integration (26), xp-cap (3) |
+| `src/components` (ui, training, onboarding, coach, progress, profile, awards, neurofit) | 23 | muscle-icons (39+24+16+13), exercise-explainer (25), form-check (22), onboarding-screen (17), leaderboard-personal (3) |
+| `src/__tests__` (flujos integrales, accesibilidad, temas, i18n, filosofía) | 12 | accessibility (45), full-flow (13), philosophy-guard (13) |
 | `src/app` (docs, error-pages, loading) | 3 | boundaries-i18n (15), error-pages (14) |
 
 E2E — Playwright: **30 specs** (`npm run test:e2e`), incluido `e2e/default-flow-clean.spec.ts`

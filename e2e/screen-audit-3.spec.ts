@@ -21,7 +21,7 @@ test('Audit 3/3 — Logros → Leaderboard → Catalog → Session → /docs →
   console.log('✅ 13. Logros');
 
   // 14. LEADERBOARD
-  await openExtraMenu(page, 'Ranking');
+  await openExtraMenu(page, 'Mi evolución');
   await checkErrors(page, 'leaderboard');
   console.log('✅ 14. Leaderboard');
 

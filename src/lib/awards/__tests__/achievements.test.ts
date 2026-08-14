@@ -416,21 +416,6 @@ describe('evaluateAchievement', () => {
     });
   });
 
-  // ── streak_days ──
-  describe('streak_days', () => {
-    it('unlocks when streak >= min', () => {
-      const ach = makeAchievement({ condition_type: 'streak_days', condition_value: { min: 7 } });
-      const ctx = makeCtx({ streak: 7 });
-      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 7, progressTarget: 7 });
-    });
-
-    it('does not unlock when below min', () => {
-      const ach = makeAchievement({ condition_type: 'streak_days', condition_value: { min: 14 } });
-      const ctx = makeCtx({ streak: 5 });
-      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 5, progressTarget: 14 });
-    });
-  });
-
   // ── intensity_count ──
   describe('intensity_count', () => {
     it('counts completed workouts of a specific intensity', () => {
@@ -850,10 +835,12 @@ describe('evaluateAllAchievements', () => {
     vi.useRealTimers();
   });
 
-  it('returns progress for all 29 achievements', () => {
+  it('returns progress for all 32 achievements (sin rachas, rúbrica §7)', () => {
     const ctx = makeCtx({ totalWorkouts: 100 });
     const result = evaluateAllAchievements(ctx, {});
-    expect(Object.keys(result.progress).length).toBe(29);
+    expect(Object.keys(result.progress).length).toBe(32);
+    // La categoría de rachas ya no existe
+    expect(Object.keys(result.progress).some((id) => id.startsWith('streak_'))).toBe(false);
   });
 
   it('detects newly unlocked achievements', () => {

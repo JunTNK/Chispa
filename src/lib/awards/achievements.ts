@@ -4,7 +4,8 @@ import type { Achievement, UserAchievement, Workout } from '@/types';
 
 /**
  * ─── Achievement Definitions Catalog ───
- * 33 achievements across 9 NEUROFIT-inspired categories.
+ * 32 achievements across 8 NEUROFIT-inspired categories.
+ * Sin rachas (rúbrica §7): los logros celebran volver, no la perfección.
  * Each has a condition evaluator that checks store data.
  *
  * Filosofía CHISPA: NUNCA se gamifican datos corporales (peso/IMC/medidas).
@@ -20,12 +21,6 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'fifty_workouts', category: 'workouts', name: 'Guerrero', description: 'Completa 50 entrenamientos', icon: 'Sword', tier: 'epic', condition_type: 'total_workouts', condition_value: { min: 50 }, sort_order: 5 },
   { id: 'hundred_workouts', category: 'workouts', name: 'Legendario', description: 'Completa 100 entrenamientos', icon: 'Crown', tier: 'legendary', condition_type: 'total_workouts', condition_value: { min: 100 }, sort_order: 6 },
 
-  // ── Streak Milestones ──
-  { id: 'streak_3', category: 'streak', name: 'Racha Inicial', description: 'Mantén una racha de 3 días seguidos', icon: 'Flame', tier: 'common', condition_type: 'streak_days', condition_value: { min: 3 }, sort_order: 7 },
-  { id: 'streak_7', category: 'streak', name: 'Imparable', description: 'Mantén una racha de 7 días seguidos', icon: 'Flame', tier: 'rare', condition_type: 'streak_days', condition_value: { min: 7 }, sort_order: 8 },
-  { id: 'streak_14', category: 'streak', name: 'Consagrado', description: 'Mantén una racha de 14 días seguidos', icon: 'Flame', tier: 'epic', condition_type: 'streak_days', condition_value: { min: 14 }, sort_order: 9 },
-  { id: 'streak_30', category: 'streak', name: 'Leyenda Viva', description: 'Mantén una racha de 30 días seguidos', icon: 'Crown', tier: 'legendary', condition_type: 'streak_days', condition_value: { min: 30 }, sort_order: 10 },
-
   // ── Intensity Milestones ──
   { id: 'try_push', category: 'intensity', name: 'Límites', description: 'Completa un entrenamiento intensidad push', icon: 'Zap', tier: 'common', condition_type: 'intensity_count', condition_value: { type: 'push', min: 1 }, sort_order: 11 },
   { id: 'all_intensities', category: 'intensity', name: 'Versatilidad', description: 'Prueba las 4 intensidades (minimal, light, standard, push)', icon: 'Activity', tier: 'rare', condition_type: 'all_intensities', condition_value: { min: 1 }, sort_order: 12 },
@@ -39,7 +34,7 @@ export const ACHIEVEMENTS: Achievement[] = [
   // ── Completion Milestones ──
   { id: 'perfect_session', category: 'completion', name: 'Sesión Perfecta', description: 'Completa un entrenamiento al 100%', icon: 'CheckCircle', tier: 'uncommon', condition_type: 'perfect_sessions', condition_value: { min: 1 }, sort_order: 17 },
   { id: 'perfectionist_10', category: 'completion', name: 'Perfeccionista', description: 'Completa 10 entrenamientos al 100%', icon: 'Award', tier: 'epic', condition_type: 'perfect_sessions', condition_value: { min: 10 }, sort_order: 18 },
-  { id: 'comeback', category: 'completion', name: 'The Comeback', description: 'Completa un entrenamiento después de 3+ días sin entrenar', icon: 'Activity', tier: 'rare', condition_type: 'comeback', condition_value: { min_days_off: 3 }, sort_order: 19 },
+  { id: 'comeback', category: 'completion', name: 'El Regreso', description: 'Vuelve después de 3+ días de pausa', icon: 'Activity', tier: 'rare', condition_type: 'comeback', condition_value: { min_days_off: 3 }, sort_order: 19 },
 
   // ── Level Milestones ──
   { id: 'level_5', category: 'level', name: 'Nivel 5', description: 'Alcanza el nivel 5', icon: 'TrendingUp', tier: 'uncommon', condition_type: 'level', condition_value: { min: 5 }, sort_order: 20 },
@@ -62,6 +57,11 @@ export const ACHIEVEMENTS: Achievement[] = [
   { id: 'mini_victoria', category: 'movimiento', name: 'Mini victoria', description: 'Completa una sesión de 1 minuto. Un minuto cuenta.', icon: 'Sparkles', tier: 'common', condition_type: 'min_session', condition_value: { min: 1 }, sort_order: 33 },
   { id: 'cinco_seguidos', category: 'movimiento', name: 'Cinco días en movimiento', description: 'Muévete en 5 días distintos dentro de dos semanas.', icon: 'HeartPulse', tier: 'uncommon', condition_type: 'windowed_days', condition_value: { min_days: 5, window_days: 14 }, sort_order: 34 },
   { id: 'intensidades_2sem', category: 'movimiento', name: 'Variedad en 2 semanas', description: 'Prueba las 4 intensidades en un plazo de 2 semanas.', icon: 'Activity', tier: 'rare', condition_type: 'intensities_in_days', condition_value: { min_days: 14 }, sort_order: 35 },
+
+  // ── Logros de volver (rúbrica §7): celebran el regreso y las pausas, no la perfección ──
+  { id: 'brasa_constante', category: 'movimiento', name: 'Brasa constante', description: '10 días con movimiento en 30 días rodantes', icon: 'Flame', tier: 'rare', condition_type: 'rolling_days', condition_value: { min: 10, window_days: 30 }, sort_order: 36 },
+  { id: 'maestro_pausas', category: 'movimiento', name: 'Maestro de pausas', description: 'Termina 3 sesiones temprano, sin culpa', icon: 'Coffee', tier: 'uncommon', condition_type: 'partial_sessions', condition_value: { min: 3 }, sort_order: 37 },
+  { id: 'victoria_garantizada', category: 'movimiento', name: 'Victoria garantizada', description: 'Completa tu primera rutina de 2 minutos', icon: 'Sparkles', tier: 'common', condition_type: 'two_min_session', condition_value: { min: 1 }, sort_order: 38 },
 ];
 
 /** Build a lookup map by id */
@@ -131,7 +131,6 @@ export function computeWorkoutXp(
 
 export const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
   workouts:   { label: 'Entrenamientos', icon: 'Dumbbell' },
-  streak:     { label: 'Rachas',         icon: 'Flame' },
   intensity:  { label: 'Intensidad',     icon: 'Zap' },
   focus:      { label: 'Enfoque',        icon: 'Target' },
   completion: { label: 'Completitud',    icon: 'CheckCircle' },
@@ -260,12 +259,6 @@ export function evaluateAchievement(
       unlocked = ctx.totalWorkouts >= progressTarget;
       break;
     }
-    case 'streak_days': {
-      progressCurrent = ctx.streak;
-      progressTarget = (condition_value as { min: number }).min;
-      unlocked = ctx.streak >= progressTarget;
-      break;
-    }
     case 'intensity_count': {
       const { type } = condition_value as { type: string; min: number };
       progressCurrent = ctx.workouts.filter((w) => w.intensity === type && w.completed_rate >= 0.5).length;
@@ -382,6 +375,38 @@ export function evaluateAchievement(
       unlocked = progressCurrent >= progressTarget;
       break;
     }
+    case 'rolling_days': {
+      // Días distintos con movimiento en la ventana rodante (p. ej. 10 en 30).
+      const { min, window_days } = condition_value as { min: number; window_days: number };
+      const completed = ctx.workouts.filter((w) => w.completed_rate >= 0.5);
+      const today = new Date();
+      const recentDates = new Set<string>();
+      for (const w of completed) {
+        const wDate = new Date(w.date);
+        const dayDiff = Math.floor((today.getTime() - wDate.getTime()) / 86400000);
+        if (dayDiff >= 0 && dayDiff < window_days) {
+          recentDates.add(w.date);
+        }
+      }
+      progressCurrent = recentDates.size;
+      progressTarget = min;
+      unlocked = progressCurrent >= min;
+      break;
+    }
+    case 'partial_sessions': {
+      // Maestro de pausas: salidas tempranas/parciales SIN culpa (spec §5).
+      progressCurrent = ctx.workouts.filter((w) => w.completed_rate < 0.5).length;
+      progressTarget = (condition_value as { min: number }).min;
+      unlocked = progressCurrent >= progressTarget;
+      break;
+    }
+    case 'two_min_session': {
+      // Victoria garantizada: la primera rutina del día 1 es de 2 min y completable.
+      progressCurrent = ctx.workouts.filter((w) => w.duration <= 2 && w.completed_rate >= 0.5).length;
+      progressTarget = (condition_value as { min: number }).min ?? 1;
+      unlocked = progressCurrent >= progressTarget;
+      break;
+    }
     case 'intensities_in_days': {
       // Las 4 intensidades probadas (sesiones completadas) dentro de un plazo
       const { min_days } = condition_value as { min_days: number };
@@ -425,11 +450,7 @@ export function evaluateAllAchievements(
   const progress: Record<string, UserAchievement> = {};
   const newlyUnlocked: string[] = [];
 
-  // Excluir categoría 'streak' (legacy) de evaluación activa; 
-  // sus logros permanecen en datos históricos pero no se desbloquean nuevos.
-  const activeAchievements = ACHIEVEMENTS.filter((a) => a.category !== 'streak');
-
-  for (const achievement of activeAchievements) {
+  for (const achievement of ACHIEVEMENTS) {
     const existing = currentProgress[achievement.id];
     const wasUnlocked = existing?.unlocked ?? false;
     const evaluation = evaluateAchievement(achievement, ctx);

@@ -13,7 +13,7 @@ export const enLayout: Record<string, string> = {
   'Ejercicios': 'Exercises',
   'Dopamina': 'Dopamine',
   'Logros': 'Achievements',
-  'Ranking': 'Ranking',
+  'Mi evolución': 'My evolution',
   'Progreso': 'Progress',
   'Perfil': 'Profile',
 };

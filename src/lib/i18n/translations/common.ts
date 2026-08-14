@@ -31,7 +31,7 @@ export const enCommon: Record<string, string> = {
   'Auto': 'Auto',
   'Manual': 'Manual',
   'Perfil': 'Profile',
-  'Ranking': 'Ranking',
+  'Mi evolución': 'My evolution',
   'Progreso': 'Progress',
   'Logros': 'Achievements',
   'LOGROS': 'ACHIEVEMENTS',
