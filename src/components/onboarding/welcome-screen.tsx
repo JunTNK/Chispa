@@ -237,7 +237,7 @@ export function WelcomeScreen() {
         {/* Triad */}
         <div
           className="animate-in flex flex-wrap gap-[8px] justify-center mb-[34px]"
-          style={{ animationDelay: '300ms' }}
+          style={{ animationDelay: '150ms' }}
         >
           <Pill icon={<MinusIcon />} label={t('Menos decisiones')} />
           <Pill icon={<PulseIcon />} label={t('Más movimiento')} />
@@ -245,7 +245,7 @@ export function WelcomeScreen() {
         </div>
 
         {/* Hero CTA — visible above the fold (ND: una sola acción, inmediata, cero scroll forzado) */}
-        <div className="animate-in w-full mb-[26px]" style={{ animationDelay: '320ms' }}>
+        <div className="animate-in w-full mb-[26px]" style={{ animationDelay: '160ms' }}>
           <button
             id="cta-btn"
             aria-busy={ctaBusy}
@@ -262,7 +262,7 @@ export function WelcomeScreen() {
         </div>
 
         {/* Validated pain points — guilt-free, ND-aware copy */}
-          <div className="animate-in w-full mb-[28px]" style={{ animationDelay: '330ms' }}>
+          <div className="animate-in w-full mb-[28px]" style={{ animationDelay: '170ms' }}>
             <p className="text-[.74rem] font-semibold uppercase tracking-[.07em] text-[var(--muted)] mb-[16px]">{t('Estos retos los conoces')}</p>
             <div className="flex flex-col gap-[12px]">
               <div className="flex gap-[14px] items-start">
@@ -290,7 +290,7 @@ export function WelcomeScreen() {
           </div>
 
           {/* ND philosophy — transparent, no perfection pressure */}
-          <div className="animate-in w-full mb-[28px]" style={{ animationDelay: '350ms' }}>
+          <div className="animate-in w-full mb-[28px]" style={{ animationDelay: '180ms' }}>
             <p className="text-[.85rem] leading-[1.6] text-[var(--muted)]">
               <span className="font-semibold text-[var(--muted)]">{t('Así funciona CHISPA')}</span>
               {': '}
@@ -299,7 +299,7 @@ export function WelcomeScreen() {
           </div>
 
           {/* Our story + public roadmap (honesty, zero fake testimonials) */}
-          <div className="animate-in w-full mb-[30px]" style={{ animationDelay: '355ms' }}>
+          <div className="animate-in w-full mb-[30px]" style={{ animationDelay: '185ms' }}>
             <p className="text-[.74rem] font-semibold uppercase tracking-[.07em] text-[var(--muted)] mb-[14px]">{t('Nuestra historia')}</p>
             <p className="text-[.88rem] leading-[1.65] text-[var(--muted)] max-w-[38ch] mx-auto mb-[20px]">
               {t('CHISPA nació del fracaso de apps que no entienden el cerebro TDAH. Se está construyendo activamente, sin rachas ni perfección: solo movimiento real, paso a paso.')}
@@ -326,7 +326,7 @@ export function WelcomeScreen() {
           </div>
 
         {/* Preview — reduces anxiety about the unknown (ND: predictibilidad, cero sorpresas) */}
-        <div className="animate-in w-full mb-[28px]" style={{ animationDelay: '385ms' }}>
+        <div className="animate-in w-full mb-[28px]" style={{ animationDelay: '200ms' }}>
           <div className="flex items-center justify-center gap-[10px] mb-[14px]">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="w-[14px] h-[14px] text-[#f7b65f]"><path d="M12 2l3 7h7l-5.5 4 2 7-5.5-4-5.5 4 2-7-5.5-4h7z" /></svg>
             <p className="text-[.74rem] font-semibold uppercase tracking-[.07em] text-[var(--muted)]">{t('Qué verás al entrar')}</p>
@@ -351,7 +351,7 @@ export function WelcomeScreen() {
 
         {/* FAQ TDAH — native <details>: accesible, cero JS, bajo estímulo */}
         {showFAQs && (
-        <div className="animate-in w-full mb-[30px]" style={{ animationDelay: '490ms' }}>
+        <div className="animate-in w-full mb-[30px]" style={{ animationDelay: '250ms' }}>
           <p className="text-[.74rem] font-semibold uppercase tracking-[.07em] text-[var(--muted)] mb-[16px] text-center">{t('Preguntas frecuentes')}</p>
           <div className="flex flex-col gap-[12px]">
             {FAQ_ITEMS.map((f, i) => (
@@ -369,7 +369,7 @@ export function WelcomeScreen() {
         {/* Footer */}
         <footer
           className="animate-in mt-[46px] w-full flex flex-col items-center gap-[16px]"
-          style={{ animationDelay: '580ms' }}
+          style={{ animationDelay: '300ms' }}
         >
           <div className="flex gap-[18px] justify-center flex-wrap">
             <Stat value="80%" label={t('algoritmos')} />

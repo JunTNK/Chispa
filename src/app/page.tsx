@@ -4,7 +4,6 @@ import React, { useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useStore } from '@/lib/store';
 import { useT } from '@/lib/i18n/use-t';
-import { onAuthStateChange } from '@/lib/auth/supabase-auth';
 import { trackDAU } from '@/lib/analytics';
 import { ToastContainer } from '@/components/ui/toast';
 
@@ -166,21 +165,33 @@ export default function App() {
   // Restaura la sesión de Supabase al montar/recargar: el idioma vive en el
   // Digital Twin (digital_twins.lang) y se aplica al store tras el pull,
   // para que la preferencia siga al usuario entre dispositivos.
+  //
+  // Perf: el listener se importa de forma dinámica y SOLO si hay perfil — en el
+  // landing (sin cuenta) el cliente de Supabase (~40KiB) ni se descarga, lo que
+  // aligera el bundle inicial. Con perfil (usuario que vuelve) se restaura igual.
   useEffect(() => {
-    const unsubscribe = onAuthStateChange((event, session) => {
-      // Auto-navigate authenticated users to their home view
-      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
-        const store = useStore.getState();
-        const { profile, onboarded } = store;
-        if (profile && onboarded) {
-          store.setView('home');
-        } else if (profile && !onboarded) {
-          store.setView('onboarding');
-        }
-      }
-    });
     trackDAU();
-    return unsubscribe;
+    const { profile } = useStore.getState();
+    if (!profile) return; // local-first: sin perfil no hay sesión que restaurar
+
+    let unsubscribe: (() => void) | undefined;
+    import('@/lib/auth/supabase-auth')
+      .then(({ onAuthStateChange }) => {
+        unsubscribe = onAuthStateChange((event, session) => {
+          // Auto-navigate authenticated users to their home view
+          if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
+            const store = useStore.getState();
+            const { profile, onboarded } = store;
+            if (profile && onboarded) {
+              store.setView('home');
+            } else if (profile && !onboarded) {
+              store.setView('onboarding');
+            }
+          }
+        });
+      })
+      .catch(() => {});
+    return () => unsubscribe?.();
   }, []);
 
   const renderContent = () => {
@@ -248,11 +259,18 @@ export default function App() {
   // Content stays mounted in a single wrapper (no remount on hydration):
   // MotionShell renders it at full opacity immediately thanks to
   // `AnimatePresence initial={false}`, and view switches still animate.
+  // Perf: en el landing (welcome) no hay transiciones que animar ni logros
+  // que tostear → ni MotionShell ni AchievementToast se montan, así `motion`
+  // (~28KiB) tampoco se descarga en el primer paint.
+  const content = view === 'welcome'
+    ? screen
+    : <MotionShell view={view}>{screen}</MotionShell>;
+
   return (
     <div id="app" className="max-w-[440px] lg:max-w-none mx-auto min-h-dvh relative bg-[var(--bg)] overflow-hidden">
-      <MotionShell view={view}>{screen}</MotionShell>
+      {content}
       <ToastContainer />
-      <AchievementToast />
+      {view !== 'welcome' && <AchievementToast />}
     </div>
   );
 }
