@@ -213,7 +213,6 @@ function makeCtx(overrides: Partial<AchievementContext> = {}): AchievementContex
   return {
     workouts: [],
     totalWorkouts: 0,
-    streak: 0,
     currentLevel: 1,
     adaptationCount: 0,
     rpeJustoCount: 0,
@@ -231,7 +230,6 @@ describe('computeAchievementContext', () => {
   it('returns 0 totalWorkouts for empty workouts', () => {
     const ctx = computeAchievementContext([]);
     expect(ctx.totalWorkouts).toBe(0);
-    expect(ctx.streak).toBe(0);
     expect(ctx.currentLevel).toBe(1);
   });
 
@@ -242,35 +240,6 @@ describe('computeAchievementContext', () => {
     const w4 = mockWorkout({ id: 'w4', date: '2026-01-04', completed_rate: 0.49 }); // filtered out
     const ctx = computeAchievementContext([w1, w2, w3, w4]);
     expect(ctx.totalWorkouts).toBe(2);
-  });
-
-  it('calculates streak of consecutive days', () => {
-    // Today = mocked later; instead, set dates relative to today
-    const today = new Date();
-    const days = [0, 1, 2].map((i) => {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      return d.toISOString().slice(0, 10);
-    });
-    const workouts = days.map((date, i) =>
-      mockWorkout({ id: `wo-${i}`, date, completed_rate: 1 })
-    );
-    const ctx = computeAchievementContext(workouts);
-    expect(ctx.streak).toBe(3);
-  });
-
-  it('breaks streak when a day is missing', () => {
-    const today = new Date();
-    // Today and day before yesterday, but yesterday is missing
-    const d0 = new Date(today);
-    const d2 = new Date(today);
-    d2.setDate(d2.getDate() - 2);
-    const workouts = [
-      mockWorkout({ id: 'wo-0', date: d0.toISOString().slice(0, 10), completed_rate: 1 }),
-      mockWorkout({ id: 'wo-2', date: d2.toISOString().slice(0, 10), completed_rate: 1 }),
-    ];
-    const ctx = computeAchievementContext(workouts);
-    expect(ctx.streak).toBe(1); // only today counts
   });
 
   it('calculates currentLevel as floor(completed / 5) + 1', () => {

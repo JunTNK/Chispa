@@ -23,6 +23,7 @@ const MODEL_CANDIDATES: Record<VoiceLang, string[]> = {
 
 const cache = new Map<VoiceLang, any>();
 
+/** Limpia la cache de sintetizadores (cambio de idioma, liberar memoria). */
 export function clearNeuralCache(): void {
   cache.clear();
 }

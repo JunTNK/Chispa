@@ -131,12 +131,10 @@ export function PricingScreen() {
               </button>
             ) : (
               <button
-                onClick={() => {}}
+                onClick={() => setView('profile')}
                 className="w-full py-2.5 rounded-xl text-sm font-bold text-[#06221b] bg-[#34d399] hover:bg-[#34d399]/90 transition-colors"
               >
-                {subscription?.tier === 'pro' && !subscription?.isInTrial
-                  ? t('Continuar Pro')
-                  : t('Actualizar a Pro')}
+                {t('Ya tienes Pro')}
               </button>
             )}
           </Card>

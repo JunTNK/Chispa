@@ -130,7 +130,3 @@ export function evaluateTitles(
 
   return newlyUnlocked;
 }
-
-export function getTitleById(id: string): Title | undefined {
-  return TITLES.find((t) => t.id === id);
-}

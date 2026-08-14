@@ -11,12 +11,6 @@ export interface QuestState {
   };
 }
 
-export function tierForEnergy(energy: number): QuestTier {
-  if (energy <= 3) return 'min';
-  if (energy <= 6) return 'mid';
-  return 'full';
-}
-
 export function baseXpForTier(tier: QuestTier): number {
   switch (tier) {
     case 'min':

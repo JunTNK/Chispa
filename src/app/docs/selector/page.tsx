@@ -63,6 +63,7 @@ import { FOCUS_LABELS } from '@/lib/utils/constants';
 import { useStore } from '@/lib/store';
 import { supabaseSync } from '@/lib/sync/supabase-sync';
 import { logError } from '@/lib/utils/logger';
+import { copyText } from '@/lib/utils/helpers';
 
 // ─── Paleta y tipografía ───────────────────────────────────────────────────
 
@@ -332,28 +333,6 @@ const MANIFEST: { es: string; en: string }[] = [
   { es: 'Local-first por defecto: rutinas, equipo y preferencias viven en el dispositivo; nada sube a la nube sin pedirlo.', en: 'Local-first by default: routines, equipment and preferences live on the device; nothing goes to the cloud unless asked.' },
   { es: 'Los números informan, no moralizan: duración total y dopamina; jamás un "~X min de descanso" que suene a castigo.', en: 'Numbers inform, they do not moralize: total duration and dopamine; never a “~X min of rest” that sounds like a punishment.' },
 ];
-
-// ─── Helpers ───────────────────────────────────────────────────────────────
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    try {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.cssText = 'position:fixed;opacity:0';
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-}
 
 /** Texto bilingüe ES/EN — pinta la variante según el idioma activo del store. */
 function Bi({ es, en }: { es: React.ReactNode; en: React.ReactNode }) {

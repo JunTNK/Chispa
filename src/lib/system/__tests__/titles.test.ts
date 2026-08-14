@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { evaluateTitles, getTitleById } from '../titles';
+import { evaluateTitles } from '../titles';
 import { PlayerState } from '../types';
 
 const EMPTY_PLAYER: PlayerState = {
@@ -119,16 +119,4 @@ describe('titles.ts', () => {
     });
   });
 
-  describe('getTitleById', () => {
-    it('returns title for valid id', () => {
-      const title = getTitleById('retorno_monarca');
-      expect(title).toBeDefined();
-      expect(title?.id).toBe('retorno_monarca');
-      expect(title?.name).toBe('Retorno Monarca');
-    });
-
-    it('returns undefined for invalid id', () => {
-      expect(getTitleById('no_existe')).toBeUndefined();
-    });
-  });
 });

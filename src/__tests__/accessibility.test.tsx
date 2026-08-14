@@ -91,7 +91,7 @@ function setStore(overrides: Record<string, unknown> = {}) {
     onboarded: true,
     profile: mockProfile,
     twin: mockTwin,
-    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false },
+    prefs: { reduceMotion: false, highContrast: false, fontLarge: false },
     chat: [],
     checkins: {},
     workouts: [],

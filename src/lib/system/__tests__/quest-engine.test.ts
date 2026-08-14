@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  tierForEnergy,
   baseXpForTier,
   xpPerTask,
   applyQuestResult,
@@ -15,32 +14,6 @@ const basePlayer: PlayerState = {
 };
 
 describe('quest-engine.ts', () => {
-  describe('tierForEnergy', () => {
-    it('returns min for energy 1', () => {
-      expect(tierForEnergy(1)).toBe('min');
-    });
-
-    it('returns min for energy 3', () => {
-      expect(tierForEnergy(3)).toBe('min');
-    });
-
-    it('returns mid for energy 4', () => {
-      expect(tierForEnergy(4)).toBe('mid');
-    });
-
-    it('returns mid for energy 6', () => {
-      expect(tierForEnergy(6)).toBe('mid');
-    });
-
-    it('returns full for energy 7', () => {
-      expect(tierForEnergy(7)).toBe('full');
-    });
-
-    it('returns full for energy 10', () => {
-      expect(tierForEnergy(10)).toBe('full');
-    });
-  });
-
   describe('baseXpForTier', () => {
     it('returns 10 for min tier', () => {
       expect(baseXpForTier('min')).toBe(10);

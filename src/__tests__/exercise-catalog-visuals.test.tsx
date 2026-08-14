@@ -37,7 +37,7 @@ beforeEach(() => {
     onboarded: true,
     profile: mockProfile,
     twin: {} as any,
-    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false },
+    prefs: { reduceMotion: false, highContrast: false, fontLarge: false },
     view: 'catalog',
     chat: [],
     checkins: {},

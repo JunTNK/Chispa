@@ -9,11 +9,7 @@ import {
   daysBetween,
   cap,
   fmtTime,
-  shuffle,
-  recColor,
   recWord,
-  localGet,
-  localSet,
   matchesEquipment,
 } from '../helpers';
 
@@ -268,71 +264,6 @@ describe('fmtTime', () => {
 });
 
 /* ═══════════════════════════════════════════
-   shuffle (Fisher-Yates)
-   ═══════════════════════════════════════════ */
-
-describe('shuffle', () => {
-  it('returns a new array (does not mutate)', () => {
-    const arr = [1, 2, 3];
-    const result = shuffle(arr);
-    expect(result).not.toBe(arr); // different reference
-  });
-
-  it('preserves all elements', () => {
-    const arr = [1, 2, 3, 4, 5];
-    const result = shuffle(arr);
-    expect(result.sort()).toEqual(arr.sort());
-  });
-
-  it('preserves length', () => {
-    const arr = [1, 2, 3, 4, 5];
-    expect(shuffle(arr).length).toBe(5);
-  });
-
-  it('handles empty array', () => {
-    expect(shuffle([])).toEqual([]);
-  });
-
-  it('handles single element', () => {
-    expect(shuffle([42])).toEqual([42]);
-  });
-
-  it('handles two elements', () => {
-    const result = shuffle(['a', 'b']);
-    expect(result.length).toBe(2);
-    expect(result).toContain('a');
-    expect(result).toContain('b');
-  });
-});
-
-/* ═══════════════════════════════════════════
-   recColor
-   ═══════════════════════════════════════════ */
-
-describe('recColor', () => {
-  it('returns good color for >= 75', () => {
-    expect(recColor(75)).toBe('var(--good)');
-    expect(recColor(100)).toBe('var(--good)');
-  });
-
-  it('returns accent color for 55-74', () => {
-    expect(recColor(55)).toBe('var(--accent)');
-    expect(recColor(74)).toBe('var(--accent)');
-  });
-
-  it('returns warn color for 35-54', () => {
-    expect(recColor(35)).toBe('var(--warn)');
-    expect(recColor(54)).toBe('var(--warn)');
-  });
-
-  it('returns bad color for < 35', () => {
-    expect(recColor(34)).toBe('var(--bad)');
-    expect(recColor(0)).toBe('var(--bad)');
-    expect(recColor(-1)).toBe('var(--bad)');
-  });
-});
-
-/* ═══════════════════════════════════════════
    recWord
    ═══════════════════════════════════════════ */
 
@@ -524,90 +455,4 @@ describe('matchesEquipment', () => {
   });
 });
 
-/* ═══════════════════════════════════════════
-   localGet / localSet (localStorage)
-   ═══════════════════════════════════════════ */
 
-describe('localGet / localSet', () => {
-  const TEST_KEY = '_test_helpers_';
-
-  beforeEach(() => {
-    localStorage.clear();
-  });
-
-  afterEach(() => {
-    localStorage.removeItem(TEST_KEY);
-  });
-
-  describe('localSet', () => {
-    it('writes a string value', () => {
-      localSet(TEST_KEY, 'hello');
-      expect(localStorage.getItem(TEST_KEY)).toBe('"hello"');
-    });
-
-    it('writes a number value', () => {
-      localSet(TEST_KEY, 42);
-      expect(localStorage.getItem(TEST_KEY)).toBe('42');
-    });
-
-    it('writes an object value', () => {
-      localSet(TEST_KEY, { a: 1, b: 'two' });
-      expect(JSON.parse(localStorage.getItem(TEST_KEY)!)).toEqual({ a: 1, b: 'two' });
-    });
-
-    it('writes null', () => {
-      localSet(TEST_KEY, null);
-      expect(localStorage.getItem(TEST_KEY)).toBe('null');
-    });
-
-    it('does not throw when window is undefined', () => {
-      // Simulate server-side by temporarily removing window
-      const win = globalThis.window;
-      try {
-        // @ts-expect-error — testing SSR edge case
-        delete globalThis.window;
-        expect(() => localSet(TEST_KEY, 'test')).not.toThrow();
-      } finally {
-        globalThis.window = win;
-      }
-    });
-  });
-
-  describe('localGet', () => {
-    it('reads a stored string', () => {
-      localStorage.setItem(TEST_KEY, JSON.stringify('hello'));
-      expect(localGet(TEST_KEY, 'fallback')).toBe('hello');
-    });
-
-    it('reads a stored number', () => {
-      localStorage.setItem(TEST_KEY, JSON.stringify(42));
-      expect(localGet(TEST_KEY, 0)).toBe(42);
-    });
-
-    it('reads a stored object', () => {
-      const obj = { a: 1 };
-      localStorage.setItem(TEST_KEY, JSON.stringify(obj));
-      expect(localGet(TEST_KEY, {})).toEqual(obj);
-    });
-
-    it('returns fallback when key is missing', () => {
-      expect(localGet('nonexistent_key', 'default')).toBe('default');
-    });
-
-    it('returns fallback when localStorage has invalid JSON', () => {
-      localStorage.setItem(TEST_KEY, '{invalid');
-      expect(localGet(TEST_KEY, 'fallback')).toBe('fallback');
-    });
-
-    it('returns fallback when window is undefined (SSR)', () => {
-      const win = globalThis.window;
-      try {
-        // @ts-expect-error — testing SSR edge case
-        delete globalThis.window;
-        expect(localGet(TEST_KEY, 'ssr-fallback')).toBe('ssr-fallback');
-      } finally {
-        globalThis.window = win;
-      }
-    });
-  });
-});

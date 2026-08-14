@@ -33,11 +33,6 @@ export function calculateBmi(weightKg: number, heightCm: number): number | null 
   return Math.round(bmi * 10) / 10;
 }
 
-export type BmiResult = {
-  value: number;
-  category: string;
-};
-
 export function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -91,47 +86,11 @@ export function fmtTime(seconds: number) {
   return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
 }
 
-export function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-export function recColor(r: number) {
-  return r >= 75
-    ? 'var(--good)'
-    : r >= 55
-      ? 'var(--accent)'
-      : r >= 35
-        ? 'var(--warn)'
-        : 'var(--bad)';
-}
-
 export function recWord(r: number) {
   if (r >= 75) return 'Óptimo';
   if (r >= 55) return 'Listo';
   if (r >= 35) return 'A medio gas';
   return 'Pide calma';
-}
-
-export function localGet<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-export function localSet(key: string, value: unknown) {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
 }
 
 /**

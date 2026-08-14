@@ -17,15 +17,6 @@ export function applyDailyCap(xp: number, xpGanadoHoy: number): { awarded: numbe
   return { awarded, capped: awarded < xp, remaining: remaining - awarded };
 }
 
-export function levelFromTotalXp(xp: number): { level: number; xp: number } {
-  if (xp <= 0) return { level: 1, xp: 0 };
-  let level = 1;
-  while (xpForLevel(level + 1) <= xp) {
-    level++;
-  }
-  return { level, xp };
-}
-
 export function xpForLevel(level: number): number {
   if (level <= 1) return 0;
   return Math.round(100 * Math.pow(1.5, level - 2));
@@ -49,23 +40,3 @@ export function maxRank(a: Rank, b: Rank): Rank {
   return rankToOrder(a) >= rankToOrder(b) ? a : b;
 }
 
-export function xpForRank(rank: Rank): number {
-  const thresholds: Record<string, number> = {
-    E: 0,
-    D: 100,
-    C: 1000,
-    B: 5000,
-    A: 20000,
-    S: 100000,
-  };
-  return thresholds[rank] ?? 0;
-}
-
-export function rankForLevel(level: number): Rank {
-  if (level >= 50) return 'S';
-  if (level >= 49) return 'A';
-  if (level >= 20) return 'B';
-  if (level >= 10) return 'C';
-  if (level >= 5) return 'D';
-  return 'E';
-}

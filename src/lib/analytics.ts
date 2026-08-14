@@ -171,17 +171,8 @@ export function getMovementDaysRolling(workouts: { date: string; completed_rate:
 /**
  * Get retention info for analytics/debug.
  */
-export function getRetentionInfo(): { firstDay: string | null; lastDAU: string | null; currentStreak: number } {
+export function getRetentionInfo(): { firstDay: string | null; lastDAU: string | null } {
   const firstDay = localStorage.getItem('chispa_first_day');
   const lastDAU = localStorage.getItem('chispa_last_dau');
-  let currentStreak = 0;
-
-  if (lastDAU) {
-    const today = new Date().toISOString().slice(0, 10);
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    currentStreak = lastDAU === today ? (parseInt(localStorage.getItem('chispa_streak') || '0') + 1) : (lastDAU === yesterday ? 1 : 0);
-    localStorage.setItem('chispa_streak', String(currentStreak));
-  }
-
-  return { firstDay, lastDAU, currentStreak };
+  return { firstDay, lastDAU };
 }

@@ -22,7 +22,7 @@ const SEED = {
     reduceMotion: false,
     highContrast: false,
     fontLarge: false,
-    hideStreaks: false,
+
     showFAQs: true,
     light: false,
     systemMode: false,

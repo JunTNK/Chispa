@@ -117,5 +117,5 @@ export const workoutRequestSchema = z.object({
    TYPE INFERENCES
    ═══════════════════════════════════════════ */
 
-export type DecisionRequest = z.infer<typeof decisionRequestSchema>;
-export type WorkoutRequest = z.infer<typeof workoutRequestSchema>;
+type DecisionRequest = z.infer<typeof decisionRequestSchema>;
+type WorkoutRequest = z.infer<typeof workoutRequestSchema>;

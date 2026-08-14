@@ -145,7 +145,6 @@ export const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = 
 export interface AchievementContext {
   workouts: Workout[];
   totalWorkouts: number;
-  streak: number;
   currentLevel: number;
   bossDefeated?: number;
   adaptationCount?: number;
@@ -176,20 +175,6 @@ export function computeAchievementContext(
   const completed = workouts.filter((w) => w.completed_rate >= 0.5);
   const totalWorkouts = completed.length;
 
-  // Streak: consecutive days going backwards from today
-  let streak = 0;
-  const today = new Date();
-  for (let i = 0; i < 365; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    if (completed.some((w) => w.date === key)) {
-      streak++;
-    } else if (i > 0) {
-      break;
-    }
-  }
-
   const currentLevel = Math.max(1, Math.floor(totalWorkouts / 5) + 1);
 
   // Completed intensities
@@ -204,7 +189,7 @@ export function computeAchievementContext(
   // Movimiento: días distintos con sesión (no exige racha) + variedad de rutinas
   const movementDays = new Set(completed.map((w) => w.date)).size;
   // Windowed days: días distintos con movimiento en los últimos N días (rolling)
-  // Cuenta hacia atrás desde today para que "5 en 7" funcione con cualquier dato histórico
+  const today = new Date();
   const recentDates = new Set<string>();
   for (const w of completed) {
     const wDate = new Date(w.date);
@@ -223,7 +208,6 @@ export function computeAchievementContext(
   return {
     workouts,
     totalWorkouts,
-    streak,
     currentLevel,
     bossDefeated: extra?.bossDefeated,
     adaptationCount: extra?.adaptationCount ?? 0,

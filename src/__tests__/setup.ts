@@ -111,7 +111,7 @@ beforeAll(async () => {
   const { useStore } = await vi.importActual<typeof import('@/lib/store')>('@/lib/store');
   const initialState = {
     onboarded: false, user: null, profile: null, neuro: null, twin: null,
-    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, hideStreaks: false, showFAQs: true },
+    prefs: { reduceMotion: false, highContrast: false, fontLarge: false, showFAQs: true },
     checkins: {}, workouts: [], events: [], chat: [], plan: null, view: 'welcome',
     skipStreak: 0,
     suggestShortSession: false,

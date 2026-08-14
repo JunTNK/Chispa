@@ -131,6 +131,7 @@ export const enProfile: Record<string, string> = {
   'Comenzar trial Pro': 'Start Pro trial',
   'Continuar Pro': 'Continue Pro',
   'Actualizar a Pro': 'Upgrade to Pro',
+  'Ya tienes Pro': 'You already have Pro',
   'Lifetime Founder': 'Lifetime Founder',
   'Pago único de $49. Acceso vitalicio a todo Pro + acceso temprano a features.': 'One-time payment of $49. Lifetime access to all Pro + early access to features.',
   '$49 — Lifetime': '$49 — Lifetime',
