@@ -27,6 +27,9 @@ export const enNeurofit: Record<string, string> = {
   'Reemplaza ejercicios de alto impacto': 'Replaces high-impact exercises',
   'Desactivar {x}': 'Disable {x}',
   'Activar {x}': 'Enable {x}',
+  'Gamificación': 'Gamification',
+  'Comparación social (opt-in)': 'Social comparison (opt-in)',
+  'Apagada por defecto: nada sale de tu dispositivo. Al activarla, autorizás aparecer en comparaciones anónimas de movimiento.': 'Off by default: nothing leaves your device. When enabled, you allow appearing in anonymous movement comparisons.',
 
   'Stack de producción': 'Production stack',
   'Híbrido 80/20': '80/20 hybrid',

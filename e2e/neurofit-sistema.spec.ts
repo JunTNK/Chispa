@@ -97,4 +97,26 @@ test.describe('Sistema screen', () => {
     const count = await buttons.count();
     expect(count).toBeGreaterThanOrEqual(3);
   });
+
+  test('7. Opt-in de comparación social: apagado por defecto, toggle funcional (local-first)', async ({ page }) => {
+    await goToSistema(page);
+
+    // Explicación local-first visible
+    await expect(page.getByText(/nada sale de tu dispositivo/i)).toBeVisible({ timeout: 10000 });
+
+    // Default OFF: el label es "Activar" (nada sale del dispositivo sin permiso)
+    const onBtn = page.locator('button[aria-label="Activar Comparación social (opt-in)"]');
+    await expect(onBtn).toBeVisible();
+    await expect(page.locator('button[aria-label="Desactivar Comparación social (opt-in)"]')).toHaveCount(0);
+
+    // Click → ON
+    await onBtn.click();
+    await page.waitForTimeout(300);
+    await expect(page.locator('button[aria-label="Desactivar Comparación social (opt-in)"]')).toBeVisible();
+
+    // Click → OFF otra vez
+    await page.locator('button[aria-label="Desactivar Comparación social (opt-in)"]').click();
+    await page.waitForTimeout(300);
+    await expect(page.locator('button[aria-label="Activar Comparación social (opt-in)"]')).toBeVisible();
+  });
 });
