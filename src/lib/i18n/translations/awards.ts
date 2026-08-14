@@ -90,7 +90,7 @@ export const enAwards: Record<string, string> = {
   'Brasa constante': 'Steady ember',
   '10 días con movimiento en 30 días rodantes': '10 moving days in a 30-day rolling window',
   'Maestro de pausas': 'Pause master',
-  'Termina 3 sesiones temprano, sin culpa': 'Finish 3 sessions early, guilt-free',
+  'Toma una pausa en 3 sesiones, sin culpa': 'Take a pause in 3 sessions, guilt-free',
   'Victoria garantizada': 'Guaranteed win',
   'Completa tu primera rutina de 2 minutos': 'Complete your first 2-minute routine',
   'Nivel 5': 'Level 5',

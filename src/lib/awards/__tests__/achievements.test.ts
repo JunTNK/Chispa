@@ -474,6 +474,31 @@ describe('evaluateAchievement', () => {
     });
   });
 
+  // ── paused_sessions (Maestro de pausas, spec §7) ──
+  describe('paused_sessions', () => {
+    it('unlocks when the user used the pause in enough sessions', () => {
+      const ach = makeAchievement({ condition_type: 'paused_sessions', condition_value: { min: 3 } });
+      const workouts = [
+        mockWorkout({ id: 'w1', paused: true }),
+        mockWorkout({ id: 'w2', paused: true }),
+        mockWorkout({ id: 'w3', paused: true }),
+      ];
+      const ctx = makeCtx({ workouts });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: true, progressCurrent: 3, progressTarget: 3 });
+    });
+
+    it('does not count sessions without pause', () => {
+      const ach = makeAchievement({ condition_type: 'paused_sessions', condition_value: { min: 3 } });
+      const workouts = [
+        mockWorkout({ id: 'w1', paused: true }),
+        mockWorkout({ id: 'w2', paused: false }),
+        mockWorkout({ id: 'w3' }),
+      ];
+      const ctx = makeCtx({ workouts });
+      expect(evaluateAchievement(ach, ctx)).toEqual({ unlocked: false, progressCurrent: 1, progressTarget: 3 });
+    });
+  });
+
   // ── perfect_sessions ──
   describe('perfect_sessions', () => {
     it('unlocks when enough workouts have 100% completion', () => {

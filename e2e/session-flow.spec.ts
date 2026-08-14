@@ -114,7 +114,37 @@ test.describe('Session flow — check-in → plan → session → summary', () =
     }
   });
 
-  test('5. RPE selection on summary screen', async ({ page }) => {
+  test('5. Pausa real → workout con paused:true (Maestro de pausas)', async ({ page }) => {
+    await goToHome(page);
+
+    const startBtn = page.locator('button').filter({ hasText: 'Empezar ahora' });
+    await expect(startBtn).toBeVisible({ timeout: 10000 });
+    await startBtn.click();
+    await page.waitForTimeout(800);
+
+    // Abrir la pausa y salir por la opción amable del diálogo
+    await page.getByRole('button', { name: /pausa/i }).first().click();
+    await page.waitForTimeout(500);
+    await page.getByRole('button', { name: /terminar aquí · guardamos lo hecho/i }).click();
+    await page.waitForTimeout(800);
+
+    // Summary: guardar
+    await page.getByRole('button', { name: /guardar/i }).first().click();
+    await page.waitForTimeout(1200);
+
+    // El workout persistido registra la pausa (alimenta el logro "Maestro de pausas")
+    const paused = await page.evaluate(() => {
+      try {
+        const parsed = JSON.parse(localStorage.getItem('chispa_store') ?? '{}');
+        return (parsed?.state?.workouts ?? []).map((w: { paused?: boolean }) => w.paused ?? false);
+      } catch {
+        return null;
+      }
+    });
+    expect(paused).toEqual([true]);
+  });
+
+  test('6. RPE selection on summary screen', async ({ page }) => {
     await goToHome(page);
 
     const startBtn = await runCheckIn(page);

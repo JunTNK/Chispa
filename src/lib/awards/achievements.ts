@@ -60,7 +60,7 @@ export const ACHIEVEMENTS: Achievement[] = [
 
   // ── Logros de volver (rúbrica §7): celebran el regreso y las pausas, no la perfección ──
   { id: 'brasa_constante', category: 'movimiento', name: 'Brasa constante', description: '10 días con movimiento en 30 días rodantes', icon: 'Flame', tier: 'rare', condition_type: 'rolling_days', condition_value: { min: 10, window_days: 30 }, sort_order: 36 },
-  { id: 'maestro_pausas', category: 'movimiento', name: 'Maestro de pausas', description: 'Termina 3 sesiones temprano, sin culpa', icon: 'Coffee', tier: 'uncommon', condition_type: 'partial_sessions', condition_value: { min: 3 }, sort_order: 37 },
+  { id: 'maestro_pausas', category: 'movimiento', name: 'Maestro de pausas', description: 'Toma una pausa en 3 sesiones, sin culpa', icon: 'Coffee', tier: 'uncommon', condition_type: 'paused_sessions', condition_value: { min: 3 }, sort_order: 37 },
   { id: 'victoria_garantizada', category: 'movimiento', name: 'Victoria garantizada', description: 'Completa tu primera rutina de 2 minutos', icon: 'Sparkles', tier: 'common', condition_type: 'two_min_session', condition_value: { min: 1 }, sort_order: 38 },
 ];
 
@@ -393,9 +393,9 @@ export function evaluateAchievement(
       unlocked = progressCurrent >= min;
       break;
     }
-    case 'partial_sessions': {
-      // Maestro de pausas: salidas tempranas/parciales SIN culpa (spec §5).
-      progressCurrent = ctx.workouts.filter((w) => w.completed_rate < 0.5).length;
+    case 'paused_sessions': {
+      // Maestro de pausas: sesiones donde el usuario usó la pausa (spec §7).
+      progressCurrent = ctx.workouts.filter((w) => w.paused).length;
       progressTarget = (condition_value as { min: number }).min;
       unlocked = progressCurrent >= progressTarget;
       break;

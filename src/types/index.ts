@@ -179,6 +179,8 @@ export interface Workout {
   exercises: WorkoutExercise[];
   actual_minutes: number;
   rpe?: 'suave' | 'justo' | 'duro';
+  /** Usó la pausa durante la sesión — local-only, alimenta el logro "Maestro de pausas" */
+  paused?: boolean;
   created_at: string;
 }
 
@@ -358,6 +360,8 @@ export interface SessionResult {
   totalEx: number;
   exs: WorkoutExercise[];
   adapted: boolean;
+  /** El usuario abrió el diálogo de pausa durante la sesión (spec §7, logro "Maestro de pausas") */
+  paused?: boolean;
   rpe?: string;
   motiv?: string;
 }

@@ -81,6 +81,8 @@ export function SummaryScreen() {
       exercises: result.exs || [],
       actual_minutes: result.minutes,
       rpe: (rpe ?? 'justo') as Workout['rpe'],
+      // Pausa real registrada en la sesión (logro "Maestro de pausas", spec §7)
+      paused: result.paused ?? false,
       created_at: new Date().toISOString(),
     };
 

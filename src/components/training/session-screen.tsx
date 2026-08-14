@@ -91,6 +91,9 @@ export function SessionScreen() {
   const [restTotal, setRestTotal] = React.useState(0);
   const [resting, setResting] = React.useState(false);
   const [paused, setPaused] = React.useState(false);
+  // Rastrea si el usuario abrió el diálogo de pausa (logro "Maestro de pausas", spec §7).
+  const pausedUsedRef = React.useRef(false);
+  const openPause = () => { pausedUsedRef.current = true; setPaused(true); };
   const [timeRun, setTimeRun] = React.useState(false);
   const [timeLeft, setTimeLeft] = React.useState(0);
   const [doneSets, setDoneSets] = React.useState(0);
@@ -364,8 +367,7 @@ export function SessionScreen() {
     const doneEx = currentExs.filter((e) => e.status === 'done').length;
     const totalEx = currentExs.length;
     const currentPlan = useStore.getState().plan;
-    if (!currentPlan) return;
-setPlan({
+    if (!currentPlan) return;    setPlan({
       ...currentPlan,
       result: {
         minutes: Math.round(currentElapsed / 60),
@@ -374,6 +376,7 @@ setPlan({
         doneEx,
         totalEx,
         adapted: adaptedRef.current,
+        paused: pausedUsedRef.current,
       },
     });
     if (useStore.getState().prefs.audioGuide) {
@@ -721,7 +724,7 @@ setPlan({
             ><Camera size={13} /> <span>{t('Postura')}</span></motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => setPaused(true)}
+              onClick={openPause}
               className="flex items-center justify-center gap-1 rounded-xl border border-white/[.07] bg-[#151b2a] px-2 py-2.5 text-xs font-semibold text-[var(--muted)] hover:bg-white/[.08] transition-colors"
             ><Icons.Pause size={13} /> <span>{t('Pausa')}</span></motion.button>
             <motion.button
@@ -763,7 +766,7 @@ setPlan({
           whileTap={{ scale: 0.9 }}
           aria-label={t('Volver')}
           className="w-11 h-11 rounded-2xl border border-white/[.07] bg-[#151b2a] flex items-center justify-center text-white hover:bg-white/[.08] transition-colors"
-          onClick={() => setPaused(true)}
+          onClick={openPause}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M15 5l-7 7 7 7"/></svg>
         </motion.button>
