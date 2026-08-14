@@ -215,7 +215,7 @@ tsc ✅ · eslint ✅ · vitest ✅ · playwright (contra `next build && next st
 ## HOUSEKEEPING
 
 - Todo cambio de deps/config actualiza este archivo en el mismo PR.
-- Última verificación: 2026-08-14 · 74 archivos / 1028 tests unitarios · 30 specs e2e.
+- Última verificación: 2026-08-14 · 74 archivos / 1031 tests unitarios · 30 specs e2e.
 
 ## Tests
 
@@ -246,3 +246,14 @@ clicks; los helpers de navegación en `e2e/helpers.ts` lo descartan con `dismiss
 - `POST /api/decision` → Decision Engine (decidir intensidad/duración)
 - `POST /api/workout` → Training Agent (generar rutina)
 - Validación con Zod schemas en `lib/api/schemas.ts`
+
+## Deploy (Netlify)
+
+- Sitio: `chispa-fit` (https://chispa-fit.netlify.app) — integración Git nativa con
+  `JunTNK/Chispa`, branch de producción `main`: **push a main → build + deploy automático**
+  (verificado en historial de deploys con `source: api` + commit_ref).
+- Deploy hook `push-main-auto-deploy` (branch main) en el dashboard de Netlify
+  (Build & deploy → Deploy hooks) para triggers externos: `POST <hook_url>` dispara un build.
+- Env vars del sitio ya configuradas (Supabase URL/anon/service-role, NODE_VERSION; Stripe opcional).
+- Local-first: el build de Netlify usa `netlify.toml` + `@netlify/plugin-nextjs`; los deploys
+  manuales desde CLI (`netlify deploy --build --prod`) son la excepción, no la regla.
