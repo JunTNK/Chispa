@@ -58,7 +58,15 @@ describe('Leaderboard personal (rúbrica §7)', () => {
       workouts: [w(daysAgo(1))], // esta semana 1, anterior 0 (ambas cards muestran la mejora)
     });
     render(<LeaderboardScreen />);
-    expect(screen.getAllByText('+1 vs el período anterior').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/\+1 vs (la semana pasada|el mes pasado)/).length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText(/Tabla de Campeones/i)).not.toBeInTheDocument();
+  });
+
+  it('muestra días con movimiento en la ventana rodante de 30 días', () => {
+    useStore.setState({
+      workouts: [w(daysAgo(0)), w(daysAgo(1)), w(daysAgo(5))],
+    });
+    render(<LeaderboardScreen />);
+    expect(screen.getByText('3 días con movimiento (30 días rodantes)')).toBeInTheDocument();
   });
 });
